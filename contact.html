@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tanya | Dekor By Ana</title>
+    <title>Contact Us | Decor By </title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="assets/css/style.css">
     <script>
@@ -31,108 +31,108 @@
         <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
             <a href="index.html" class="flex items-center gap-2">
                 <span class="text-gold text-2xl">✦</span>
-                <span class="text-lg font-semibold tracking-tight text-dark">Dekor By Ana</span>
+                <span class="text-lg font-semibold tracking-tight text-dark">Decor By</span>
             </a>
             <nav class="hidden md:flex gap-8 text-sm">
-                <a href="index.html" class="text-[#333333] hover:text-dark transition">Utama</a>
-                <a href="gallery.html" class="text-[#333333] hover:text-dark transition">Galeri</a>
-                <a href="services.html" class="text-[#333333] hover:text-dark transition">Servis</a>
+                <a href="index.html" class="text-[#333333] hover:text-dark transition">Home</a>
+                <a href="gallery.html" class="text-[#333333] hover:text-dark transition">Gallery</a>
+                <a href="services.html" class="text-[#333333] hover:text-dark transition">Services</a>
                 <a href="faq.html" class="text-[#333333] hover:text-dark transition">FAQ</a>
-                <a href="contact.html" class="text-dark font-medium border-b-2 border-gold pb-1">Tanya</a>
+                <a href="contact.html" class="text-dark font-medium border-b-2 border-gold pb-1">Contact</a>
             </nav>
             <button id="menuBtn" class="md:hidden text-2xl text-dark">☰</button>
         </div>
         <div id="mobileMenu" class="hidden md:hidden px-5 pb-4 space-y-2 text-sm font-medium bg-white">
-            <a href="index.html" class="block py-2 text-[#333333] pl-3">Utama</a>
-            <a href="gallery.html" class="block py-2 text-[#333333] pl-3">Galeri</a>
-            <a href="services.html" class="block py-2 text-[#333333] pl-3">Servis</a>
+            <a href="index.html" class="block py-2 text-[#333333] pl-3">Home</a>
+            <a href="gallery.html" class="block py-2 text-[#333333] pl-3">Gallery</a>
+            <a href="services.html" class="block py-2 text-[#333333] pl-3">Services</a>
             <a href="faq.html" class="block py-2 text-[#333333] pl-3">FAQ</a>
-            <a href="contact.html" class="block py-2 text-dark border-l-2 border-gold pl-3">Tanya</a>
+            <a href="contact.html" class="block py-2 text-dark border-l-2 border-gold pl-3">Contact</a>
         </div>
     </header>
 
     <section class="max-w-lg mx-auto px-5 py-12">
         <div class="text-center mb-8">
             <div class="gold-line mb-4"></div>
-            <h2 class="text-2xl font-light tracking-tight">Tanya Kami</h2>
-            <p class="text-[#333333] text-sm mt-3">Isi borang di bawah. Kami akan WhatsApp anda dalam masa 24 jam.</p>
+            <h2 class="text-2xl font-light tracking-tight">Contact Us</h2>
+            <p class="text-[#333333] text-sm mt-3">Complete the form below and we'll contact you via WhatsApp within 24 hours.</p>
         </div>
         
         <form id="inquiryForm" class="space-y-4">
             <div>
-                <label class="block text-sm font-medium mb-1 text-dark">Nama Penuh *</label>
-                <input type="text" id="customer_name" required class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none" placeholder="Nama anda">
+                <label class="block text-sm font-medium mb-1 text-dark">Full Name *</label>
+                <input type="text" id="customer_name" required class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none" placeholder="Your full name">
             </div>
             
             <div>
-                <label class="block text-sm font-medium mb-1 text-dark">Telefon *</label>
+                <label class="block text-sm font-medium mb-1 text-dark">Phone Number *</label>
                 <input type="tel" id="phone" required class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none" placeholder="012-3456789">
             </div>
             
             <div>
-                <label class="block text-sm font-medium mb-1 text-dark">Jenis Event *</label>
+                <label class="block text-sm font-medium mb-1 text-dark">Event Type *</label>
                 <select id="event_type" required class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none text-dark">
-                    <option value="">Pilih Event</option>
+                    <option value="">Select Event Type</option>
                     <option value="Birthday">Birthday</option>
                     <option value="Anniversary">Anniversary</option>
                     <option value="Corporate">Corporate</option>
-                    <option value="Other">Lain-lain</option>
+                    <option value="Other">Other</option>
                 </select>
             </div>
             
             <div>
-                <label class="block text-sm font-medium mb-1 text-dark">Tarikh Event *</label>
+                <label class="block text-sm font-medium mb-1 text-dark">Event Date *</label>
                 <input type="date" id="event_date" required class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none">
             </div>
             
             <div>
-                <label class="block text-sm font-medium mb-1 text-dark">Jumlah Tetamu *</label>
+                <label class="block text-sm font-medium mb-1 text-dark">Number of Guests *</label>
                 <input type="number" id="guest_count" required min="10" max="500" class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none" placeholder="50">
             </div>
             
             <div>
-                <label class="block text-sm font-medium mb-3 text-dark">Servis Diperlukan *</label>
+                <label class="block text-sm font-medium mb-3 text-dark">Required Services *</label>
                 <div class="space-y-2">
                     <label class="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-5 py-3.5 cursor-pointer hover:border-gold transition">
                         <input type="checkbox" name="services" value="deco" class="w-5 h-5">
-                        <span class="text-dark text-sm">✦ Dekorasi</span>
+                        <span class="text-dark text-sm">✦ Decoration</span>
                     </label>
                     <label class="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-5 py-3.5 cursor-pointer hover:border-gold transition">
                         <input type="checkbox" name="services" value="photo" class="w-5 h-5">
-                        <span class="text-dark text-sm">◈ Fotografi</span>
+                        <span class="text-dark text-sm">◈ Photography</span>
                     </label>
                     <label class="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-5 py-3.5 cursor-pointer hover:border-gold transition">
                         <input type="checkbox" name="services" value="catering" class="w-5 h-5">
-                        <span class="text-dark text-sm">◆ Katering (Abang 1)</span>
+                        <span class="text-dark text-sm">◆ Catering</span>
                     </label>
                     <label class="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-5 py-3.5 cursor-pointer hover:border-gold transition">
                         <input type="checkbox" name="services" value="magic" class="w-5 h-5">
-                        <span class="text-dark text-sm">❖ Magic Show (Abang 2)</span>
+                        <span class="text-dark text-sm">❖ Magic Show</span>
                     </label>
                 </div>
             </div>
             
             <div>
-                <label class="block text-sm font-medium mb-1 text-dark">Mesej (Pilihan)</label>
-                <textarea id="message" rows="3" class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none" placeholder="Contoh: Nak tema Frozen..."></textarea>
+                <label class="block text-sm font-medium mb-1 text-dark">Message (Optional)</label>
+                <textarea id="message" rows="3" class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none" placeholder="Example: We'd like a () theme..."></textarea>
             </div>
             
             <button type="submit" id="submitBtn" class="w-full bg-dark text-white py-4 rounded-full font-semibold text-base hover:bg-gold hover:text-dark transition">
-                Hantar Pertanyaan
+                Submit Inquiry
             </button>
         </form>
         
         <div id="successMessage" class="hidden text-center py-12">
             <div class="text-gold text-5xl mb-5">✦</div>
-            <h3 class="text-xl font-semibold text-dark mb-2">Terima Kasih!</h3>
-            <p class="text-[#333333] text-sm">Kami akan WhatsApp anda dalam masa 24 jam.</p>
-            <a href="index.html" class="inline-block mt-6 text-gold text-sm font-medium hover:underline">← Kembali ke Utama</a>
+            <h3 class="text-xl font-semibold text-dark mb-2">Thank You!</h3>
+            <p class="text-[#333333] text-sm">We'll contact you via WhatsApp within 24 hours.</p>
+            <a href="index.html" class="inline-block mt-6 text-gold text-sm font-medium hover:underline">← ← Back to Home</a>
         </div>
     </section>
 
     <footer class="bg-dark border-t border-gray-800 text-center py-8 px-5 mt-8">
         <p class="text-gold text-lg mb-2">✦</p>
-        <p class="text-gray-500 text-xs">© 2026 Dekor By Ana. Semua hak cipta terpelihara.</p>
+        <p class="text-gray-500 text-xs">© 2026 Decor By. All rights reserved.</p>
     </footer>
 
     <script src="config.js"></script>

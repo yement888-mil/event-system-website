@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,8 +22,8 @@
 
     <header class="bg-dark text-white py-4 px-5">
         <div class="max-w-4xl mx-auto flex items-center justify-between">
-            <span class="text-gold font-semibold">✦ Alat Sebut Harga</span>
-            <span class="text-gray-400 text-xs">Untuk Ana sahaja</span>
+            <span class="text-gold font-semibold">✦ Quotation Tool</span>
+            <span class="text-gray-400 text-xs">For Me Only</span>
         </div>
     </header>
 
@@ -32,10 +32,10 @@
         <!-- Password Gate -->
         <div id="passwordGate" class="text-center py-16">
             <div class="text-gold text-4xl mb-4">🔐</div>
-            <h2 class="text-xl font-semibold mb-2">Kata Laluan Diperlukan</h2>
-            <input type="password" id="toolPassword" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-center mt-4" placeholder="Masukkan kata laluan">
-            <button onclick="checkPassword()" class="block mx-auto mt-3 bg-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Buka</button>
-            <p id="passwordError" class="text-red-500 text-xs mt-2 hidden">Kata laluan salah</p>
+            <h2 class="text-xl font-semibold mb-2">Password Required</h2>
+            <input type="password" id="toolPassword" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-center mt-4" placeholder="Enter password">
+            <button onclick="checkPassword()" class="block mx-auto mt-3 bg-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Unlock</button>
+            <p id="passwordError" class="text-red-500 text-xs mt-2 hidden">Incorrect password</p>
         </div>
 
         <!-- Main Tool (hidden until password) -->
@@ -43,20 +43,20 @@
             
             <!-- Inquiry List -->
             <section class="mb-8">
-                <h2 class="text-lg font-semibold mb-3">📋 Pertanyaan Terkini</h2>
+                <h2 class="text-lg font-semibold mb-3">Latest Inquiries</h2>
                 <div id="inquiryList" class="space-y-2">
-                    <p class="text-sm text-gray-500">Memuatkan...</p>
+                    <p class="text-sm text-gray-500">Loading...</p>
                 </div>
             </section>
 
             <!-- Quotation Generator -->
             <section class="bg-white rounded-2xl p-6 shadow-sm">
-                <h2 class="text-lg font-semibold mb-4">💰 Jana Sebut Harga</h2>
+                <h2 class="text-lg font-semibold mb-4">Generate Quotation</h2>
                 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium mb-1">Pilih Pertanyaan</label>
+                    <label class="block text-sm font-medium mb-1">Select Inquiry</label>
                     <select id="inquirySelect" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm">
-                        <option value="">-- Pilih --</option>
+                        <option value="">-- Select --</option>
                     </select>
                 </div>
 
@@ -65,15 +65,15 @@
                     
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="text-sm">Dekorasi (RM)</label>
+                            <label class="text-sm">Decoration (RM)</label>
                             <input type="number" id="priceDeco" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0">
                         </div>
                         <div>
-                            <label class="text-sm">Fotografi (RM)</label>
+                            <label class="text-sm">Photography (RM)</label>
                             <input type="number" id="pricePhoto" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0">
                         </div>
                         <div>
-                            <label class="text-sm">Katering (RM)</label>
+                            <label class="text-sm">Catering (RM)</label>
                             <input type="number" id="priceCatering" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0">
                         </div>
                         <div>
@@ -83,18 +83,18 @@
                     </div>
 
                     <div class="bg-[#F5F0E6] p-4 rounded-xl text-sm space-y-1">
-                        <p>Jumlah: <strong id="totalPrice">RM 0</strong></p>
+                        <p>Total: <strong id="totalPrice">RM 0</strong></p>
                         <p>Deposit (30%): <strong id="depositPrice">RM 0</strong></p>
-                        <p>Baki: <strong id="balancePrice">RM 0</strong></p>
+                        <p>Balance: <strong id="balancePrice">RM 0</strong></p>
                     </div>
 
                     <button onclick="generateQuotation()" class="w-full bg-dark text-white py-3 rounded-full font-semibold hover:bg-gold hover:text-dark transition">
-                        Jana WhatsApp
+                        Generate WhatsApp Message
                     </button>
 
                     <div id="whatsappOutput" class="hidden bg-[#F8F8F8] p-4 rounded-xl text-sm whitespace-pre-line"></div>
                     <button id="copyBtn" class="hidden w-full border-2 border-dark text-dark py-2 rounded-full font-medium text-sm hover:bg-dark hover:text-white transition" onclick="copyToClipboard()">
-                        Salin Teks
+                        Copy Text
                     </button>
                 </div>
             </section>
@@ -125,7 +125,7 @@
                 const select = document.getElementById('inquirySelect');
                 
                 if (!data.data || data.data.length === 0) {
-                    list.innerHTML = '<p class="text-sm text-gray-500">Tiada pertanyaan lagi.</p>';
+                    list.innerHTML = '<p class="text-sm text-gray-500">No inquiries yet.</p>';
                     return;
                 }
 
@@ -136,12 +136,12 @@
                     </div>
                 `).join('');
 
-                select.innerHTML = '<option value="">-- Pilih --</option>' + data.data.map(inq => `
+                select.innerHTML = '<option value="">-- Select --</option>' + data.data.map(inq => `
                     <option value='${JSON.stringify(inq).replace(/'/g, "&#39;")}'>${inq.customer_name} - ${inq.event_date || '?'}</option>
                 `).join('');
 
             } catch (err) {
-                document.getElementById('inquiryList').innerHTML = '<p class="text-sm text-red-500">Gagal memuatkan.</p>';
+                document.getElementById('inquiryList').innerHTML = '<p class="text-sm text-red-500">Failed to load inquiries.</p>';
             }
         }
 
@@ -153,7 +153,7 @@
                 document.getElementById('inquiryPreview').innerHTML = `
                     <strong>${inq.customer_name}</strong> | ${inq.phone}<br>
                     ${inq.event_type || '-'} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('ms-MY') : '-'} | ${inq.guest_count || '-'} pax<br>
-                    Servis: ${services.join(', ')}
+                    Services: ${services.join(', ')}
                     ${inq.message ? '<br>Mesej: ' + inq.message : ''}
                 `;
                 document.getElementById('whatsappOutput').classList.add('hidden');
@@ -194,33 +194,46 @@
             const deposit = Math.round(total * 0.3);
             const balance = Math.round(total * 0.7);
             const dateObj = inq.event_date ? new Date(inq.event_date) : null;
-            const formattedDate = dateObj ? dateObj.toLocaleDateString('ms-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+            const formattedDate = dateObj ? dateObj.toLocaleDateString('en-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
 
             let lines = [];
-            lines.push(`Hai ${inq.customer_name}! Terima kasih untuk pertanyaan anda.`);
+            lines.push(`Hi ${inq.customer_name},`);
             lines.push('');
-            lines.push('📋 SEBUT HARGA');
-            lines.push(`🎯 ${inq.event_type || 'Event'} | 📅 ${formattedDate} | 👥 ${inq.guest_count} tetamu`);
+            lines.push('Thank you for your inquiry. Please find your quotation details below.');
             lines.push('');
-            if (services.includes('deco')) lines.push(`✅ Dekorasi: RM ${d}`);
-            else lines.push('❌ Dekorasi: Tiada');
-            if (services.includes('photo')) lines.push(`✅ Fotografi: RM ${p}`);
-            else lines.push('❌ Fotografi: Tiada');
-            if (services.includes('catering')) lines.push(`✅ Katering: RM ${c}`);
-            else lines.push('❌ Katering: Tiada');
-            if (services.includes('magic')) lines.push(`✅ Magic Show: RM ${m}`);
-            else lines.push('❌ Magic Show: Tiada');
-            lines.push('');
-            lines.push(`Jumlah: RM ${total}`);
-            lines.push(`Deposit (30%): RM ${deposit}`);
-            lines.push(`Baki: RM ${balance}`);
-            lines.push('');
-            lines.push('📌 Bayaran deposit ke:');
-            lines.push('Maybank 5xxxxx | Dekor By Ana');
-            lines.push('');
-            lines.push('❓ FAQ: dekorbyana.com/faq');
-            lines.push('📱 Ada soalan? Reply WhatsApp ni.');
 
+            lines.push('QUOTATION');
+            lines.push('--------------------');
+
+            lines.push(`Event Type: ${inq.event_type || 'Event'}`);
+            lines.push(`Event Date: ${formattedDate}`);
+            lines.push(`Guests: ${inq.guest_count || '-'} pax`);
+
+            lines.push('');
+            lines.push('Selected Services');
+
+            if (services.includes('deco')) lines.push(`Decoration: RM ${d}`);
+            if (services.includes('photo')) lines.push(`Photography: RM ${p}`);
+            if (services.includes('catering')) lines.push(`Catering: RM ${c}`);
+            if (services.includes('magic')) lines.push(`Magic Show: RM ${m}`);
+
+            lines.push('');
+            lines.push('--------------------');
+            lines.push(`Total: RM ${total}`);
+            lines.push(`Deposit (30%): RM ${deposit}`);
+            lines.push(`Balance: RM ${balance}`);
+            lines.push('--------------------');
+
+            lines.push('');
+            lines.push('Payment Details');
+            lines.push('Maybank 5xxxxx');
+            lines.push('Dekor By Ana');
+
+            lines.push('');
+            lines.push('FAQ: dekorbyana.com/faq');
+            lines.push('');
+            lines.push('If you have any questions, please reply to this WhatsApp message.');
+        
             const output = lines.join('\n');
             document.getElementById('whatsappOutput').textContent = output;
             document.getElementById('whatsappOutput').classList.remove('hidden');
@@ -230,7 +243,7 @@
         function copyToClipboard() {
             const text = document.getElementById('whatsappOutput').textContent;
             navigator.clipboard.writeText(text).then(() => {
-                alert('Teks disalin! Buka WhatsApp dan paste.');
+                alert('Quotation copied successfully.');
             });
         }
     </script>

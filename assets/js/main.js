@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitBtn = document.getElementById('submitBtn');
             const originalText = submitBtn.textContent;
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Menghantar...';
+            submitBtn.textContent = 'Submitting...';
             submitBtn.style.opacity = '0.7';
             
             const services = [];
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (services.length === 0) {
-                alert('Sila pilih sekurang-kurangnya satu servis.');
+                alert('Please select at least one service.');
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
                 submitBtn.style.opacity = '1';
@@ -105,13 +105,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('successMessage').classList.remove('hidden');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
-                    alert(result.error || 'Gagal menghantar. Sila cuba lagi.');
+                    alert(result.error || 'Failed to submit. Please try again.');
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalText;
                     submitBtn.style.opacity = '1';
                 }
             } catch (error) {
-                alert('Ralat sambungan. Sila cuba lagi atau WhatsApp kami terus.');
+                alert('Connection error. Please try again or contact us via WhatsApp.');
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
                 submitBtn.style.opacity = '1';
