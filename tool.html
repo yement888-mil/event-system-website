@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alat Sebut Harga | Dekor By Ana</title>
+    <title>Quotation Tool | Dekor By</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -25,6 +25,7 @@
             <span class="text-gold font-semibold">Quotation Tool</span>
             <button onclick="logout()" class="text-gray-400 text-xs hover:text-white">
             Logout
+            </button>
         </div>
     </header>
 
@@ -106,6 +107,17 @@
     <script>
         let adminToken = localStorage.getItem('adminToken') || '';
 
+        function escapeHTML(str) {
+            if (!str) return '';
+
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         async function checkPassword() {
             const input = document.getElementById('toolPassword').value;
 
@@ -153,6 +165,11 @@
                     }
                 });
                 const data = await res.json();
+
+                if (res.status === 401 || res.status === 403) {
+                    logout();
+                    return;
+                }
                 
                 const list = document.getElementById('inquiryList');
                 const select = document.getElementById('inquirySelect');
@@ -164,13 +181,13 @@
 
                 list.innerHTML = data.data.map((inq) => `
                     <div class="bg-white rounded-xl p-3 text-sm border border-gray-100">
-                        <strong>${inq.customer_name}</strong> — ${inq.event_type || '-'} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('ms-MY') : '-'} | ${inq.guest_count || '-'} pax
+                        <strong>${escapeHTML(inq.customer_name)}</strong> — ${escapeHTML(inq.event_type || '-')} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('ms-MY') : '-'} | ${escapeHTML(inq.guest_count || '-')} pax
                         <span class="text-xs text-gray-400 ml-2">${new Date(inq.created_at).toLocaleDateString('ms-MY')}</span>
                     </div>
                 `).join('');
 
                 select.innerHTML = '<option value="">-- Select --</option>' + data.data.map(inq => `
-                    <option value='${JSON.stringify(inq).replace(/'/g, "&#39;")}'>${inq.customer_name} - ${inq.event_date || '?'}</option>
+                    <option value='${JSON.stringify(inq).replace(/'/g, "&#39;")}'>${escapeHTML(inq.customer_name)} - ${inq.event_date || '?'}</option>
                 `).join('');
 
             } catch (err) {
@@ -184,10 +201,10 @@
                 const inq = JSON.parse(this.value);
                 const services = inq.services_requested || [];
                 document.getElementById('inquiryPreview').innerHTML = `
-                    <strong>${inq.customer_name}</strong> | ${inq.phone}<br>
-                    ${inq.event_type || '-'} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('ms-MY') : '-'} | ${inq.guest_count || '-'} pax<br>
-                    Services: ${services.join(', ')}
-                    ${inq.message ? '<br>Mesej: ' + inq.message : ''}
+                    <strong>${escapeHTML(inq.customer_name)}</strong> | ${inq.phone}<br>
+                    ${escapeHTML(inq.event_type || '-')} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('ms-MY') : '-'} | ${escapeHTML(inq.guest_count || '-')} pax<br>
+                    Services: ${services.map(service => escapeHTML(service)).join(', ')}
+                    ${inq.message ? '<br>Mesej: ' + escapeHTML(inq.message) : ''}
                 `;
                 document.getElementById('whatsappOutput').classList.add('hidden');
                 document.getElementById('copyBtn').classList.add('hidden');
@@ -240,7 +257,7 @@
 
             lines.push(`Event Type: ${inq.event_type || 'Event'}`);
             lines.push(`Event Date: ${formattedDate}`);
-            lines.push(`Guests: ${inq.guest_count || '-'} pax`);
+            lines.push(`Guests: ${escapeHTML(inq.guest_count || '-')} pax`);
 
             lines.push('');
             lines.push('Selected Services');
@@ -285,7 +302,7 @@
         }
 
 
-        window.onload = () => {
+        window.onload = async () => {
             if (adminToken) {
                 document.getElementById('passwordGate').classList.add('hidden');
                 document.getElementById('toolContent').classList.remove('hidden');
