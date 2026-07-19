@@ -2172,7 +2172,13 @@
 
                 const result = await response.json();
                 if (result.success) {
-                    alert(editingQuotationId ? 'Quotation updated successfully!' : 'Quotation saved successfully!');
+                    const savedQuotationNo = result.data?.quotation_no || 'DRAFT';
+                    const inqForPdf = selectedInquiry;
+                    const itemsForPdf = items;
+                    const totalForPdf = total;
+                    const depositForPdf = deposit;
+                    const balanceForPdf = balance;
+
                     editingQuotationId = null;
                     selectedInquiry = null;
                     await loadQuotations();
@@ -2190,6 +2196,10 @@
                     document.getElementById('cancelEditBtn')?.classList.add('hidden');
                     document.getElementById('saveQuotationText').innerText = 'Generate & Save Quotation';
                     switchTab('quotations');
+
+                    if (confirm(`Quotation ${savedQuotationNo} saved. Download the PDF now?`)) {
+                        buildAndDownloadPDF(inqForPdf, savedQuotationNo, itemsForPdf, totalForPdf, depositForPdf, balanceForPdf);
+                    }
                 } else {
                     throw new Error(result.message || 'Operation failed');
                 }
@@ -2419,39 +2429,11 @@
         // ------------------------------------------------------------
         // PDF
         // ------------------------------------------------------------
-        function generatePDF() {
-            if (!selectedInquiry) {
-                alert('Please search and select an inquiry first');
-                return;
-            }
-
+        function buildAndDownloadPDF(inq, quotationNo, items, total, deposit, balance) {
             const { jsPDF } = window.jspdf || {};
             if (!jsPDF) {
                 alert('PDF library failed to load. Please check your internet connection and try again.');
                 return;
-            }
-
-            const inq = selectedInquiry;
-            const nameInputs = document.querySelectorAll('.service-name');
-            const priceInputs = document.querySelectorAll('.service-price');
-            const items = [];
-            let total = 0;
-            for (let i = 0; i < nameInputs.length; i++) {
-                const name = nameInputs[i].value.trim();
-                const price = parseFloat(priceInputs[i].value) || 0;
-                if (name && price > 0) { items.push({ name, price }); total += price; }
-            }
-            if (total <= 0) { alert('Enter service prices'); return; }
-            const deposit = Math.round(total * 0.3);
-            const balance = Math.round(total * 0.7);
-
-            // Use the real quotation number if this is an existing/saved
-            // quotation being edited; otherwise this is a not-yet-saved
-            // draft, so label it clearly rather than guessing a number.
-            let quotationNo = 'DRAFT';
-            if (editingQuotationId) {
-                const existing = allQuotations.find(q => q.id === editingQuotationId);
-                if (existing?.quotation_no) quotationNo = existing.quotation_no;
             }
 
             const valid = new Date();
@@ -2542,6 +2524,38 @@
 
             const fileName = `Quotation_${quotationNo}_${(inq.customer_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
             doc.save(fileName);
+        }
+
+        function generatePDF() {
+            if (!selectedInquiry) {
+                alert('Please search and select an inquiry first');
+                return;
+            }
+
+            const inq = selectedInquiry;
+            const nameInputs = document.querySelectorAll('.service-name');
+            const priceInputs = document.querySelectorAll('.service-price');
+            const items = [];
+            let total = 0;
+            for (let i = 0; i < nameInputs.length; i++) {
+                const name = nameInputs[i].value.trim();
+                const price = parseFloat(priceInputs[i].value) || 0;
+                if (name && price > 0) { items.push({ name, price }); total += price; }
+            }
+            if (total <= 0) { alert('Enter service prices'); return; }
+            const deposit = Math.round(total * 0.3);
+            const balance = Math.round(total * 0.7);
+
+            // Use the real quotation number if this is an existing/saved
+            // quotation being edited; otherwise this is a not-yet-saved
+            // draft, so label it clearly rather than guessing a number.
+            let quotationNo = 'DRAFT';
+            if (editingQuotationId) {
+                const existing = allQuotations.find(q => q.id === editingQuotationId);
+                if (existing?.quotation_no) quotationNo = existing.quotation_no;
+            }
+
+            buildAndDownloadPDF(inq, quotationNo, items, total, deposit, balance);
         }
 
         // ------------------------------------------------------------
