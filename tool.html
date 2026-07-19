@@ -99,6 +99,7 @@
         .status-contacted { background: #dbeafe; color: #1d4ed8; }
         .status-quotation_sent { background: #ede9fe; color: #6d28d9; }
         .status-confirmed { background: #d1fae5; color: #065f46; }
+        .status-cancel_requested { background: #fed7aa; color: #9a3412; font-weight: 700; }
         
         .table-container {
             max-height: 500px;
@@ -587,7 +588,7 @@
             return `<span class="status-badge ${classes[status] || 'status-draft'}">${status || 'draft'}</span>`;
         }
 
-        const INQUIRY_STATUSES = ['new', 'contacted', 'quotation_sent', 'waiting_deposit', 'confirmed', 'completed', 'cancelled'];
+        const INQUIRY_STATUSES = ['new', 'contacted', 'quotation_sent', 'waiting_deposit', 'confirmed', 'completed', 'cancel_requested', 'cancelled'];
         const INQUIRY_STATUS_LABELS = {
             'new': 'New',
             'contacted': 'Contacted',
@@ -595,6 +596,7 @@
             'waiting_deposit': 'Waiting Deposit',
             'confirmed': 'Confirmed',
             'completed': 'Completed',
+            'cancel_requested': 'Cancellation Requested',
             'cancelled': 'Cancelled'
         };
 

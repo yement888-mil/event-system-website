@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (response.ok && result.success) {
                     document.getElementById('inquiryForm').classList.add('hidden');
                     document.getElementById('successMessage').classList.remove('hidden');
+                    window.__lastInquiryWithdrawToken = result.data?.withdraw_token || null;
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
                     alert(result.error || 'Failed to submit. Please try again.');
@@ -119,3 +120,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Lets a customer instantly withdraw an inquiry they just submitted, in
+// the same browser session, before any quotation has been created for
+// it. Uses the random withdraw_token returned when the inquiry was
+// created - never the inquiry's plain numeric id - so it can't be
+// guessed or used to withdraw someone else's inquiry.
+async function withdrawInquiry() {
+    const token = window.__lastInquiryWithdrawToken;
+    const btn = document.getElementById('withdrawBtn');
+    const resultEl = document.getElementById('withdrawResult');
+
+    if (!token) {
+        if (resultEl) {
+            resultEl.textContent = 'This can only be used right after submitting. Please contact us via WhatsApp instead.';
+            resultEl.classList.remove('hidden');
+        }
+        return;
+    }
+
+    if (!confirm('Withdraw this inquiry? We will no longer follow up on it.')) return;
+
+    try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Withdrawing...'; }
+
+        const res = await fetch(`${CONFIG.API_URL}/api/inquiry/withdraw/${token}`, {
+            method: 'POST'
+        });
+        const result = await res.json();
+
+        if (resultEl) {
+            resultEl.textContent = result.message || 'Done.';
+            resultEl.classList.remove('hidden');
+        }
+        if (btn) btn.classList.add('hidden');
+
+    } catch (error) {
+        if (resultEl) {
+            resultEl.textContent = 'Something went wrong. Please contact us via WhatsApp.';
+            resultEl.classList.remove('hidden');
+        }
+        if (btn) { btn.disabled = false; btn.textContent = 'Submitted by mistake? Withdraw this inquiry'; }
+    }
+}

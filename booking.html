@@ -121,6 +121,14 @@
                 This booking has been cancelled. Please contact us via WhatsApp if you have any questions.
             </div>
 
+            <div id="cancelRequestedNote" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 mb-4">
+                We've received your cancellation request and will confirm with you shortly.
+            </div>
+
+            <div id="requestCancelSection" class="hidden text-center mb-4">
+                <button id="requestCancelBtn" onclick="requestCancellation()" class="text-xs text-gray-400 hover:text-red-500 hover:underline">Need to cancel this booking?</button>
+            </div>
+
             <p class="text-center text-xs text-gray-400 mt-6">
                 Questions about your booking? <a href="https://wa.me/60123456789" target="_blank" class="text-gold hover:underline">Message us on WhatsApp</a>
             </p>
@@ -203,12 +211,23 @@
                 document.getElementById('depositAmount').textContent = `RM ${Number(b.deposit || 0).toFixed(2)}`;
                 document.getElementById('balanceAmount').textContent = `RM ${Number(b.balance || 0).toFixed(2)}`;
 
-                if (b.status === 'cancelled') {
+                if (b.inquiry_status === 'cancel_requested') {
+                    document.getElementById('cancelRequestedNote').classList.remove('hidden');
+                } else if (b.status === 'cancelled') {
                     document.getElementById('cancelledNote').classList.remove('hidden');
                 } else if (b.status === 'deposit_paid' || b.status === 'completed') {
                     document.getElementById('confirmedNote').classList.remove('hidden');
                 } else {
                     document.getElementById('depositNote').classList.remove('hidden');
+                }
+
+                // Only offer the cancel-request option if this booking
+                // isn't already cancelled, completed, or already pending
+                // a cancellation review.
+                const cancellableStates = ['cancelled', 'completed', 'cancel_requested'];
+                if (b.withdraw_token && !cancellableStates.includes(b.inquiry_status) && b.status !== 'completed' && b.status !== 'cancelled') {
+                    window.__withdrawToken = b.withdraw_token;
+                    document.getElementById('requestCancelSection').classList.remove('hidden');
                 }
 
                 document.getElementById('loadingState').classList.add('hidden');
@@ -218,6 +237,31 @@
                 console.error('Booking load error:', err);
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('notFoundState').classList.remove('hidden');
+            }
+        }
+
+        async function requestCancellation() {
+            const token = window.__withdrawToken;
+            if (!token) return;
+
+            if (!confirm('Request cancellation of this booking? Our team will review and confirm with you.')) return;
+
+            const btn = document.getElementById('requestCancelBtn');
+            try {
+                if (btn) { btn.disabled = true; btn.textContent = 'Sending request...'; }
+
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/withdraw/${token}`, {
+                    method: 'POST'
+                });
+                const result = await res.json();
+
+                alert(result.message || 'Request sent.');
+                document.getElementById('requestCancelSection').classList.add('hidden');
+                loadBooking();
+
+            } catch (err) {
+                alert('Something went wrong. Please contact us via WhatsApp.');
+                if (btn) { btn.disabled = false; btn.textContent = 'Need to cancel this booking?'; }
             }
         }
 
