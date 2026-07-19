@@ -167,6 +167,7 @@
         let editingQuotationId = null;
         let savingQuotation = false;
         let allInquiries = [];
+        let allQuotations = [];
 
         // ------------------------------------------------------------
         // PACKAGE TEMPLATES
@@ -369,12 +370,12 @@
                 });
                 if (!res.ok) throw new Error('Failed');
                 const data = await res.json();
-                const quotations = (data.data || []).map(q => {
+                allQuotations = (data.data || []).map(q => {
                     if (typeof q.items === 'string') { try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; } }
                     return q;
                 });
-                renderQuotations(quotations);
-                updateDashboard(quotations, allInquiries);
+                renderQuotations(allQuotations);
+                updateDashboard(allQuotations, allInquiries);
             } catch (err) {
                 console.error(err);
                 document.getElementById('quotationHistory').innerHTML = '<p class="text-red-500 text-sm">Failed to load quotations</p>';
@@ -394,7 +395,7 @@
                     <br>Q-${String(q.id).padStart(5,'0')} | RM ${q.total}
                     <br>Event: ${q.event_date ? new Date(q.event_date).toLocaleDateString('en-MY') : '-'}
                     <br>Status:
-                    <select onchange="updateQuotationStatus(${q.id},this.value)" class="border rounded text-xs">
+                    <select id="status_${q.id}" class="border rounded text-xs">
                         <option ${q.status==='draft'?'selected':''}>draft</option>
                         <option ${q.status==='sent'?'selected':''}>sent</option>
                         <option ${q.status==='waiting_deposit'?'selected':''}>waiting_deposit</option>
@@ -402,6 +403,7 @@
                         <option ${q.status==='completed'?'selected':''}>completed</option>
                         <option ${q.status==='cancelled'?'selected':''}>cancelled</option>
                     </select>
+                    <button onclick="updateQuotationStatus(${q.id})" class="bg-gold text-white px-3 py-1 rounded text-xs ml-2">Update Status</button>
                     <div class="mt-3 flex gap-2">
                         <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-1 rounded text-xs">Delete</button>
                     </div>
@@ -446,7 +448,6 @@
                 <strong>${escapeHTML(inq.customer_name)}</strong><br>
                 ${escapeHTML(inq.event_type || '-')} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('en-MY') : '-'}
             `;
-            // Reset services
             const container = document.getElementById('serviceRows');
             container.innerHTML = '';
             addServiceRow('', '');
@@ -475,7 +476,7 @@
         });
 
         // ------------------------------------------------------------
-        // GENERATE QUOTATION - FIXED payload structure
+        // GENERATE QUOTATION
         // ------------------------------------------------------------
         async function generateQuotation() {
             if (savingQuotation) return;
@@ -506,11 +507,9 @@
                 const validUntil = new Date(now);
                 validUntil.setDate(validUntil.getDate() + 7);
 
-                // Build payload matching backend expectations
-                // Backend expects: inquiry_id, items (JSON string), total, deposit, balance, status
                 const payload = {
                     inquiry_id: inq.id,
-                    items: JSON.stringify(items), // Send as JSON string
+                    items: JSON.stringify(items),
                     total: total,
                     deposit: deposit,
                     balance: balance,
@@ -543,7 +542,6 @@
                 if (result.success) {
                     alert(editingQuotationId ? 'Quotation updated successfully!' : 'Quotation saved successfully!');
                     editingQuotationId = null;
-                    // Refresh and reset
                     await loadQuotations();
                     document.getElementById('whatsappOutput').classList.add('hidden');
                     document.getElementById('copyBtn').classList.add('hidden');
@@ -564,6 +562,68 @@
                 savingQuotation = false;
                 btn.disabled = false;
                 document.getElementById('saveQuotationText').innerText = editingQuotationId ? 'Update Quotation' : 'Generate & Save Quotation';
+            }
+        }
+
+        // ------------------------------------------------------------
+        // UPDATE STATUS - with dedicated button
+        // ------------------------------------------------------------
+        async function updateQuotationStatus(id) {
+            try {
+                // Get the selected status from the dropdown
+                const statusSelect = document.getElementById(`status_${id}`);
+                if (!statusSelect) {
+                    alert('Status dropdown not found');
+                    return;
+                }
+                
+                const newStatus = statusSelect.value;
+                
+                // First, get the current quotation data
+                const getRes = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                
+                if (!getRes.ok) {
+                    throw new Error('Failed to fetch quotation data');
+                }
+                
+                const data = await getRes.json();
+                const q = data.data || data.quotation || data;
+                
+                if (!q || !q.id) {
+                    throw new Error('Quotation not found');
+                }
+                
+                // Prepare the full payload with the new status
+                const payload = {
+                    inquiry_id: q.inquiry_id,
+                    items: typeof q.items === 'string' ? q.items : JSON.stringify(q.items || []),
+                    total: q.total || 0,
+                    deposit: q.deposit || 0,
+                    balance: q.balance || 0,
+                    status: newStatus
+                };
+                
+                console.log('Updating status with payload:', payload);
+                
+                // Send the full update
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    alert(`Status updated to "${newStatus}" successfully!`);
+                    await loadQuotations();
+                } else {
+                    const errData = await res.json();
+                    alert('Status update failed: ' + (errData.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Status update error:', err);
+                alert('Status update failed: ' + err.message);
             }
         }
 
@@ -635,7 +695,7 @@
         }
 
         // ------------------------------------------------------------
-        // DELETE / STATUS
+        // DELETE
         // ------------------------------------------------------------
         async function deleteQuotation(id) {
             if (!confirm('Delete this quotation?')) return;
@@ -650,25 +710,6 @@
                 } else throw new Error('Delete failed');
             } catch (err) { console.error(err);
                 alert('Delete failed'); }
-        }
-
-        async function updateQuotationStatus(id, status) {
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                    body: JSON.stringify({ status: status })
-                });
-                if (res.ok) {
-                    loadQuotations();
-                } else {
-                    const data = await res.json();
-                    alert('Status update failed: ' + (data.message || 'Unknown error'));
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Status update failed: ' + err.message);
-            }
         }
 
         // ------------------------------------------------------------
