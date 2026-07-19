@@ -25,6 +25,16 @@
         }
     </script>
     <style>
+        /* Prevents the whole page from being forced to zoom out on mobile
+           if any element inside briefly renders wider than the screen
+           (e.g. right after login when the dashboard first appears).
+           This clips accidental overflow instead of letting it stretch
+           the page - it doesn't hide content, just stops it from
+           dragging the entire viewport wider than the phone screen. */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
         .tab-active {
             border-bottom: 3px solid #C9A84C;
             color: #1A1A1A;

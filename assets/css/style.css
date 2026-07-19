@@ -4,6 +4,15 @@ html {
     scroll-behavior: smooth;
 }
 
+/* Prevents the whole page from being forced to zoom out on mobile if any
+   element briefly renders wider than the screen (a common cause of
+   "page suddenly zooms out, pinching fixes it" on phones). Clips
+   accidental overflow instead of letting it stretch the page. */
+html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #1A1A1A;
