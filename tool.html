@@ -581,11 +581,10 @@
         }
 
         // ------------------------------------------------------------
-        // UPDATE STATUS - with dedicated button
+        // UPDATE STATUS - Using PATCH endpoint
         // ------------------------------------------------------------
         async function updateQuotationStatus(id) {
             try {
-                // Get the selected status from the dropdown
                 const statusSelect = document.getElementById(`status_${id}`);
                 if (!statusSelect) {
                     alert('Status dropdown not found');
@@ -595,39 +594,14 @@
                 const newStatus = statusSelect.value;
                 console.log('Updating quotation', id, 'to status:', newStatus);
                 
-                // First, get the current quotation data
-                const getRes = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
-                
-                if (!getRes.ok) {
-                    throw new Error('Failed to fetch quotation data');
-                }
-                
-                const data = await getRes.json();
-                const q = data.data || data.quotation || data;
-                
-                if (!q || !q.id) {
-                    throw new Error('Quotation not found');
-                }
-                
-                // Prepare the full payload with the new status
-                const payload = {
-                    inquiry_id: q.inquiry_id,
-                    items: typeof q.items === 'string' ? q.items : JSON.stringify(q.items || []),
-                    total: q.total || 0,
-                    deposit: q.deposit || 0,
-                    balance: q.balance || 0,
-                    status: newStatus
-                };
-                
-                console.log('Updating status with payload:', payload);
-                
-                // Send the full update
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                    body: JSON.stringify(payload)
+                // Use the PATCH route for status-only updates
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${adminToken}` 
+                    },
+                    body: JSON.stringify({ status: newStatus })
                 });
                 
                 if (res.ok) {
@@ -640,7 +614,7 @@
                     }
                 } else {
                     const errData = await res.json();
-                    alert('Status update failed: ' + (errData.message || 'Unknown error'));
+                    alert('Status update failed: ' + (errData.error || `HTTP ${res.status}`));
                 }
             } catch (err) {
                 console.error('Status update error:', err);
