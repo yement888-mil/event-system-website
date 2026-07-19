@@ -233,7 +233,40 @@
             document.getElementById(id).addEventListener('input', calculate);
         });
 
-        function generateQuotation() {
+        async function saveQuotation(inquiry, items, total, deposit, balance) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({
+                        inquiry_id: inquiry.id,
+                        items: items,
+                        total: total,
+                        deposit: deposit,
+                        balance: balance
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    console.error('Quotation save failed:', data);
+                    return false;
+                }
+
+                console.log('Quotation saved:', data);
+                return true;
+
+            } catch (error) {
+                console.error('Quotation save error:', error);
+                return false;
+            }
+        }
+
+        async function generateQuotation() {
             const inq = JSON.parse(document.getElementById('inquirySelect').value);
             const services = inq.services_requested || [];
             const d = parseInt(document.getElementById('priceDeco').value) || 0;
@@ -243,6 +276,42 @@
             const total = d + p + c + m;
             const deposit = Math.round(total * 0.3);
             const balance = Math.round(total * 0.7);
+            const items = [];
+            if (services.includes('deco')) {
+                items.push({
+                    name: 'Decoration',
+                    price: d
+                });
+            }
+
+            if (services.includes('photo')) {
+                items.push({
+                    name: 'Photography',
+                    price: p
+                });
+            }
+
+            if (services.includes('catering')) {
+                items.push({
+                    name: 'Catering',
+                    price: c
+                });
+            }
+
+            if (services.includes('magic')) {
+                items.push({
+                    name: 'Magic Show',
+                    price: m
+                });
+            }
+
+            await saveQuotation(
+                inq,
+                items,
+                total,
+                deposit,
+                balance
+            );
             const dateObj = inq.event_date ? new Date(inq.event_date) : null;
             const formattedDate = dateObj ? dateObj.toLocaleDateString('en-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
 
