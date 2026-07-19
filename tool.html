@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dekor By Ana | Owner Dashboard</title>
+    <title>Decor By | Owner Dashboard</title>
     <script src="https://cdn.tailwindcss.com">
     </script>
     <script>
@@ -19,17 +19,67 @@
             }
         }
     </script>
+    <style>
+        .tab-active {
+            border-bottom: 3px solid #C9A84C;
+            color: #1A1A1A;
+            font-weight: 600;
+        }
+        .tab-inactive {
+            color: #888;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .inquiry-detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 600px) {
+            .inquiry-detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body class="bg-[#F8F8F8] text-[#1A1A1A]">
 
     <header class="bg-dark text-white py-4 px-5">
-        <div class="max-w-6xl mx-auto flex items-center justify-between">
-            <span class="text-gold font-semibold">Dekor By Ana</span>
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <span class="text-gold font-semibold text-lg">✨ Dekor By Ana</span>
             <button onclick="logout()" class="text-gray-400 text-xs hover:text-white">Logout</button>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-5 py-8">
+    <main class="max-w-7xl mx-auto px-5 py-6">
 
         <!-- Password Gate -->
         <div id="passwordGate" class="text-center py-16">
@@ -43,129 +93,180 @@
         <!-- Main Tool -->
         <div id="toolContent" class="hidden">
 
-            <!-- DASHBOARD -->
-            <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <!-- DASHBOARD STATS -->
+            <section class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div class="bg-white rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs text-gray-400">New Inquiries</p>
-                    <p class="text-2xl font-bold" id="statNewInquiries">0</p>
+                    <p class="text-xs text-gray-400">📬 Unread</p>
+                    <p class="text-2xl font-bold" id="statUnread">0</p>
                 </div>
                 <div class="bg-white rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs text-gray-400">Quotations Sent</p>
-                    <p class="text-2xl font-bold" id="statSent">0</p>
+                    <p class="text-xs text-gray-400">📋 Total Inquiries</p>
+                    <p class="text-2xl font-bold" id="statTotalInquiries">0</p>
                 </div>
                 <div class="bg-white rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs text-gray-400">Deposit Pending</p>
-                    <p class="text-2xl font-bold text-gold" id="statDepositPending">RM 0</p>
+                    <p class="text-xs text-gray-400">📄 Quotations</p>
+                    <p class="text-2xl font-bold" id="statQuotations">0</p>
                 </div>
                 <div class="bg-white rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs text-gray-400">Upcoming Events</p>
+                    <p class="text-xs text-gray-400">💰 Total Deposit</p>
+                    <p class="text-2xl font-bold text-gold" id="statTotalDeposit">RM 0</p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">📅 Upcoming Events</p>
                     <p class="text-2xl font-bold" id="statUpcoming">0</p>
                 </div>
             </section>
 
-            <!-- UNREAD INQUIRIES (Latest) -->
-            <section class="mb-8">
-                <h2 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                    📬 Unread Inquiries
-                    <span id="unreadCount" class="bg-gold text-dark text-xs px-2 py-0.5 rounded-full">0</span>
-                </h2>
-                <div id="unreadInquiryList" class="space-y-2">
-                    <p class="text-sm text-gray-500">Loading...</p>
+            <!-- TABS -->
+            <div class="flex gap-6 border-b border-gray-200 mb-6 overflow-x-auto">
+                <button onclick="switchTab('inquiries')" id="tabInquiries" class="tab-active pb-3 px-2 text-sm">📬 Inquiries</button>
+                <button onclick="switchTab('quotations')" id="tabQuotations" class="tab-inactive pb-3 px-2 text-sm">📄 Quotations</button>
+                <button onclick="switchTab('analytics')" id="tabAnalytics" class="tab-inactive pb-3 px-2 text-sm">📊 Analytics</button>
+                <button onclick="switchTab('generate')" id="tabGenerate" class="tab-inactive pb-3 px-2 text-sm">✏️ Generate Quotation</button>
+            </div>
+
+            <!-- TAB 1: INQUIRIES -->
+            <div id="tabInquiriesContent" class="tab-content active">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Unread Inquiries -->
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                            📬 Unread
+                            <span id="unreadCount" class="bg-gold text-dark text-xs px-2 py-0.5 rounded-full">0</span>
+                        </h2>
+                        <div id="unreadInquiryList" class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                    <!-- All Inquiries -->
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3">📋 All Inquiries</h2>
+                        <div id="allInquiryList" class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
                 </div>
-            </section>
+            </div>
 
-            <!-- ALL INQUIRIES (Read + Unread) -->
-            <section class="mb-8">
-                <h2 class="text-lg font-semibold mb-3">All Inquiries</h2>
-                <div id="allInquiryList" class="space-y-2 max-h-60 overflow-y-auto">
-                    <p class="text-sm text-gray-500">Loading...</p>
-                </div>
-            </section>
-
-            <!-- Customer Search -->
-            <section class="bg-white rounded-2xl p-6 shadow-sm mb-8">
-                <h2 class="text-lg font-semibold mb-3">Find Customer</h2>
-                <div class="flex gap-3">
-                    <input type="text" id="customerSearch" placeholder="Search by name, phone..." class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm" />
-                    <button onclick="searchCustomer()" class="bg-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Search</button>
-                </div>
-                <div id="searchResults" class="mt-3 space-y-2"></div>
-            </section>
-
-            <!-- Quotation Generator -->
-            <section class="bg-white rounded-2xl p-6 shadow-sm mb-8">
-                <h2 class="text-lg font-semibold mb-4">Generate Quotation</h2>
-
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-1">Select Inquiry</label>
-                    <select id="inquirySelect" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm">
-                        <option value="">-- Select --</option>
+            <!-- TAB 2: QUOTATIONS -->
+            <div id="tabQuotationsContent" class="tab-content">
+                <div class="flex gap-3 mb-4">
+                    <input type="text" id="quotationSearch" placeholder="Search by customer..." class="border border-gray-200 rounded-xl px-4 py-2 text-sm flex-1" oninput="filterQuotations()" />
+                    <select id="statusFilter" onchange="filterQuotations()" class="border border-gray-200 rounded-xl px-4 py-2 text-sm">
+                        <option value="">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="sent">Sent</option>
+                        <option value="waiting_deposit">Waiting Deposit</option>
+                        <option value="deposit_paid">Deposit Paid</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
                     </select>
                 </div>
+                <div id="quotationHistory" class="space-y-3 max-h-[600px] overflow-y-auto">
+                    <p class="text-sm text-gray-500">Loading...</p>
+                </div>
+            </div>
 
-                <div id="quotationForm" class="hidden space-y-4">
-                    <div class="bg-[#F8F8F8] p-4 rounded-xl text-sm" id="inquiryPreview"></div>
+            <!-- TAB 3: ANALYTICS -->
+            <div id="tabAnalyticsContent" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white rounded-2xl p-6 shadow-sm">
+                        <h3 class="text-sm text-gray-400">This Month's Events</h3>
+                        <p class="text-3xl font-bold" id="analyticsEvents">0</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-sm">
+                        <h3 class="text-sm text-gray-400">This Month's Revenue</h3>
+                        <p class="text-3xl font-bold text-gold" id="analyticsRevenue">RM 0</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-sm">
+                        <h3 class="text-sm text-gray-400">Pending Deposits</h3>
+                        <p class="text-3xl font-bold text-orange-500" id="analyticsPending">RM 0</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+                    <h3 class="font-semibold mb-4">📊 Monthly Overview</h3>
+                    <div id="monthlyChart" class="h-64 flex items-end gap-2">
+                        <!-- Will be populated by JS -->
+                    </div>
+                </div>
+            </div>
 
-                    <!-- Package Templates -->
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Package Template</label>
-                        <select id="packageSelect" onchange="applyPackage()" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm">
-                            <option value="">-- Custom --</option>
-                            <option value="birthday_basic">Birthday Basic</option>
-                            <option value="birthday_premium">Birthday Premium</option>
-                            <option value="wedding">Wedding Package</option>
-                            <option value="corporate">Corporate Event</option>
+            <!-- TAB 4: GENERATE QUOTATION -->
+            <div id="tabGenerateContent" class="tab-content">
+                <section class="bg-white rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold mb-4">✏️ Generate Quotation</h2>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Select Inquiry</label>
+                        <select id="inquirySelect" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm">
+                            <option value="">-- Select --</option>
                         </select>
                     </div>
 
-                    <!-- Dynamic Services -->
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Services</label>
-                        <div id="serviceRows" class="space-y-2">
-                            <div class="flex gap-2 items-center">
-                                <input type="text" placeholder="Service name" class="service-name w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                                <input type="number" placeholder="Price (RM)" class="service-price w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                                <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">✕</button>
-                            </div>
+                    <div id="quotationForm" class="hidden space-y-4">
+                        <div class="bg-[#F8F8F8] p-4 rounded-xl text-sm" id="inquiryPreview"></div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Package Template</label>
+                            <select id="packageSelect" onchange="applyPackage()" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm">
+                                <option value="">-- Custom --</option>
+                                <option value="birthday_basic">Birthday Basic</option>
+                                <option value="birthday_premium">Birthday Premium</option>
+                                <option value="wedding">Wedding Package</option>
+                                <option value="corporate">Corporate Event</option>
+                            </select>
                         </div>
-                        <button onclick="addServiceRow()" class="text-gold text-sm font-medium hover:underline mt-2">+ Add Service</button>
-                    </div>
 
-                    <div class="bg-[#F5F0E6] p-4 rounded-xl text-sm space-y-1">
-                        <p>Total: <strong id="totalPrice">RM 0</strong></p>
-                        <p>Deposit (30%): <strong id="depositPrice">RM 0</strong></p>
-                        <p>Balance: <strong id="balancePrice">RM 0</strong></p>
-                        <p>Valid Until: <strong id="validUntil">-</strong></p>
-                    </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Services</label>
+                            <div id="serviceRows" class="space-y-2">
+                                <div class="flex gap-2 items-center">
+                                    <input type="text" placeholder="Service name" class="service-name w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                                    <input type="number" placeholder="Price (RM)" class="service-price w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                                    <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">✕</button>
+                                </div>
+                            </div>
+                            <button onclick="addServiceRow()" class="text-gold text-sm font-medium hover:underline mt-2">+ Add Service</button>
+                        </div>
 
-                    <button id="saveQuotationBtn" onclick="generateQuotation()" class="w-full bg-dark text-white py-3 rounded-full font-semibold hover:bg-gold hover:text-dark transition">
-                        <span id="saveQuotationText">Generate & Save Quotation</span>
-                    </button>
+                        <div class="bg-[#F5F0E6] p-4 rounded-xl text-sm space-y-1">
+                            <p>Total: <strong id="totalPrice">RM 0</strong></p>
+                            <p>Deposit (30%): <strong id="depositPrice">RM 0</strong></p>
+                            <p>Balance: <strong id="balancePrice">RM 0</strong></p>
+                            <p>Valid Until: <strong id="validUntil">-</strong></p>
+                        </div>
 
-                    <!-- WhatsApp & PDF -->
-                    <div class="flex gap-3">
-                        <button onclick="generateWhatsApp()" class="w-full border-2 border-green-600 text-green-600 py-3 rounded-full font-semibold hover:bg-green-600 hover:text-white transition">
-                            📱 WhatsApp
+                        <button id="saveQuotationBtn" onclick="generateQuotation()" class="w-full bg-dark text-white py-3 rounded-full font-semibold hover:bg-gold hover:text-dark transition">
+                            <span id="saveQuotationText">Generate & Save Quotation</span>
                         </button>
-                        <button onclick="generatePDF()" class="w-full border-2 border-dark text-dark py-3 rounded-full font-semibold hover:bg-dark hover:text-white transition">
-                            📄 PDF
-                        </button>
+
+                        <div class="flex gap-3">
+                            <button onclick="generateWhatsApp()" class="w-full border-2 border-green-600 text-green-600 py-3 rounded-full font-semibold hover:bg-green-600 hover:text-white transition">
+                                📱 WhatsApp
+                            </button>
+                            <button onclick="generatePDF()" class="w-full border-2 border-dark text-dark py-3 rounded-full font-semibold hover:bg-dark hover:text-white transition">
+                                📄 PDF
+                            </button>
+                        </div>
+
+                        <div id="whatsappOutput" class="hidden bg-[#F8F8F8] p-4 rounded-xl text-sm whitespace-pre-line"></div>
+                        <button id="copyBtn" class="hidden w-full border-2 border-dark text-dark py-2 rounded-full font-medium text-sm hover:bg-dark hover:text-white transition" onclick="copyToClipboard()">Copy Text</button>
                     </div>
-
-                    <div id="whatsappOutput" class="hidden bg-[#F8F8F8] p-4 rounded-xl text-sm whitespace-pre-line"></div>
-                    <button id="copyBtn" class="hidden w-full border-2 border-dark text-dark py-2 rounded-full font-medium text-sm hover:bg-dark hover:text-white transition" onclick="copyToClipboard()">Copy Text</button>
-                </div>
-            </section>
-
-            <!-- Quotation History -->
-            <section class="bg-white rounded-2xl p-6 shadow-sm">
-                <h2 class="text-lg font-semibold mb-4">Quotation History</h2>
-                <div id="quotationHistory" class="space-y-3">
-                    <p class="text-sm text-gray-500">Loading...</p>
-                </div>
-            </section>
+                </section>
+            </div>
         </div>
     </main>
+
+    <!-- INQUIRY DETAIL MODAL -->
+    <div id="inquiryModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold" id="modalTitle">Inquiry Details</h3>
+                <button onclick="closeModal()" class="text-2xl">&times;</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
 
     <script>
         const CONFIG = {
@@ -180,6 +281,7 @@
         let savingQuotation = false;
         let allInquiries = [];
         let allQuotations = [];
+        let filteredQuotations = [];
 
         // ------------------------------------------------------------
         // PACKAGE TEMPLATES
@@ -211,21 +313,45 @@
             ]
         };
 
-        function applyPackage() {
-            const pkg = document.getElementById('packageSelect').value;
-            if (!pkg || !PACKAGES[pkg]) return;
-            const container = document.getElementById('serviceRows');
-            container.innerHTML = '';
-            PACKAGES[pkg].forEach(s => addServiceRow(s.name, s.price));
-            calculate();
-        }
-
         // ------------------------------------------------------------
         // HELPERS
         // ------------------------------------------------------------
         function escapeHTML(str) {
             if (!str) return '';
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('en-MY');
+        }
+
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleString('en-MY');
+        }
+
+        // ------------------------------------------------------------
+        // TABS
+        // ------------------------------------------------------------
+        function switchTab(tab) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Show selected tab content
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}Content`).classList.add('active');
+            
+            // Update tab buttons
+            document.querySelectorAll('[id^="tab"][id$="Content"]').forEach(el => {
+                const btnId = el.id.replace('Content', '');
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.className = 'pb-3 px-2 text-sm tab-inactive';
+                }
+            });
+            const activeBtn = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+            if (activeBtn) {
+                activeBtn.className = 'pb-3 px-2 text-sm tab-active';
+            }
         }
 
         // ------------------------------------------------------------
@@ -246,8 +372,7 @@
                     localStorage.setItem('adminToken', adminToken);
                     document.getElementById('passwordGate').classList.add('hidden');
                     document.getElementById('toolContent').classList.remove('hidden');
-                    loadInquiries();
-                    loadQuotations();
+                    loadAllData();
                 } else {
                     document.getElementById('passwordError').classList.remove('hidden');
                 }
@@ -258,34 +383,12 @@
         }
 
         // ------------------------------------------------------------
-        // DASHBOARD STATS
+        // LOAD ALL DATA
         // ------------------------------------------------------------
-        function updateDashboard(quotations, inquiries) {
-            const now = new Date();
-            const thisMonth = now.getMonth();
-            const thisYear = now.getFullYear();
-
-            const newInquiries = inquiries.filter(i => {
-                const d = new Date(i.created_at);
-                return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-            }).length;
-
-            const sent = quotations.filter(q => 
-                q.status !== 'draft' && q.status !== 'cancelled'
-            ).length;
-
-            const totalDeposit = quotations.reduce((sum, q) => sum + (parseFloat(q.deposit) || 0), 0);
-
-            const upcoming = inquiries.filter(i => {
-                if (!i.event_date) return false;
-                const d = new Date(i.event_date);
-                return d >= now;
-            }).length;
-
-            document.getElementById('statNewInquiries').textContent = newInquiries;
-            document.getElementById('statSent').textContent = sent;
-            document.getElementById('statDepositPending').textContent = 'RM ' + totalDeposit;
-            document.getElementById('statUpcoming').textContent = upcoming;
+        async function loadAllData() {
+            await loadInquiries();
+            await loadQuotations();
+            updateAnalytics();
         }
 
         // ------------------------------------------------------------
@@ -302,18 +405,64 @@
                 });
                 
                 if (res.ok) {
-                    // Reload inquiries to refresh the list
                     await loadInquiries();
                 } else {
-                    console.error('Failed to mark as read');
+                    alert('Failed to mark as read');
                 }
             } catch (err) {
                 console.error('Error marking as read:', err);
+                alert('Error: ' + err.message);
             }
         }
 
         // ------------------------------------------------------------
-        // LOAD INQUIRIES - Split into Unread and All
+        // VIEW INQUIRY DETAILS
+        // ------------------------------------------------------------
+        function viewInquiry(id) {
+            const inq = allInquiries.find(i => i.id === id);
+            if (!inq) return;
+            
+            document.getElementById('modalTitle').textContent = `Inquiry from ${inq.customer_name}`;
+            
+            let servicesHtml = '';
+            if (inq.services_requested) {
+                const services = typeof inq.services_requested === 'string' ? 
+                    JSON.parse(inq.services_requested) : inq.services_requested;
+                servicesHtml = services.map(s => `<span class="bg-gray-100 px-2 py-1 rounded text-xs">${s}</span>`).join(' ');
+            }
+            
+            document.getElementById('modalBody').innerHTML = `
+                <div class="inquiry-detail-grid">
+                    <div><strong>Name:</strong> ${escapeHTML(inq.customer_name)}</div>
+                    <div><strong>Phone:</strong> ${escapeHTML(inq.phone || '-')}</div>
+                    <div><strong>Event Type:</strong> ${escapeHTML(inq.event_type || '-')}</div>
+                    <div><strong>Event Date:</strong> ${formatDate(inq.event_date)}</div>
+                    <div><strong>Guests:</strong> ${inq.guest_count || '-'}</div>
+                    <div><strong>Status:</strong> ${inq.is_read ? '✓ Read' : '🆕 Unread'}</div>
+                </div>
+                <div class="mt-4">
+                    <strong>Services Requested:</strong>
+                    <div class="mt-2">${servicesHtml || '-'}</div>
+                </div>
+                <div class="mt-4">
+                    <strong>Message:</strong>
+                    <p class="mt-1 text-sm bg-gray-50 p-3 rounded">${escapeHTML(inq.message || 'No message')}</p>
+                </div>
+                <div class="mt-4 text-xs text-gray-400">
+                    Submitted: ${formatDateTime(inq.created_at)}
+                </div>
+                ${!inq.is_read ? `<button onclick="markAsRead(${inq.id}); closeModal();" class="mt-4 bg-gold text-dark px-4 py-2 rounded text-sm font-medium">✓ Mark as Read</button>` : ''}
+            `;
+            
+            document.getElementById('inquiryModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('inquiryModal').classList.remove('active');
+        }
+
+        // ------------------------------------------------------------
+        // LOAD INQUIRIES
         // ------------------------------------------------------------
         async function loadInquiries() {
             try {
@@ -324,6 +473,7 @@
                 const data = await res.json();
                 allInquiries = data.data || [];
                 renderInquiries(allInquiries);
+                updateStats();
             } catch (err) {
                 console.error(err);
                 document.getElementById('unreadInquiryList').innerHTML = '<p class="text-red-500 text-sm">Failed to load inquiries</p>';
@@ -337,95 +487,70 @@
             const select = document.getElementById('inquirySelect');
             
             if (!inquiries || inquiries.length === 0) {
-                unreadList.innerHTML = 'No unread inquiries';
+                unreadList.innerHTML = '✨ All caught up!';
                 allList.innerHTML = 'No inquiries yet';
                 select.innerHTML = '<option value="">-- Select --</option>';
                 return;
             }
 
-            // Split into unread and read
             const unread = inquiries.filter(i => !i.is_read);
             const read = inquiries.filter(i => i.is_read);
 
-            // Update unread count badge
             document.getElementById('unreadCount').textContent = unread.length;
 
-            // Render UNREAD inquiries (with highlight and mark as read button)
+            // Render UNREAD inquiries
             if (unread.length === 0) {
                 unreadList.innerHTML = '<p class="text-sm text-gray-500">✨ All caught up! No unread inquiries.</p>';
             } else {
                 unreadList.innerHTML = unread.map(inq => `
-                    <div class="bg-[#FFF8E7] border-l-4 border-gold rounded-xl p-3 text-sm flex justify-between items-center">
-                        <div>
-                            <strong>${escapeHTML(inq.customer_name)}</strong> | ${escapeHTML(inq.event_type || '-')}
-                            <br>📅 ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('en-MY') : '-'}
-                            <br>📱 ${escapeHTML(inq.phone || '-')}
-                            <br>🕐 ${inq.created_at ? new Date(inq.created_at).toLocaleString('en-MY') : '-'}
+                    <div class="bg-[#FFF8E7] border-l-4 border-gold rounded-xl p-3 text-sm cursor-pointer hover:shadow transition" onclick="viewInquiry(${inq.id})">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <strong>${escapeHTML(inq.customer_name)}</strong>
+                                <span class="text-xs text-gray-400 ml-2">${formatDate(inq.created_at)}</span>
+                            </div>
+                            <button onclick="event.stopPropagation(); markAsRead(${inq.id})" class="bg-gold text-dark px-2 py-0.5 rounded text-xs font-medium hover:bg-yellow-600 transition">
+                                ✓ Read
+                            </button>
                         </div>
-                        <button onclick="markAsRead(${inq.id})" class="bg-gold text-dark px-3 py-1 rounded text-xs font-medium hover:bg-yellow-600 transition whitespace-nowrap ml-2">
-                            ✓ Mark as Read
-                        </button>
+                        <div class="text-xs text-gray-500 mt-1">
+                            ${escapeHTML(inq.event_type || '-')} | 📅 ${formatDate(inq.event_date)}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-0.5 truncate">
+                            ${inq.services_requested ? JSON.parse(inq.services_requested).join(', ') : 'No services selected'}
+                        </div>
                     </div>
                 `).join('');
             }
 
-            // Render ALL inquiries (for reference)
+            // Render ALL inquiries
             allList.innerHTML = inquiries.map(inq => `
-                <div class="bg-white rounded-xl p-3 text-sm border ${inq.is_read ? 'opacity-60' : 'border-l-4 border-l-gold'}">
-                    <strong>${escapeHTML(inq.customer_name)}</strong> | ${escapeHTML(inq.event_type || '-')}
-                    <br>${inq.is_read ? '📖 Read' : '🆕 Unread'} | ${inq.created_at ? new Date(inq.created_at).toLocaleDateString('en-MY') : '-'}
+                <div class="bg-white rounded-xl p-3 text-sm border hover:shadow transition cursor-pointer ${inq.is_read ? '' : 'border-l-4 border-l-gold'}" onclick="viewInquiry(${inq.id})">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <strong>${escapeHTML(inq.customer_name)}</strong>
+                            <span class="text-xs text-gray-400 ml-2">${formatDate(inq.created_at)}</span>
+                        </div>
+                        <span class="text-xs ${inq.is_read ? 'text-gray-400' : 'text-gold font-medium'}">
+                            ${inq.is_read ? '✓ Read' : '🆕 New'}
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        ${escapeHTML(inq.event_type || '-')} | 📅 ${formatDate(inq.event_date)} | 📱 ${escapeHTML(inq.phone || '-')}
+                    </div>
+                    <div class="text-xs text-gray-400 mt-0.5 truncate">
+                        ${inq.services_requested ? JSON.parse(inq.services_requested).join(', ') : 'No services selected'}
+                    </div>
                 </div>
             `).join('');
 
-            // Render dropdown (ALL inquiries)
+            // Render dropdown for quotation generation
             select.innerHTML = '<option value="">-- Select --</option>' +
                 inquiries.map(inq => `
-                    <option value='${JSON.stringify(inq).replace(/'/g,"&#39;")}'>${escapeHTML(inq.customer_name)} ${inq.is_read ? '✓' : '🆕'}</option>
+                    <option value='${JSON.stringify(inq).replace(/'/g,"&#39;")}'>
+                        ${escapeHTML(inq.customer_name)} ${inq.is_read ? '✓' : '🆕'}
+                    </option>
                 `).join('');
-        }
-
-        // ------------------------------------------------------------
-        // SEARCH CUSTOMER
-        // ------------------------------------------------------------
-        function searchCustomer() {
-            const q = document.getElementById('customerSearch').value.toLowerCase().trim();
-            const results = document.getElementById('searchResults');
-            if (!q) { results.innerHTML = ''; return; }
-            const found = allInquiries.filter(i =>
-                i.customer_name?.toLowerCase().includes(q) ||
-                i.phone?.includes(q)
-            );
-            if (found.length === 0) {
-                results.innerHTML = '<p class="text-sm text-gray-500">No customers found</p>';
-                return;
-            }
-            results.innerHTML = found.map(i => `
-                <div class="bg-white border rounded-xl p-3 text-sm flex justify-between items-center">
-                    <div>
-                        <strong>${escapeHTML(i.customer_name)}</strong>
-                        <span class="text-gray-400">| ${escapeHTML(i.phone || '-')}</span>
-                        <br>${escapeHTML(i.event_type || '-')} | ${i.event_date ? new Date(i.event_date).toLocaleDateString('en-MY') : '-'}
-                        ${i.is_read ? '' : '<span class="text-gold text-xs ml-2">🆕 New</span>'}
-                    </div>
-                    <button onclick="selectInquiry(${i.id})" class="bg-gold text-white px-3 py-1 rounded text-xs">Select</button>
-                </div>
-            `).join('');
-        }
-
-        function selectInquiry(id) {
-            const select = document.getElementById('inquirySelect');
-            for (let i = 0; i < select.options.length; i++) {
-                try {
-                    const val = JSON.parse(select.options[i].value);
-                    if (val.id === id) {
-                        select.selectedIndex = i;
-                        select.dispatchEvent(new Event('change'));
-                        document.getElementById('searchResults').innerHTML = '';
-                        document.getElementById('customerSearch').value = '';
-                        return;
-                    }
-                } catch (e) {}
-            }
         }
 
         // ------------------------------------------------------------
@@ -444,8 +569,10 @@
                     }
                     return q;
                 });
-                renderQuotations(allQuotations);
-                updateDashboard(allQuotations, allInquiries);
+                filteredQuotations = [...allQuotations];
+                renderQuotations(filteredQuotations);
+                updateStats();
+                updateAnalytics();
             } catch (err) {
                 console.error(err);
                 document.getElementById('quotationHistory').innerHTML = '<p class="text-red-500 text-sm">Failed to load quotations</p>';
@@ -468,30 +595,146 @@
                     optionsHtml += `<option ${selected} value="${s}">${s}</option>`;
                 });
                 
+                // Show services
+                let servicesHtml = '';
+                if (q.items && q.items.length > 0) {
+                    servicesHtml = q.items.map(item => 
+                        `<span class="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs mr-1">${escapeHTML(item.name)}: RM ${item.price}</span>`
+                    ).join(' ');
+                }
+                
                 html += `
                     <div class="border rounded-xl p-4 text-sm" id="quotation_${q.id}">
-                        <strong>${escapeHTML(q.customer_name || 'Unknown')}</strong>
-                        ${q.phone ? `| 📱 ${escapeHTML(q.phone)}` : ''}
-                        <br>Q-${String(q.id).padStart(5,'0')} | RM ${q.total}
-                        <br>Event: ${q.event_date ? new Date(q.event_date).toLocaleDateString('en-MY') : '-'}
-                        <br>
-                        <div class="flex items-center gap-2 mt-2">
-                            <label class="text-sm font-medium">Status:</label>
+                        <div class="flex flex-wrap justify-between items-start gap-2">
+                            <div>
+                                <strong class="text-base">${escapeHTML(q.customer_name || 'Unknown')}</strong>
+                                ${q.phone ? `<span class="text-gray-400 text-xs">| 📱 ${escapeHTML(q.phone)}</span>` : ''}
+                            </div>
+                            <span class="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">Q-${String(q.id).padStart(5,'0')}</span>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-xs">
+                            <div><span class="text-gray-400">Event:</span> ${formatDate(q.event_date)}</div>
+                            <div><span class="text-gray-400">Total:</span> <strong>RM ${q.total}</strong></div>
+                            <div><span class="text-gray-400">Deposit:</span> RM ${q.deposit || 0}</div>
+                            <div><span class="text-gray-400">Balance:</span> RM ${q.balance || 0}</div>
+                        </div>
+                        <div class="mt-2 text-xs">
+                            <span class="text-gray-400">Services:</span>
+                            <div class="mt-1">${servicesHtml || '-'}</div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 mt-3">
+                            <label class="text-xs font-medium">Status:</label>
                             <select id="status_${q.id}" class="border rounded text-xs px-2 py-1">
                                 ${optionsHtml}
                             </select>
-                            <button onclick="updateQuotationStatus(${q.id})" class="bg-gold text-white px-4 py-1 rounded text-xs font-medium hover:bg-yellow-600 transition">
-                                Update Status
+                            <button onclick="updateQuotationStatus(${q.id})" class="bg-gold text-dark px-3 py-0.5 rounded text-xs font-medium hover:bg-yellow-600 transition">
+                                Update
                             </button>
-                        </div>
-                        <div class="mt-3 flex gap-2">
-                            <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition">Delete</button>
+                            <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-0.5 rounded text-xs hover:bg-red-700 transition">Delete</button>
                         </div>
                     </div>
                 `;
             });
             
             box.innerHTML = html;
+        }
+
+        function filterQuotations() {
+            const search = document.getElementById('quotationSearch').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            
+            filteredQuotations = allQuotations.filter(q => {
+                const matchSearch = q.customer_name?.toLowerCase().includes(search) || false;
+                const matchStatus = status ? q.status === status : true;
+                return matchSearch && matchStatus;
+            });
+            
+            renderQuotations(filteredQuotations);
+        }
+
+        // ------------------------------------------------------------
+        // UPDATE STATS
+        // ------------------------------------------------------------
+        function updateStats() {
+            const unread = allInquiries.filter(i => !i.is_read).length;
+            document.getElementById('statUnread').textContent = unread;
+            document.getElementById('statTotalInquiries').textContent = allInquiries.length;
+            document.getElementById('statQuotations').textContent = allQuotations.length;
+            
+            const totalDeposit = allQuotations.reduce((sum, q) => sum + (parseFloat(q.deposit) || 0), 0);
+            document.getElementById('statTotalDeposit').textContent = 'RM ' + totalDeposit;
+            
+            const now = new Date();
+            const upcoming = allInquiries.filter(i => {
+                if (!i.event_date) return false;
+                const d = new Date(i.event_date);
+                return d >= now;
+            }).length;
+            document.getElementById('statUpcoming').textContent = upcoming;
+        }
+
+        // ------------------------------------------------------------
+        // ANALYTICS
+        // ------------------------------------------------------------
+        function updateAnalytics() {
+            const now = new Date();
+            const thisMonth = now.getMonth();
+            const thisYear = now.getFullYear();
+            
+            // This month's events
+            const eventsThisMonth = allInquiries.filter(i => {
+                if (!i.event_date) return false;
+                const d = new Date(i.event_date);
+                return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+            }).length;
+            document.getElementById('analyticsEvents').textContent = eventsThisMonth;
+            
+            // This month's revenue (from completed/deposit_paid quotations)
+            const revenue = allQuotations
+                .filter(q => q.status === 'completed' || q.status === 'deposit_paid')
+                .reduce((sum, q) => sum + (parseFloat(q.total) || 0), 0);
+            document.getElementById('analyticsRevenue').textContent = 'RM ' + revenue;
+            
+            // Pending deposits
+            const pending = allQuotations
+                .filter(q => q.status === 'waiting_deposit' || q.status === 'sent')
+                .reduce((sum, q) => sum + (parseFloat(q.deposit) || 0), 0);
+            document.getElementById('analyticsPending').textContent = 'RM ' + pending;
+            
+            // Monthly chart (last 6 months)
+            const months = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date();
+                d.setMonth(d.getMonth() - i);
+                months.push(d);
+            }
+            
+            const chartData = months.map(m => {
+                const month = m.getMonth();
+                const year = m.getFullYear();
+                return allQuotations.filter(q => {
+                    if (!q.created_at) return false;
+                    const d = new Date(q.created_at);
+                    return d.getMonth() === month && d.getFullYear() === year;
+                }).reduce((sum, q) => sum + (parseFloat(q.total) || 0), 0);
+            });
+            
+            const maxVal = Math.max(...chartData, 1);
+            const chartHtml = chartData.map(val => {
+                const height = Math.round((val / maxVal) * 100);
+                const monthName = months[chartData.indexOf(val)].toLocaleString('default', { month: 'short' });
+                return `
+                    <div class="flex-1 flex flex-col items-center">
+                        <div class="w-full bg-gold/20 rounded-t" style="height: ${height}px; max-height: 200px; min-height: 20px;">
+                            <div class="w-full bg-gold rounded-t" style="height: ${height}px; max-height: 200px; min-height: 20px;"></div>
+                        </div>
+                        <span class="text-xs text-gray-400 mt-1">${monthName}</span>
+                        <span class="text-xs font-medium">RM ${val}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('monthlyChart').innerHTML = chartHtml;
         }
 
         // ------------------------------------------------------------
@@ -517,6 +760,15 @@
             calculate();
         }
 
+        function applyPackage() {
+            const pkg = document.getElementById('packageSelect').value;
+            if (!pkg || !PACKAGES[pkg]) return;
+            const container = document.getElementById('serviceRows');
+            container.innerHTML = '';
+            PACKAGES[pkg].forEach(s => addServiceRow(s.name, s.price));
+            calculate();
+        }
+
         // ------------------------------------------------------------
         // INQUIRY SELECT
         // ------------------------------------------------------------
@@ -529,14 +781,14 @@
             document.getElementById('quotationForm').classList.remove('hidden');
             document.getElementById('inquiryPreview').innerHTML = `
                 <strong>${escapeHTML(inq.customer_name)}</strong><br>
-                ${escapeHTML(inq.event_type || '-')} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('en-MY') : '-'}
+                ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)}
+                <br>${inq.services_requested ? JSON.parse(inq.services_requested).join(', ') : 'No services selected'}
             `;
             const container = document.getElementById('serviceRows');
             container.innerHTML = '';
             addServiceRow('', '');
             calculate();
-            const now = new Date();
-            const valid = new Date(now);
+            const valid = new Date();
             valid.setDate(valid.getDate() + 7);
             document.getElementById('validUntil').textContent = valid.toLocaleDateString('en-MY');
             document.getElementById('whatsappOutput').classList.add('hidden');
@@ -586,9 +838,6 @@
                 const total = items.reduce((s, i) => s + i.price, 0);
                 const deposit = Math.round(total * 0.3);
                 const balance = Math.round(total * 0.7);
-                const now = new Date();
-                const validUntil = new Date(now);
-                validUntil.setDate(validUntil.getDate() + 7);
 
                 const payload = {
                     inquiry_id: inq.id,
@@ -598,8 +847,6 @@
                     balance: balance,
                     status: 'draft'
                 };
-
-                console.log('Saving payload:', payload);
 
                 let response;
                 if (editingQuotationId) {
@@ -634,6 +881,8 @@
                     calculate();
                     document.getElementById('inquirySelect').value = '';
                     document.getElementById('quotationForm').classList.add('hidden');
+                    // Switch to quotations tab
+                    switchTab('quotations');
                 } else {
                     throw new Error(result.message || 'Operation failed');
                 }
@@ -660,7 +909,6 @@
                 }
                 
                 const newStatus = statusSelect.value;
-                console.log('Updating quotation', id, 'to status:', newStatus);
                 
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}/status`, {
                     method: 'PATCH',
@@ -690,6 +938,24 @@
         }
 
         // ------------------------------------------------------------
+        // DELETE QUOTATION
+        // ------------------------------------------------------------
+        async function deleteQuotation(id) {
+            if (!confirm('Delete this quotation?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (res.ok) {
+                    alert('Quotation deleted');
+                    await loadQuotations();
+                } else throw new Error('Delete failed');
+            } catch (err) { console.error(err);
+                alert('Delete failed'); }
+        }
+
+        // ------------------------------------------------------------
         // WHATSAPP
         // ------------------------------------------------------------
         function generateWhatsApp() {
@@ -712,7 +978,7 @@
 
             let msg = [`Hi ${inq.customer_name},`, '', 'Thank you for your inquiry.', '', 'QUOTATION', '--------------------'];
             msg.push(`Event: ${inq.event_type || '-'}`);
-            msg.push(`Date: ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('en-MY') : '-'}`);
+            msg.push(`Date: ${formatDate(inq.event_date)}`);
             msg.push(`Guests: ${inq.guest_count || '-'} pax`, '');
             msg.push('Services');
             items.forEach(i => msg.push(`${i.name}: RM ${i.price}`));
@@ -720,8 +986,7 @@
             msg.push(`Total: RM ${total}`);
             msg.push(`Deposit (30%): RM ${deposit}`);
             msg.push(`Balance: RM ${balance}`);
-            const now = new Date();
-            const valid = new Date(now);
+            const valid = new Date();
             valid.setDate(valid.getDate() + 7);
             msg.push('', `Valid until: ${valid.toLocaleDateString('en-MY')}`);
             msg.push('', 'Payment Details', 'Maybank | 5xxxxx | Dekor By Ana', '', 'Thank you.');
@@ -744,7 +1009,9 @@
         // PDF (placeholder)
         // ------------------------------------------------------------
         function generatePDF() {
-            alert('PDF generation will be available soon. Use WhatsApp or Copy Text for now.');
+            const select = document.getElementById('inquirySelect');
+            if (!select.value) { alert('Select an inquiry first'); return; }
+            alert('📄 PDF generation will be available in the next update.\nFor now, use WhatsApp or Copy Text.');
         }
 
         // ------------------------------------------------------------
@@ -754,24 +1021,6 @@
             const text = document.getElementById('whatsappOutput').textContent;
             if (!text) return alert('Nothing to copy');
             navigator.clipboard.writeText(text).then(() => alert('Copied!')).catch(() => alert('Copy failed'));
-        }
-
-        // ------------------------------------------------------------
-        // DELETE
-        // ------------------------------------------------------------
-        async function deleteQuotation(id) {
-            if (!confirm('Delete this quotation?')) return;
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
-                    method: 'DELETE',
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
-                if (res.ok) {
-                    alert('Quotation deleted');
-                    loadQuotations();
-                } else throw new Error('Delete failed');
-            } catch (err) { console.error(err);
-                alert('Delete failed'); }
         }
 
         // ------------------------------------------------------------
@@ -793,8 +1042,7 @@
             if (adminToken) {
                 document.getElementById('passwordGate').classList.add('hidden');
                 document.getElementById('toolContent').classList.remove('hidden');
-                loadInquiries();
-                loadQuotations();
+                loadAllData();
                 if (document.getElementById('serviceRows').children.length === 0) addServiceRow('', '');
             }
         };
