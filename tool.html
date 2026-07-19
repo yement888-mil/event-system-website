@@ -246,24 +246,28 @@
         }
 
         // ------------------------------------------------------------
-        // DASHBOARD STATS
+        // DASHBOARD STATS - FIXED
         // ------------------------------------------------------------
         function updateDashboard(quotations, inquiries) {
             const now = new Date();
             const thisMonth = now.getMonth();
             const thisYear = now.getFullYear();
 
+            // New Inquiries (this month)
             const newInquiries = inquiries.filter(i => {
                 const d = new Date(i.created_at);
                 return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
             }).length;
 
-            const sent = quotations.filter(q => q.status === 'sent' || q.status === 'waiting_deposit').length;
+            // Quotations Sent - any status except draft and cancelled
+            const sent = quotations.filter(q => 
+                q.status !== 'draft' && q.status !== 'cancelled'
+            ).length;
 
-            const depositPending = quotations
-                .filter(q => q.status === 'waiting_deposit')
-                .reduce((sum, q) => sum + (q.deposit || 0), 0);
+            // Total Deposit across ALL quotations
+            const totalDeposit = quotations.reduce((sum, q) => sum + (parseFloat(q.deposit) || 0), 0);
 
+            // Upcoming Events
             const upcoming = inquiries.filter(i => {
                 if (!i.event_date) return false;
                 const d = new Date(i.event_date);
@@ -272,7 +276,7 @@
 
             document.getElementById('statNewInquiries').textContent = newInquiries;
             document.getElementById('statSent').textContent = sent;
-            document.getElementById('statDepositPending').textContent = 'RM ' + depositPending;
+            document.getElementById('statDepositPending').textContent = 'RM ' + totalDeposit;
             document.getElementById('statUpcoming').textContent = upcoming;
         }
 
