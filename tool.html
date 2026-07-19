@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quotation Tool | Dekor By</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
     <script>
         tailwind.config = {
             theme: {
@@ -24,25 +25,25 @@
         <div class="max-w-4xl mx-auto flex items-center justify-between">
             <span class="text-gold font-semibold">Quotation Tool</span>
             <button onclick="logout()" class="text-gray-400 text-xs hover:text-white">
-            Logout
+                Logout
             </button>
         </div>
     </header>
 
     <main class="max-w-4xl mx-auto px-5 py-8">
-        
+
         <!-- Password Gate -->
         <div id="passwordGate" class="text-center py-16">
             <div class="text-gold text-4xl mb-4">🔐</div>
             <h2 class="text-xl font-semibold mb-2">Password Required</h2>
-            <input type="password" id="toolPassword" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-center mt-4" placeholder="Enter password">
+            <input type="password" id="toolPassword" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-center mt-4 w-64" placeholder="Enter password" />
             <button onclick="checkPassword()" class="block mx-auto mt-3 bg-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Unlock</button>
             <p id="passwordError" class="text-red-500 text-xs mt-2 hidden">Incorrect password</p>
         </div>
 
         <!-- Main Tool (hidden until password) -->
         <div id="toolContent" class="hidden">
-            
+
             <!-- Inquiry List -->
             <section class="mb-8">
                 <h2 class="text-lg font-semibold mb-3">Latest Inquiries</h2>
@@ -54,7 +55,7 @@
             <!-- Quotation Generator -->
             <section class="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 class="text-lg font-semibold mb-4">Generate Quotation</h2>
-                
+
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-1">Select Inquiry</label>
                     <select id="inquirySelect" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm">
@@ -64,23 +65,23 @@
 
                 <div id="quotationForm" class="hidden space-y-4">
                     <div class="bg-[#F8F8F8] p-4 rounded-xl text-sm" id="inquiryPreview"></div>
-                    
+
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-sm">Decoration (RM)</label>
-                            <input type="number" id="priceDeco" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0">
+                            <input type="number" id="priceDeco" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0" />
                         </div>
                         <div>
                             <label class="text-sm">Photography (RM)</label>
-                            <input type="number" id="pricePhoto" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0">
+                            <input type="number" id="pricePhoto" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0" />
                         </div>
                         <div>
                             <label class="text-sm">Catering (RM)</label>
-                            <input type="number" id="priceCatering" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0">
+                            <input type="number" id="priceCatering" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0" />
                         </div>
                         <div>
                             <label class="text-sm">Magic Show (RM)</label>
-                            <input type="number" id="priceMagic" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0">
+                            <input type="number" id="priceMagic" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0" />
                         </div>
                     </div>
 
@@ -90,33 +91,53 @@
                         <p>Balance: <strong id="balancePrice">RM 0</strong></p>
                     </div>
 
-                    <button onclick="generateQuotation()" class="w-full bg-dark text-white py-3 rounded-full font-semibold hover:bg-gold hover:text-dark transition">
+                    <!-- Two buttons: Save & WhatsApp -->
+                    <button id="saveQuotationBtn" onclick="generateQuotation()" class="w-full bg-dark text-white py-3 rounded-full font-semibold hover:bg-gold hover:text-dark transition">
+                        Generate & Save Quotation
+                    </button>
+
+                    <button onclick="generateWhatsApp()" class="w-full border-2 border-dark text-dark py-3 rounded-full font-semibold hover:bg-dark hover:text-white transition">
                         Generate WhatsApp Message
                     </button>
 
                     <div id="whatsappOutput" class="hidden bg-[#F8F8F8] p-4 rounded-xl text-sm whitespace-pre-line"></div>
+
                     <button id="copyBtn" class="hidden w-full border-2 border-dark text-dark py-2 rounded-full font-medium text-sm hover:bg-dark hover:text-white transition" onclick="copyToClipboard()">
                         Copy Text
                     </button>
-                    <section class="mt-8 bg-white rounded-2xl p-6 shadow-sm">
-                        <h2 class="text-lg font-semibold mb-4">Quotation History</h2>
+                </div>
+            </section>
 
-                        <div id="quotationHistory" class="space-y-3">
-                            <p class="text-sm text-gray-500">Loading...</p>
-                        </div>
-                    </section>
+            <!-- Quotation History -->
+            <section class="mt-8 bg-white rounded-2xl p-6 shadow-sm">
+                <h2 class="text-lg font-semibold mb-4">Quotation History</h2>
+                <div id="quotationHistory" class="space-y-3">
+                    <p class="text-sm text-gray-500">Loading...</p>
                 </div>
             </section>
         </div>
     </main>
 
-    <script src="config.js"></script>
+    <!-- CONFIG: Correct Railway backend -->
     <script>
-        let adminToken = localStorage.getItem('adminToken') || '';
+        const CONFIG = {
+            API_URL: 'https://event-system-backend-production.up.railway.app'
+        };
+    </script>
 
+    <script>
+        // ------------------------------------------------------------
+        // STATE
+        // ------------------------------------------------------------
+        let adminToken = localStorage.getItem('adminToken') || '';
+        let editingQuotationId = null;
+        let savingQuotation = false;
+
+        // ------------------------------------------------------------
+        // HELPERS
+        // ------------------------------------------------------------
         function escapeHTML(str) {
             if (!str) return '';
-
             return String(str)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
@@ -125,162 +146,161 @@
                 .replace(/'/g, '&#039;');
         }
 
+        // ------------------------------------------------------------
+        // AUTH / PASSWORD
+        // ------------------------------------------------------------
         async function checkPassword() {
             const input = document.getElementById('toolPassword').value;
-
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/admin/login`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: 'admin',
-                        password: input
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: input })
                 });
-
+                if (!res.ok) throw new Error('API error');
                 const data = await res.json();
-
                 if (data.success) {
                     adminToken = data.token;
-
                     localStorage.setItem('adminToken', adminToken);
-
                     document.getElementById('passwordGate').classList.add('hidden');
                     document.getElementById('toolContent').classList.remove('hidden');
-
                     loadInquiries();
                     loadQuotations();
-
                 } else {
                     document.getElementById('passwordError').classList.remove('hidden');
                 }
-
-            } catch (error) {
-                console.error('Login error:', error);
-
-                document.getElementById('passwordError').textContent = 'Login failed';
-                document.getElementById('passwordError').classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                alert('Login failed. Check API or network.');
             }
         }
 
+        // ------------------------------------------------------------
+        // LOAD INQUIRIES
+        // ------------------------------------------------------------
         async function loadInquiries() {
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/inquiry`, {
-                    headers: {
-                        Authorization: `Bearer ${adminToken}`
-                    }
+                    headers: { Authorization: `Bearer ${adminToken}` }
                 });
+                if (!res.ok) throw new Error('Failed to fetch inquiries');
                 const data = await res.json();
-
-                if (res.status === 401 || res.status === 403) {
-                    logout();
-                    return;
-                }
-                
-                const list = document.getElementById('inquiryList');
-                const select = document.getElementById('inquirySelect');
-                
-                if (!data.data || data.data.length === 0) {
-                    list.innerHTML = '<p class="text-sm text-gray-500">No inquiries yet.</p>';
-                    return;
-                }
-
-                list.innerHTML = data.data.map((inq) => `
-                    <div class="bg-white rounded-xl p-3 text-sm border border-gray-100">
-                        <strong>${escapeHTML(inq.customer_name)}</strong> — ${escapeHTML(inq.event_type || '-')} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('ms-MY') : '-'} | ${escapeHTML(inq.guest_count || '-')} pax
-                        <span class="text-xs text-gray-400 ml-2">${new Date(inq.created_at).toLocaleDateString('ms-MY')}</span>
-                    </div>
-                `).join('');
-
-                select.innerHTML = '<option value="">-- Select --</option>' + data.data.map(inq => `
-                    <option value='${JSON.stringify(inq).replace(/'/g, "&#39;")}'>${escapeHTML(inq.customer_name)} - ${inq.event_date || '?'}</option>
-                `).join('');
-
+                renderInquiries(data.data || []);
             } catch (err) {
-                document.getElementById('inquiryList').innerHTML = '<p class="text-sm text-red-500">Failed to load inquiries.</p>';
+                console.error(err);
+                document.getElementById('inquiryList').innerHTML =
+                    '<p class="text-red-500 text-sm">Failed to load inquiries</p>';
             }
         }
 
+        function renderInquiries(inquiries) {
+            const list = document.getElementById('inquiryList');
+            const select = document.getElementById('inquirySelect');
+            if (!inquiries || inquiries.length === 0) {
+                list.innerHTML = 'No inquiries yet';
+                select.innerHTML = '<option value="">-- Select --</option>';
+                return;
+            }
+            list.innerHTML = inquiries.map(inq => `
+                <div class="bg-white rounded-xl p-3 text-sm border">
+                    <strong>${escapeHTML(inq.customer_name)}</strong> |
+                    ${escapeHTML(inq.event_type || '-')}
+                </div>
+            `).join('');
+
+            select.innerHTML = '<option value="">-- Select --</option>' +
+                inquiries.map(inq => `
+                    <option value='${JSON.stringify(inq).replace(/'/g,"&#39;")}'>
+                        ${escapeHTML(inq.customer_name)}
+                    </option>
+                `).join('');
+        }
+
+        // ------------------------------------------------------------
+        // LOAD QUOTATIONS
+        // ------------------------------------------------------------
         async function loadQuotations() {
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation`, {
-                    headers: {
-                        Authorization: `Bearer ${adminToken}`
-                    }
+                    headers: { Authorization: `Bearer ${adminToken}` }
                 });
-
+                if (!res.ok) throw new Error('Failed to fetch quotations');
                 const data = await res.json();
-
-                const container = document.getElementById('quotationHistory');
-
-                if (!data.success || data.data.length === 0) {
-                    container.innerHTML = `
-                        <p class="text-sm text-gray-500">
-                            No quotations yet.
-                        </p>
-                    `;
-                    return;
-                }
-
-                container.innerHTML = data.data.map(q => `
-                    <div class="border border-gray-100 rounded-xl p-4 text-sm">
-                        <strong>${escapeHTML(q.customer_name)}</strong>
-                        <br>
-                        ${escapeHTML(q.event_type || '-')}
-                        |
-                        ${q.event_date ? new Date(q.event_date).toLocaleDateString('ms-MY') : '-'}
-                        <br>
-                        Total: RM ${q.total}
-                        <br>
-                        Deposit: RM ${q.deposit}
-                        <br>
-                        Balance: RM ${q.balance}
-                        <br>
-                        Status:
-                        <span class="text-gold">
-                            ${escapeHTML(q.status)}
-                        </span>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                console.error('Quotation history error:', error);
-
+                const quotations = (data.data || []).map(q => {
+                    if (typeof q.items === 'string') {
+                        try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; }
+                    }
+                    return q;
+                });
+                renderQuotations(quotations);
+            } catch (err) {
+                console.error(err);
                 document.getElementById('quotationHistory').innerHTML =
-                    '<p class="text-sm text-red-500">Failed to load quotations.</p>';
+                    '<p class="text-red-500 text-sm">Failed to load quotations</p>';
             }
         }
+
+        function renderQuotations(quotations) {
+            const box = document.getElementById('quotationHistory');
+            if (!quotations || quotations.length === 0) {
+                box.innerHTML = 'No quotations yet';
+                return;
+            }
+            box.innerHTML = quotations.map(q => `
+                <div class="border rounded-xl p-4 text-sm">
+                    <strong>${escapeHTML(q.customer_name)}</strong><br>
+                    Quotation No: Q-${String(q.id).padStart(5,'0')}<br>
+                    Total: RM ${q.total}<br>
+                    Status:
+                    <select onchange="updateQuotationStatus(${q.id},this.value)" class="border rounded">
+                        <option ${q.status==='draft'?'selected':''}>draft</option>
+                        <option ${q.status==='sent'?'selected':''}>sent</option>
+                        <option ${q.status==='paid'?'selected':''}>paid</option>
+                        <option ${q.status==='cancelled'?'selected':''}>cancelled</option>
+                    </select>
+                    <div class="mt-3 flex gap-2">
+                        <button onclick="editQuotation(${q.id})" class="bg-dark text-white px-3 py-1 rounded text-xs">Edit</button>
+                        <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-1 rounded text-xs">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ------------------------------------------------------------
+        // INQUIRY SELECT → SHOW FORM
+        // ------------------------------------------------------------
         document.getElementById('inquirySelect').addEventListener('change', function() {
-            if (this.value) {
-                document.getElementById('quotationForm').classList.remove('hidden');
-                const inq = JSON.parse(this.value);
-                const services = inq.services_requested || [];
-                document.getElementById('inquiryPreview').innerHTML = `
-                    <strong>${escapeHTML(inq.customer_name)}</strong> | ${inq.phone}<br>
-                    ${escapeHTML(inq.event_type || '-')} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('ms-MY') : '-'} | ${escapeHTML(inq.guest_count || '-')} pax<br>
-                    Services: ${services.map(service => escapeHTML(service)).join(', ')}
-                    ${inq.message ? '<br>Mesej: ' + escapeHTML(inq.message) : ''}
-                `;
+            if (!this.value) {
+                document.getElementById('quotationForm').classList.add('hidden');
                 document.getElementById('whatsappOutput').classList.add('hidden');
                 document.getElementById('copyBtn').classList.add('hidden');
-                document.getElementById('priceDeco').value = '';
-                document.getElementById('pricePhoto').value = '';
-                document.getElementById('priceCatering').value = '';
-                document.getElementById('priceMagic').value = '';
-                document.getElementById('totalPrice').textContent = 'RM 0';
-                document.getElementById('depositPrice').textContent = 'RM 0';
-                document.getElementById('balancePrice').textContent = 'RM 0';
+                return;
             }
+            const inq = JSON.parse(this.value);
+            document.getElementById('quotationForm').classList.remove('hidden');
+            document.getElementById('inquiryPreview').innerHTML = `
+                <strong>${escapeHTML(inq.customer_name)}</strong><br>
+                ${escapeHTML(inq.event_type || '-')}
+            `;
+            // Reset prices if not editing
+            if (!editingQuotationId) {
+                ['priceDeco', 'pricePhoto', 'priceCatering', 'priceMagic'].forEach(id => {
+                    document.getElementById(id).value = 0;
+                });
+                calculate();
+            }
+            // Hide previous whatsapp output
+            document.getElementById('whatsappOutput').classList.add('hidden');
+            document.getElementById('copyBtn').classList.add('hidden');
         });
 
+        // ------------------------------------------------------------
+        // CALCULATE TOTALS
+        // ------------------------------------------------------------
         function calculate() {
-            const d = parseInt(document.getElementById('priceDeco').value) || 0;
-            const p = parseInt(document.getElementById('pricePhoto').value) || 0;
-            const c = parseInt(document.getElementById('priceCatering').value) || 0;
-            const m = parseInt(document.getElementById('priceMagic').value) || 0;
-            const total = d + p + c + m;
+            const values = ['priceDeco', 'pricePhoto', 'priceCatering', 'priceMagic']
+                .map(id => Number(document.getElementById(id).value) || 0);
+            const total = values.reduce((a, b) => a + b, 0);
             document.getElementById('totalPrice').textContent = 'RM ' + total;
             document.getElementById('depositPrice').textContent = 'RM ' + Math.round(total * 0.3);
             document.getElementById('balancePrice').textContent = 'RM ' + Math.round(total * 0.7);
@@ -290,161 +310,302 @@
             document.getElementById(id).addEventListener('input', calculate);
         });
 
-        async function saveQuotation(inquiry, items, total, deposit, balance) {
+        // ------------------------------------------------------------
+        // GENERATE / SAVE QUOTATION (Create or Update)
+        // ------------------------------------------------------------
+        async function generateQuotation() {
+            if (savingQuotation) return;
+            savingQuotation = true;
+            const btn = document.getElementById('saveQuotationBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
             try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${adminToken}`
-                    },
-                    body: JSON.stringify({
-                        inquiry_id: inquiry.id,
-                        items: items,
-                        total: total,
-                        deposit: deposit,
-                        balance: balance
-                    })
-                });
+                const selectEl = document.getElementById('inquirySelect');
+                if (!selectEl.value) {
+                    alert('Please select an inquiry first.');
+                    return;
+                }
+                const inq = JSON.parse(selectEl.value);
 
-                const data = await res.json();
+                const prices = {
+                    Decoration: Number(document.getElementById('priceDeco').value) || 0,
+                    Photography: Number(document.getElementById('pricePhoto').value) || 0,
+                    Catering: Number(document.getElementById('priceCatering').value) || 0,
+                    'Magic Show': Number(document.getElementById('priceMagic').value) || 0
+                };
+                const items = Object.keys(prices)
+                    .filter(name => prices[name] > 0)
+                    .map(name => ({ name, price: prices[name] }));
 
-                if (!res.ok) {
-                    console.error('Quotation save failed:', data);
-                    return false;
+                const total = Object.values(prices).reduce((a, b) => a + b, 0);
+                const deposit = Math.round(total * 0.3);
+                const balance = Math.round(total * 0.7);
+
+                let response;
+                if (editingQuotationId) {
+                    // UPDATE
+                    response = await fetch(`${CONFIG.API_URL}/api/quotation/${editingQuotationId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                        body: JSON.stringify({ items, total, deposit, balance })
+                    });
+                    if (!response.ok) throw new Error('Update failed');
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Quotation updated successfully!');
+                    } else {
+                        throw new Error(result.message || 'Update error');
+                    }
+                    editingQuotationId = null;
+                } else {
+                    // CREATE
+                    response = await fetch(`${CONFIG.API_URL}/api/quotation`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                        body: JSON.stringify({ inquiry_id: inq.id, items, total, deposit, balance })
+                    });
+                    if (!response.ok) throw new Error('Save failed');
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Quotation saved successfully!');
+                    } else {
+                        throw new Error(result.message || 'Save error');
+                    }
                 }
 
-                console.log('Quotation saved:', data);
-                return true;
+                // Refresh history
+                await loadQuotations();
 
-            } catch (error) {
-                console.error('Quotation save error:', error);
-                return false;
+                // Do NOT hide the form or clear the inquiry selection.
+                // Keep the form visible so user can immediately generate WhatsApp.
+                // Also hide any previous whatsapp output.
+                document.getElementById('whatsappOutput').classList.add('hidden');
+                document.getElementById('copyBtn').classList.add('hidden');
+
+                // Optionally reset price inputs? No, keep them so user can adjust and re-save.
+                // But we keep the values.
+
+            } catch (err) {
+                console.error(err);
+                alert('Error: ' + err.message);
+            } finally {
+                savingQuotation = false;
+                btn.disabled = false;
+                btn.textContent = 'Generate & Save Quotation';
             }
         }
 
-        async function generateQuotation() {
-            const inq = JSON.parse(document.getElementById('inquirySelect').value);
-            const services = inq.services_requested || [];
-            const d = parseInt(document.getElementById('priceDeco').value) || 0;
-            const p = parseInt(document.getElementById('pricePhoto').value) || 0;
-            const c = parseInt(document.getElementById('priceCatering').value) || 0;
-            const m = parseInt(document.getElementById('priceMagic').value) || 0;
+        // ------------------------------------------------------------
+        // GENERATE WHATSAPP MESSAGE
+        // ------------------------------------------------------------
+        function generateWhatsApp() {
+            const select = document.getElementById('inquirySelect');
+            if (!select.value) {
+                alert('Please select inquiry first');
+                return;
+            }
+            const inq = JSON.parse(select.value);
+
+            const d = Number(document.getElementById('priceDeco').value) || 0;
+            const p = Number(document.getElementById('pricePhoto').value) || 0;
+            const c = Number(document.getElementById('priceCatering').value) || 0;
+            const m = Number(document.getElementById('priceMagic').value) || 0;
+
             const total = d + p + c + m;
+            if (total <= 0) {
+                alert('Please enter quotation amount first');
+                return;
+            }
             const deposit = Math.round(total * 0.3);
             const balance = Math.round(total * 0.7);
-            const items = [];
-            if (services.includes('deco')) {
-                items.push({
-                    name: 'Decoration',
-                    price: d
-                });
-            }
 
-            if (services.includes('photo')) {
-                items.push({
-                    name: 'Photography',
-                    price: p
-                });
-            }
+            const date = inq.event_date ?
+                new Date(inq.event_date).toLocaleDateString('en-MY') :
+                '-';
 
-            if (services.includes('catering')) {
-                items.push({
-                    name: 'Catering',
-                    price: c
-                });
-            }
+            let message = [];
+            message.push(`Hi ${inq.customer_name},`);
+            message.push('');
+            message.push('Thank you for your inquiry.');
+            message.push('');
+            message.push('QUOTATION');
+            message.push('--------------------');
+            message.push(`Event: ${inq.event_type || '-'}`);
+            message.push(`Date: ${date}`);
+            message.push(`Guests: ${inq.guest_count || '-'} pax`);
+            message.push('');
+            message.push('Services');
+            if (d) message.push(`Decoration: RM ${d}`);
+            if (p) message.push(`Photography: RM ${p}`);
+            if (c) message.push(`Catering: RM ${c}`);
+            if (m) message.push(`Magic Show: RM ${m}`);
+            message.push('');
+            message.push('--------------------');
+            message.push(`Total: RM ${total}`);
+            message.push(`Deposit (30%): RM ${deposit}`);
+            message.push(`Balance: RM ${balance}`);
+            message.push('');
+            message.push('Payment Details');
+            // Update with your real bank details
+            message.push('Maybank');
+            message.push('Account No: 5xxxxx');
+            message.push('Dekor By Ana');
+            message.push('');
+            message.push('Thank you. Please reply if you have any questions.');
 
-            if (services.includes('magic')) {
-                items.push({
-                    name: 'Magic Show',
-                    price: m
-                });
-            }
-
-            console.log('Sending items:', items);
-            await saveQuotation(
-                inq,
-                items,
-                total,
-                deposit,
-                balance
-            );
-            const dateObj = inq.event_date ? new Date(inq.event_date) : null;
-            const formattedDate = dateObj ? dateObj.toLocaleDateString('en-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
-
-            let lines = [];
-            lines.push(`Hi ${inq.customer_name},`);
-            lines.push('');
-            lines.push('Thank you for your inquiry. Please find your quotation details below.');
-            lines.push('');
-
-            lines.push('QUOTATION');
-            lines.push('--------------------');
-
-            lines.push(`Event Type: ${inq.event_type || 'Event'}`);
-            lines.push(`Event Date: ${formattedDate}`);
-            lines.push(`Guests: ${escapeHTML(inq.guest_count || '-')} pax`);
-
-            lines.push('');
-            lines.push('Selected Services');
-
-            if (services.includes('deco')) lines.push(`Decoration: RM ${d}`);
-            if (services.includes('photo')) lines.push(`Photography: RM ${p}`);
-            if (services.includes('catering')) lines.push(`Catering: RM ${c}`);
-            if (services.includes('magic')) lines.push(`Magic Show: RM ${m}`);
-
-            lines.push('');
-            lines.push('--------------------');
-            lines.push(`Total: RM ${total}`);
-            lines.push(`Deposit (30%): RM ${deposit}`);
-            lines.push(`Balance: RM ${balance}`);
-            lines.push('--------------------');
-
-            lines.push('');
-            lines.push('Payment Details');
-            lines.push('Maybank 5xxxxx');
-            lines.push('Dekor By Ana');
-
-            lines.push('');
-            lines.push('FAQ: dekorbyana.com/faq');
-            lines.push('');
-            lines.push('If you have any questions, please reply to this WhatsApp message.');
-        
-            const output = lines.join('\n');
-            document.getElementById('whatsappOutput').textContent = output;
-            document.getElementById('whatsappOutput').classList.remove('hidden');
+            const output = document.getElementById('whatsappOutput');
+            output.textContent = message.join('\n');
+            output.classList.remove('hidden');
             document.getElementById('copyBtn').classList.remove('hidden');
+
+            // Auto-scroll to the message
+            output.scrollIntoView({ behavior: 'smooth' });
         }
 
+        // ------------------------------------------------------------
+        // EDIT QUOTATION
+        // ------------------------------------------------------------
+        async function editQuotation(id) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to fetch quotation');
+                const data = await res.json();
+                const q = data.data;
+                if (!q) throw new Error('No data');
+
+                if (typeof q.items === 'string') {
+                    try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; }
+                }
+
+                editingQuotationId = q.id;
+                document.getElementById('quotationForm').classList.remove('hidden');
+
+                const find = (name) => q.items.find(x => x.name === name)?.price || 0;
+                document.getElementById('priceDeco').value = find('Decoration');
+                document.getElementById('pricePhoto').value = find('Photography');
+                document.getElementById('priceCatering').value = find('Catering');
+                document.getElementById('priceMagic').value = find('Magic Show');
+
+                document.getElementById('inquiryPreview').innerHTML = `
+                    <strong>${escapeHTML(q.customer_name)}</strong><br>
+                    ${escapeHTML(q.event_type || '')}
+                `;
+
+                // Try to select matching inquiry in dropdown
+                const select = document.getElementById('inquirySelect');
+                const options = select.options;
+                let found = false;
+                for (let i = 0; i < options.length; i++) {
+                    try {
+                        const optVal = JSON.parse(options[i].value);
+                        if (optVal.id === q.inquiry_id) {
+                            select.selectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    } catch (e) {}
+                }
+
+                calculate();
+                document.getElementById('whatsappOutput').classList.add('hidden');
+                document.getElementById('copyBtn').classList.add('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err) {
+                console.error(err);
+                alert('Failed to load quotation for editing: ' + err.message);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // DELETE QUOTATION
+        // ------------------------------------------------------------
+        async function deleteQuotation(id) {
+            if (!confirm('Delete this quotation?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Delete failed');
+                const data = await res.json();
+                if (data.success) {
+                    alert('Quotation deleted');
+                    await loadQuotations();
+                } else {
+                    throw new Error(data.message || 'Delete error');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Delete failed: ' + err.message);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // UPDATE STATUS
+        // ------------------------------------------------------------
+        async function updateQuotationStatus(id, status) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ status })
+                });
+                if (!res.ok) throw new Error('Status update failed');
+                const data = await res.json();
+                if (data.success) {
+                    await loadQuotations();
+                } else {
+                    throw new Error(data.message || 'Status update error');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Status update failed: ' + err.message);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // COPY TO CLIPBOARD
+        // ------------------------------------------------------------
+        function copyToClipboard() {
+            const text = document.getElementById('whatsappOutput').textContent;
+            if (!text) return alert('Nothing to copy');
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Quotation copied successfully');
+            }).catch(() => {
+                alert('Copy failed');
+            });
+        }
+
+        // ------------------------------------------------------------
+        // LOGOUT
+        // ------------------------------------------------------------
         function logout() {
             localStorage.removeItem('adminToken');
-
             adminToken = '';
-
             document.getElementById('toolContent').classList.add('hidden');
             document.getElementById('passwordGate').classList.remove('hidden');
-
-            document.getElementById('toolPassword').value = '';
+            document.getElementById('quotationForm').classList.add('hidden');
+            document.getElementById('inquirySelect').value = '';
+            document.getElementById('whatsappOutput').classList.add('hidden');
+            document.getElementById('copyBtn').classList.add('hidden');
+            editingQuotationId = null;
         }
 
-
-        window.onload = async () => {
+        // ------------------------------------------------------------
+        // INIT
+        // ------------------------------------------------------------
+        window.onload = function() {
             if (adminToken) {
                 document.getElementById('passwordGate').classList.add('hidden');
                 document.getElementById('toolContent').classList.remove('hidden');
-
                 loadInquiries();
                 loadQuotations();
             }
         };
-
-        function copyToClipboard() {
-            const text = document.getElementById('whatsappOutput').textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Quotation copied successfully.');
-            });
-        }
     </script>
+
 </body>
 </html>
