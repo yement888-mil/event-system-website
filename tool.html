@@ -269,6 +269,9 @@
                     <button onclick="exportExcel()" class="bg-gold text-dark px-4 py-2 rounded-xl text-sm font-medium hover:bg-yellow-600 transition">
                         Download Excel Report
                     </button>
+                    <button onclick="downloadFullBackup()" class="border-2 border-dark text-dark px-4 py-2 rounded-xl text-sm font-medium hover:bg-dark hover:text-white transition">
+                        <span id="backupBtnLabel">Download Full Backup</span>
+                    </button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -1603,6 +1606,76 @@
             ws['!cols'] = colWidths;
             
             XLSX.writeFile(wb, `Quotations_${monthName}_${year}.xlsx`);
+        }
+
+        // ------------------------------------------------------------
+        // FULL DATABASE BACKUP (customers, quotations, catalog, logs)
+        // ------------------------------------------------------------
+        async function downloadFullBackup() {
+            const label = document.getElementById('backupBtnLabel');
+            const originalText = label ? label.textContent : '';
+            if (label) label.textContent = 'Preparing backup...';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/backup/full`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                if (!res.ok) throw new Error('Failed to generate backup');
+
+                const result = await res.json();
+                const data = result.data || {};
+
+                const wb = XLSX.utils.book_new();
+
+                function addSheet(rows, sheetName) {
+                    // Flatten JSONB columns (items, details, services_requested) to
+                    // readable text so they don't render as "[object Object]" in Excel.
+                    const flatRows = (rows || []).map(row => {
+                        const flat = {};
+                        Object.keys(row).forEach(key => {
+                            const val = row[key];
+                            if (val !== null && typeof val === 'object') {
+                                flat[key] = JSON.stringify(val);
+                            } else {
+                                flat[key] = val;
+                            }
+                        });
+                        return flat;
+                    });
+                    const ws = XLSX.utils.json_to_sheet(flatRows.length > 0 ? flatRows : [{ note: 'No data' }]);
+                    // Sheet names in Excel are capped at 31 characters
+                    XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0, 31));
+                }
+
+                addSheet(data.inquiries, 'Inquiries');
+                addSheet(data.quotations, 'Quotations');
+                addSheet(data.quotation_versions, 'Quotation Versions');
+                addSheet(data.services, 'Services');
+                addSheet(data.pricing_items, 'Pricing Items');
+                addSheet(data.packages, 'Packages');
+                addSheet(data.package_items, 'Package Items');
+                addSheet(data.activity_logs, 'Activity Log');
+                addSheet(data.notification_logs, 'Notification Log');
+
+                const dateStr = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(wb, `Full_Backup_${dateStr}.xlsx`);
+
+            } catch (err) {
+                console.error('Backup download error:', err);
+                alert('Failed to download backup: ' + err.message);
+            } finally {
+                if (label) label.textContent = originalText;
+            }
         }
 
         // ------------------------------------------------------------
