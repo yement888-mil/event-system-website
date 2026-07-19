@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Booking | Decor By</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A84C',
+                        dark: '#1A1A1A',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .status-badge { display: inline-block; padding: 4px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .status-draft, .status-sent { background: #dbeafe; color: #1d4ed8; }
+        .status-waiting_deposit { background: #fef3c7; color: #92400e; }
+        .status-deposit_paid { background: #d1fae5; color: #065f46; }
+        .status-completed { background: #a7f3d0; color: #065f46; }
+        .status-cancelled { background: #fecaca; color: #991b1b; }
+    </style>
+</head>
+<body class="bg-[#F8F8F8] text-[#1A1A1A]">
+
+    <a href="https://wa.me/60123456789" target="_blank" 
+       class="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition hover:scale-110" 
+       style="background-color: #25D366;">
+        <span class="text-white text-2xl">💬</span>
+    </a>
+
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2">
+                <span class="text-gold text-2xl">✦</span>
+                <span class="text-lg font-semibold tracking-tight text-dark">Decor By</span>
+            </a>
+        </div>
+    </header>
+
+    <section class="max-w-lg mx-auto px-5 py-12">
+
+        <div id="loadingState" class="text-center py-16">
+            <div class="loading-spinner mx-auto"></div>
+            <p class="text-sm text-gray-400 mt-3">Loading your booking...</p>
+        </div>
+
+        <div id="notFoundState" class="hidden text-center py-16">
+            <div class="text-gold text-4xl mb-4">✦</div>
+            <h2 class="text-xl font-semibold text-dark mb-2">Booking Not Found</h2>
+            <p class="text-sm text-[#333333]">This link may be incorrect or expired. Please contact us via WhatsApp for help.</p>
+        </div>
+
+        <div id="bookingContent" class="hidden">
+            <div class="text-center mb-8">
+                <div class="gold-line mb-4"></div>
+                <h2 class="text-2xl font-light tracking-tight">Your Event Booking</h2>
+                <p id="quotationNo" class="text-xs text-gray-400 mt-2"></p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm mb-4">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-sm text-gray-400">Status</span>
+                    <span id="statusBadge"></span>
+                </div>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Customer</span>
+                        <span id="customerName" class="font-medium"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Event Type</span>
+                        <span id="eventType" class="font-medium"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Event Date</span>
+                        <span id="eventDate" class="font-medium"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Guests</span>
+                        <span id="guestCount" class="font-medium"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm mb-4">
+                <h3 class="font-semibold text-dark text-sm mb-3">Services</h3>
+                <div id="servicesList" class="space-y-2 text-sm"></div>
+            </div>
+
+            <div class="bg-[#F5F0E6] rounded-2xl p-6 mb-4">
+                <div class="flex justify-between text-sm mb-2">
+                    <span>Total</span>
+                    <strong id="totalAmount"></strong>
+                </div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span>Deposit</span>
+                    <strong id="depositAmount"></strong>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span>Balance</span>
+                    <strong id="balanceAmount"></strong>
+                </div>
+            </div>
+
+            <div id="depositNote" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 mb-4">
+                Your date is not yet confirmed. It will be secured once your deposit is received - please contact us via WhatsApp if you haven't arranged payment yet.
+            </div>
+
+            <div id="confirmedNote" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-800 mb-4">
+                Your date is confirmed! We look forward to your event.
+            </div>
+
+            <div id="cancelledNote" class="hidden bg-red-50 border border-red-200 rounded-2xl p-4 text-xs text-red-800 mb-4">
+                This booking has been cancelled. Please contact us via WhatsApp if you have any questions.
+            </div>
+
+            <p class="text-center text-xs text-gray-400 mt-6">
+                Questions about your booking? <a href="https://wa.me/60123456789" target="_blank" class="text-gold hover:underline">Message us on WhatsApp</a>
+            </p>
+        </div>
+
+    </section>
+
+    <footer class="bg-dark border-t border-gray-800 text-center py-8 px-5 mt-8">
+        <p class="text-gold text-lg mb-2">✦</p>
+        <div class="flex justify-center gap-4 text-xs text-gray-400 mb-3">
+            <a href="terms.html" class="hover:text-gold transition">Terms &amp; Conditions</a>
+            <span>|</span>
+            <a href="privacy.html" class="hover:text-gold transition">Privacy Notice</a>
+        </div>
+        <p class="text-gray-500 text-xs">© 2026 Decor By. All rights reserved.</p>
+    </footer>
+
+    <script src="config.js"></script>
+    <script>
+        const STATUS_LABELS = {
+            draft: 'Quotation Draft',
+            sent: 'Quotation Sent',
+            waiting_deposit: 'Waiting for Deposit',
+            deposit_paid: 'Confirmed - Deposit Paid',
+            completed: 'Event Completed',
+            cancelled: 'Cancelled'
+        };
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('en-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        async function loadBooking() {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+
+            if (!token) {
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('notFoundState').classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/booking/${token}`);
+                if (!res.ok) throw new Error('Not found');
+
+                const result = await res.json();
+                const b = result.data;
+
+                document.getElementById('quotationNo').textContent = b.quotation_no || '';
+                document.getElementById('customerName').textContent = b.customer_name || '-';
+                document.getElementById('eventType').textContent = b.event_type || '-';
+                document.getElementById('eventDate').textContent = formatDate(b.event_date);
+                document.getElementById('guestCount').textContent = (b.guest_count || '-') + ' pax';
+
+                const badge = document.getElementById('statusBadge');
+                badge.className = 'status-badge status-' + (b.status || 'draft');
+                badge.textContent = STATUS_LABELS[b.status] || 'Processing';
+
+                let items = b.items;
+                if (typeof items === 'string') {
+                    try { items = JSON.parse(items); } catch (e) { items = []; }
+                }
+                const servicesList = document.getElementById('servicesList');
+                if (Array.isArray(items) && items.length > 0) {
+                    servicesList.innerHTML = items.map(i =>
+                        `<div class="flex justify-between"><span>${escapeHTML(i.name)}</span><span>RM ${Number(i.price).toFixed(2)}</span></div>`
+                    ).join('');
+                } else {
+                    servicesList.innerHTML = '<p class="text-gray-400">No services listed</p>';
+                }
+
+                document.getElementById('totalAmount').textContent = `RM ${Number(b.total || 0).toFixed(2)}`;
+                document.getElementById('depositAmount').textContent = `RM ${Number(b.deposit || 0).toFixed(2)}`;
+                document.getElementById('balanceAmount').textContent = `RM ${Number(b.balance || 0).toFixed(2)}`;
+
+                if (b.status === 'cancelled') {
+                    document.getElementById('cancelledNote').classList.remove('hidden');
+                } else if (b.status === 'deposit_paid' || b.status === 'completed') {
+                    document.getElementById('confirmedNote').classList.remove('hidden');
+                } else {
+                    document.getElementById('depositNote').classList.remove('hidden');
+                }
+
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('bookingContent').classList.remove('hidden');
+
+            } catch (err) {
+                console.error('Booking load error:', err);
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('notFoundState').classList.remove('hidden');
+            }
+        }
+
+        loadBooking();
+    </script>
+</body>
+</html>

@@ -1509,6 +1509,7 @@
                             </button>
                             <button onclick="viewQuotationHistory(${q.id})" class="bg-gray-200 text-dark px-3 py-0.5 rounded text-xs hover:bg-gray-300 transition">History</button>
                             <button onclick="editQuotation(${q.id})" class="bg-blue-100 text-blue-700 px-3 py-0.5 rounded text-xs hover:bg-blue-200 transition">Edit</button>
+                            <button onclick="copyBookingLink('${q.booking_token || ''}')" class="bg-purple-100 text-purple-700 px-3 py-0.5 rounded text-xs hover:bg-purple-200 transition">Copy Booking Link</button>
                             <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-0.5 rounded text-xs hover:bg-red-700 transition">Delete</button>
                         </div>
                         ${q.status === 'cancelled' ? renderCancellationPanel(q) : ''}
@@ -2710,6 +2711,20 @@
             const text = document.getElementById('whatsappOutput')?.textContent;
             if (!text) return alert('Nothing to copy');
             navigator.clipboard.writeText(text).then(() => alert('Copied!')).catch(() => alert('Copy failed'));
+        }
+
+        function copyBookingLink(token) {
+            if (!token) {
+                alert('No booking link available for this quotation yet.');
+                return;
+            }
+            // Builds the link relative to wherever this admin tool is
+            // hosted, so it works whether that's GitHub Pages, a custom
+            // domain, or local testing - no hardcoded domain needed.
+            const bookingUrl = window.location.href.replace(/tool\.html.*$/, `booking.html?token=${token}`);
+            navigator.clipboard.writeText(bookingUrl)
+                .then(() => alert('Booking link copied! Share this with the customer:\n\n' + bookingUrl))
+                .catch(() => prompt('Copy this booking link:', bookingUrl));
         }
 
         // ------------------------------------------------------------
