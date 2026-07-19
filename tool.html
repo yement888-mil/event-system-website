@@ -98,6 +98,13 @@
                     <button id="copyBtn" class="hidden w-full border-2 border-dark text-dark py-2 rounded-full font-medium text-sm hover:bg-dark hover:text-white transition" onclick="copyToClipboard()">
                         Copy Text
                     </button>
+                    <section class="mt-8 bg-white rounded-2xl p-6 shadow-sm">
+                        <h2 class="text-lg font-semibold mb-4">Quotation History</h2>
+
+                        <div id="quotationHistory" class="space-y-3">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </section>
                 </div>
             </section>
         </div>
@@ -144,6 +151,7 @@
                     document.getElementById('toolContent').classList.remove('hidden');
 
                     loadInquiries();
+                    loadQuotations();
 
                 } else {
                     document.getElementById('passwordError').classList.remove('hidden');
@@ -195,6 +203,55 @@
             }
         }
 
+        async function loadQuotations() {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation`, {
+                    headers: {
+                        Authorization: `Bearer ${adminToken}`
+                    }
+                });
+
+                const data = await res.json();
+
+                const container = document.getElementById('quotationHistory');
+
+                if (!data.success || data.data.length === 0) {
+                    container.innerHTML = `
+                        <p class="text-sm text-gray-500">
+                            No quotations yet.
+                        </p>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.data.map(q => `
+                    <div class="border border-gray-100 rounded-xl p-4 text-sm">
+                        <strong>${escapeHTML(q.customer_name)}</strong>
+                        <br>
+                        ${escapeHTML(q.event_type || '-')}
+                        |
+                        ${q.event_date ? new Date(q.event_date).toLocaleDateString('ms-MY') : '-'}
+                        <br>
+                        Total: RM ${q.total}
+                        <br>
+                        Deposit: RM ${q.deposit}
+                        <br>
+                        Balance: RM ${q.balance}
+                        <br>
+                        Status:
+                        <span class="text-gold">
+                            ${escapeHTML(q.status)}
+                        </span>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Quotation history error:', error);
+
+                document.getElementById('quotationHistory').innerHTML =
+                    '<p class="text-sm text-red-500">Failed to load quotations.</p>';
+            }
+        }
         document.getElementById('inquirySelect').addEventListener('change', function() {
             if (this.value) {
                 document.getElementById('quotationForm').classList.remove('hidden');
@@ -378,6 +435,7 @@
                 document.getElementById('toolContent').classList.remove('hidden');
 
                 loadInquiries();
+                loadQuotations();
             }
         };
 
