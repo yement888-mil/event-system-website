@@ -22,8 +22,9 @@
 
     <header class="bg-dark text-white py-4 px-5">
         <div class="max-w-4xl mx-auto flex items-center justify-between">
-            <span class="text-gold font-semibold">✦ Quotation Tool</span>
-            <span class="text-gray-400 text-xs">For Me Only</span>
+            <span class="text-gold font-semibold">Quotation Tool</span>
+            <button onclick="logout()" class="text-gray-400 text-xs hover:text-white">
+            Logout
         </div>
     </header>
 
@@ -103,7 +104,7 @@
 
     <script src="config.js"></script>
     <script>
-        let adminToken = '';
+        let adminToken = localStorage.getItem('adminToken') || '';
 
         async function checkPassword() {
             const input = document.getElementById('toolPassword').value;
@@ -124,6 +125,8 @@
 
                 if (data.success) {
                     adminToken = data.token;
+
+                    localStorage.setItem('adminToken', adminToken);
 
                     document.getElementById('passwordGate').classList.add('hidden');
                     document.getElementById('toolContent').classList.remove('hidden');
@@ -269,6 +272,27 @@
             document.getElementById('whatsappOutput').classList.remove('hidden');
             document.getElementById('copyBtn').classList.remove('hidden');
         }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+
+            adminToken = '';
+
+            document.getElementById('toolContent').classList.add('hidden');
+            document.getElementById('passwordGate').classList.remove('hidden');
+
+            document.getElementById('toolPassword').value = '';
+        }
+
+
+        window.onload = () => {
+            if (adminToken) {
+                document.getElementById('passwordGate').classList.add('hidden');
+                document.getElementById('toolContent').classList.remove('hidden');
+
+                loadInquiries();
+            }
+        };
 
         function copyToClipboard() {
             const text = document.getElementById('whatsappOutput').textContent;
