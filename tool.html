@@ -197,6 +197,7 @@
                 <button onclick="switchTab('analytics')" id="tabAnalytics" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Analytics</button>
                 <button onclick="switchTab('generate')" id="tabGenerate" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Generate Quotation</button>
                 <button onclick="switchTab('calendar')" id="tabCalendar" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Calendar</button>
+                <button onclick="switchTab('catalog')" id="tabCatalog" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Services &amp; Pricing</button>
             </div>
 
             <!-- TAB 1: UNREAD INQUIRIES -->
@@ -336,10 +337,6 @@
                             <label class="block text-sm font-medium mb-1">Package Template</label>
                             <select id="packageSelect" onchange="applyPackage()" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm">
                                 <option value="">-- Custom --</option>
-                                <option value="birthday_basic">Birthday Basic</option>
-                                <option value="birthday_premium">Birthday Premium</option>
-                                <option value="wedding">Wedding Package</option>
-                                <option value="corporate">Corporate Event</option>
                             </select>
                         </div>
 
@@ -352,7 +349,12 @@
                                     <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">&#10005;</button>
                                 </div>
                             </div>
-                            <button onclick="addServiceRow()" class="text-gold text-sm font-medium hover:underline mt-2">+ Add Service</button>
+                            <div class="flex items-center gap-3 mt-2 flex-wrap">
+                                <button onclick="addServiceRow()" class="text-gold text-sm font-medium hover:underline">+ Add Service</button>
+                                <select id="quickAddPricingItem" onchange="quickAddFromPricingList()" class="border border-gray-200 rounded-xl px-3 py-1.5 text-xs">
+                                    <option value="">+ Quick add from price list...</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="bg-[#F5F0E6] p-4 rounded-xl text-sm space-y-1">
@@ -401,6 +403,53 @@
                     </div>
                 </section>
             </div>
+
+            <!-- TAB 7: SERVICES & PRICING -->
+            <div id="tabCatalogContent" class="tab-content">
+                <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
+                    <h2 class="text-lg font-semibold mb-1">Public Services</h2>
+                    <p class="text-xs text-gray-400 mb-4">Shown on your website's Services page. No prices here - customers never see prices.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <input type="text" id="svc_name" placeholder="Service name" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="svc_category" placeholder="Category" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="svc_managed_by" placeholder="Managed by (e.g. Catering Team)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="svc_image_url" placeholder="Image URL (optional)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <textarea id="svc_description" placeholder="Description" rows="2" class="md:col-span-2 border border-gray-200 rounded-xl px-3 py-2 text-sm"></textarea>
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="svc_active" checked> Active (visible on website)</label>
+                    </div>
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="saveService()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="svcSaveLabel">Add Service</span></button>
+                        <button id="svcCancelBtn" onclick="resetServiceForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
+                    </div>
+                    <div id="servicesAdminList" class="space-y-2"></div>
+                </section>
+
+                <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
+                    <h2 class="text-lg font-semibold mb-1">Internal Pricing Items</h2>
+                    <p class="text-xs text-gray-400 mb-4">Your real prices - only used inside quotations, never shown to customers.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                        <input type="text" id="pi_category" placeholder="Category" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="pi_name" placeholder="Item name" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="number" id="pi_price" placeholder="Price (RM)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <button onclick="savePricingItem()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="piSaveLabel">Add Item</span></button>
+                    </div>
+                    <button id="piCancelBtn" onclick="resetPricingItemForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-1.5 rounded-full text-xs hover:bg-gray-100 transition mb-3">Cancel Edit</button>
+                    <div id="pricingItemsList" class="space-y-2"></div>
+                </section>
+
+                <section class="bg-white rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold mb-1">Package Templates</h2>
+                    <p class="text-xs text-gray-400 mb-4">Bundles you can quick-fill into a quotation (e.g. "Wedding Package").</p>
+                    <input type="text" id="pkg_name" placeholder="Package name" class="border border-gray-200 rounded-xl px-3 py-2 text-sm w-full mb-3">
+                    <div id="pkgItemRows" class="space-y-2 mb-2"></div>
+                    <button onclick="addPkgItemRow()" class="text-gold text-sm font-medium hover:underline">+ Add Item</button>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="savePackage()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="pkgSaveLabel">Save Package</span></button>
+                        <button id="pkgCancelBtn" onclick="resetPackageForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
+                    </div>
+                    <div id="packagesList" class="space-y-2 mt-4"></div>
+                </section>
+            </div>
         </div>
     </main>
 
@@ -431,36 +480,17 @@
         let filteredQuotations = [];
         let filteredInquiries = [];
         let selectedInquiry = null;
+        let servicesCache = [];
+        let pricingItemsCache = [];
+        let packagesCache = [];
+        let editingServiceId = null;
+        let editingPricingItemId = null;
+        let editingPackageId = null;
 
         // ------------------------------------------------------------
         // PACKAGE TEMPLATES
         // ------------------------------------------------------------
-        const PACKAGES = {
-            birthday_basic: [
-                { name: 'Decoration', price: 800 },
-                { name: 'Balloon Decoration', price: 200 },
-                { name: 'Cake Table Setup', price: 150 }
-            ],
-            birthday_premium: [
-                { name: 'Decoration', price: 1800 },
-                { name: 'Balloon Decoration', price: 300 },
-                { name: 'Cake Table Setup', price: 500 },
-                { name: 'Photography', price: 400 }
-            ],
-            wedding: [
-                { name: 'Decoration', price: 2500 },
-                { name: 'Flower Decoration', price: 1200 },
-                { name: 'Cake Table Setup', price: 600 },
-                { name: 'Photography', price: 1500 },
-                { name: 'Sound System', price: 800 }
-            ],
-            corporate: [
-                { name: 'Decoration', price: 2000 },
-                { name: 'Stage Setup', price: 1500 },
-                { name: 'Photography', price: 1200 },
-                { name: 'Catering', price: 1000 }
-            ]
-        };
+        // PACKAGES is now loaded from the backend - see loadCatalog() / packagesCache below.
 
         // ------------------------------------------------------------
         // HELPERS
@@ -718,6 +748,7 @@
         async function loadAllData() {
             await loadInquiries();
             await loadQuotations();
+            await loadCatalog();
             updateAnalytics();
         }
 
@@ -1520,13 +1551,372 @@
         }
 
         function applyPackage() {
-            const pkg = document.getElementById('packageSelect')?.value;
-            if (!pkg || !PACKAGES[pkg]) return;
+            const pkgId = document.getElementById('packageSelect')?.value;
+            if (!pkgId) return;
+            const pkg = packagesCache.find(p => String(p.id) === String(pkgId));
+            if (!pkg || !Array.isArray(pkg.items)) return;
             const container = document.getElementById('serviceRows');
             if (!container) return;
             container.innerHTML = '';
-            PACKAGES[pkg].forEach(s => addServiceRow(s.name, s.price));
+            pkg.items.forEach(s => addServiceRow(s.name, s.price));
             calculate();
+        }
+
+        function quickAddFromPricingList() {
+            const select = document.getElementById('quickAddPricingItem');
+            const itemId = select?.value;
+            if (!itemId) return;
+            const item = pricingItemsCache.find(p => String(p.id) === String(itemId));
+            if (!item) return;
+
+            // If the only row so far is an empty placeholder row, fill it instead of adding a new one
+            const container = document.getElementById('serviceRows');
+            const rows = container ? container.querySelectorAll('.service-name') : [];
+            if (rows.length === 1 && !rows[0].value) {
+                rows[0].value = item.name;
+                container.querySelector('.service-price').value = item.price;
+            } else {
+                addServiceRow(item.name, item.price);
+            }
+            calculate();
+            select.value = '';
+        }
+
+        // ------------------------------------------------------------
+        // CATALOG: SERVICES + PRICING ITEMS + PACKAGES
+        // ------------------------------------------------------------
+        async function loadCatalog() {
+            try {
+                const [svcRes, itemsRes, pkgRes] = await Promise.all([
+                    fetch(`${CONFIG.API_URL}/api/services/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/pricing/items`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/pricing/packages`, { headers: { Authorization: `Bearer ${adminToken}` } })
+                ]);
+
+                if (svcRes.status === 401 || itemsRes.status === 401 || pkgRes.status === 401) return;
+
+                const svcData = await svcRes.json();
+                const itemsData = await itemsRes.json();
+                const pkgData = await pkgRes.json();
+
+                servicesCache = svcData.data || [];
+                pricingItemsCache = itemsData.data || [];
+                packagesCache = pkgData.data || [];
+
+                renderServicesAdminList();
+                renderPricingItemsList();
+                renderPackagesList();
+                populatePackageSelect();
+                populateQuickAddSelect();
+
+            } catch (err) {
+                console.error('Load catalog error:', err);
+            }
+        }
+
+        // ---- Public Services ----
+        function renderServicesAdminList() {
+            const el = document.getElementById('servicesAdminList');
+            if (!el) return;
+            if (servicesCache.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400">No services yet.</p>';
+                return;
+            }
+            el.innerHTML = servicesCache.map(s => `
+                <div class="flex justify-between items-center border rounded-xl p-3 text-sm ${s.active ? '' : 'opacity-50'}">
+                    <div>
+                        <strong>${escapeHTML(s.name)}</strong>
+                        <span class="text-xs text-gray-400 ml-2">${escapeHTML(s.category || '')}</span>
+                        ${!s.active ? '<span class="text-xs text-red-500 ml-2">(hidden)</span>' : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editService(${s.id})" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">Edit</button>
+                        <button onclick="deleteService(${s.id})" class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editService(id) {
+            const s = servicesCache.find(x => x.id === id);
+            if (!s) return;
+            editingServiceId = id;
+            document.getElementById('svc_name').value = s.name || '';
+            document.getElementById('svc_category').value = s.category || '';
+            document.getElementById('svc_managed_by').value = s.managed_by || '';
+            document.getElementById('svc_image_url').value = s.image_url || '';
+            document.getElementById('svc_description').value = s.description || '';
+            document.getElementById('svc_active').checked = s.active !== false;
+            document.getElementById('svcSaveLabel').textContent = 'Update Service';
+            document.getElementById('svcCancelBtn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetServiceForm() {
+            editingServiceId = null;
+            document.getElementById('svc_name').value = '';
+            document.getElementById('svc_category').value = '';
+            document.getElementById('svc_managed_by').value = '';
+            document.getElementById('svc_image_url').value = '';
+            document.getElementById('svc_description').value = '';
+            document.getElementById('svc_active').checked = true;
+            document.getElementById('svcSaveLabel').textContent = 'Add Service';
+            document.getElementById('svcCancelBtn').classList.add('hidden');
+        }
+
+        async function saveService() {
+            const name = document.getElementById('svc_name').value.trim();
+            if (!name) { alert('Service name is required'); return; }
+
+            const payload = {
+                name,
+                category: document.getElementById('svc_category').value.trim(),
+                managed_by: document.getElementById('svc_managed_by').value.trim(),
+                image_url: document.getElementById('svc_image_url').value.trim(),
+                description: document.getElementById('svc_description').value.trim(),
+                active: document.getElementById('svc_active').checked
+            };
+
+            try {
+                const url = editingServiceId ? `${CONFIG.API_URL}/api/services/${editingServiceId}` : `${CONFIG.API_URL}/api/services`;
+                const method = editingServiceId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save service');
+                }
+                resetServiceForm();
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deleteService(id) {
+            if (!confirm('Delete this service? It will disappear from the website immediately.')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/services/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to delete service');
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // ---- Internal Pricing Items ----
+        function renderPricingItemsList() {
+            const el = document.getElementById('pricingItemsList');
+            if (!el) return;
+            if (pricingItemsCache.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400">No pricing items yet.</p>';
+                return;
+            }
+            el.innerHTML = pricingItemsCache.map(p => `
+                <div class="flex justify-between items-center border rounded-xl p-3 text-sm ${p.active ? '' : 'opacity-50'}">
+                    <div>
+                        <strong>${escapeHTML(p.name)}</strong>
+                        <span class="text-xs text-gray-400 ml-2">${escapeHTML(p.category || '')}</span>
+                        <span class="text-xs text-gray-500 ml-2">RM ${p.price}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editPricingItem(${p.id})" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">Edit</button>
+                        <button onclick="deletePricingItem(${p.id})" class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editPricingItem(id) {
+            const p = pricingItemsCache.find(x => x.id === id);
+            if (!p) return;
+            editingPricingItemId = id;
+            document.getElementById('pi_category').value = p.category || '';
+            document.getElementById('pi_name').value = p.name || '';
+            document.getElementById('pi_price').value = p.price;
+            document.getElementById('piSaveLabel').textContent = 'Update Item';
+            document.getElementById('piCancelBtn').classList.remove('hidden');
+        }
+
+        function resetPricingItemForm() {
+            editingPricingItemId = null;
+            document.getElementById('pi_category').value = '';
+            document.getElementById('pi_name').value = '';
+            document.getElementById('pi_price').value = '';
+            document.getElementById('piSaveLabel').textContent = 'Add Item';
+            document.getElementById('piCancelBtn').classList.add('hidden');
+        }
+
+        async function savePricingItem() {
+            const name = document.getElementById('pi_name').value.trim();
+            const price = parseFloat(document.getElementById('pi_price').value);
+            if (!name || isNaN(price)) { alert('Item name and price are required'); return; }
+
+            const payload = {
+                category: document.getElementById('pi_category').value.trim(),
+                name,
+                price,
+                active: true
+            };
+
+            try {
+                const url = editingPricingItemId ? `${CONFIG.API_URL}/api/pricing/items/${editingPricingItemId}` : `${CONFIG.API_URL}/api/pricing/items`;
+                const method = editingPricingItemId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save pricing item');
+                }
+                resetPricingItemForm();
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deletePricingItem(id) {
+            if (!confirm('Delete this pricing item?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/pricing/items/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to delete pricing item');
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // ---- Package Templates ----
+        function addPkgItemRow(name = '', price = '') {
+            const container = document.getElementById('pkgItemRows');
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 items-center';
+            row.innerHTML = `
+                <input type="text" placeholder="Item name" value="${escapeHTML(name)}" class="pkg-item-name w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                <input type="number" placeholder="Price (RM)" value="${price}" class="pkg-item-price w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                <button onclick="this.parentElement.remove()" class="text-red-500 text-sm px-2">&#10005;</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function renderPackagesList() {
+            const el = document.getElementById('packagesList');
+            if (!el) return;
+            if (packagesCache.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400">No package templates yet.</p>';
+                return;
+            }
+            el.innerHTML = packagesCache.map(p => `
+                <div class="border rounded-xl p-3 text-sm">
+                    <div class="flex justify-between items-center">
+                        <strong>${escapeHTML(p.name)}</strong>
+                        <div class="flex gap-2">
+                            <button onclick="editPackage(${p.id})" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">Edit</button>
+                            <button onclick="deletePackage(${p.id})" class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1">
+                        ${(p.items || []).map(i => `${escapeHTML(i.name)}: RM ${i.price}`).join(', ')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editPackage(id) {
+            const pkg = packagesCache.find(x => x.id === id);
+            if (!pkg) return;
+            editingPackageId = id;
+            document.getElementById('pkg_name').value = pkg.name || '';
+            const container = document.getElementById('pkgItemRows');
+            container.innerHTML = '';
+            (pkg.items || []).forEach(i => addPkgItemRow(i.name, i.price));
+            document.getElementById('pkgSaveLabel').textContent = 'Update Package';
+            document.getElementById('pkgCancelBtn').classList.remove('hidden');
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function resetPackageForm() {
+            editingPackageId = null;
+            document.getElementById('pkg_name').value = '';
+            document.getElementById('pkgItemRows').innerHTML = '';
+            document.getElementById('pkgSaveLabel').textContent = 'Save Package';
+            document.getElementById('pkgCancelBtn').classList.add('hidden');
+        }
+
+        async function savePackage() {
+            const name = document.getElementById('pkg_name').value.trim();
+            if (!name) { alert('Package name is required'); return; }
+
+            const items = [];
+            document.querySelectorAll('#pkgItemRows > div').forEach(row => {
+                const itemName = row.querySelector('.pkg-item-name')?.value.trim();
+                const itemPrice = parseFloat(row.querySelector('.pkg-item-price')?.value);
+                if (itemName && !isNaN(itemPrice)) items.push({ name: itemName, price: itemPrice });
+            });
+
+            if (items.length === 0) { alert('Add at least one item to the package'); return; }
+
+            try {
+                const url = editingPackageId ? `${CONFIG.API_URL}/api/pricing/packages/${editingPackageId}` : `${CONFIG.API_URL}/api/pricing/packages`;
+                const method = editingPackageId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ name, items, active: true })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save package');
+                }
+                resetPackageForm();
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deletePackage(id) {
+            if (!confirm('Delete this package template?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/pricing/packages/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to delete package');
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // ---- Dropdown population (used in Generate Quotation tab) ----
+        function populatePackageSelect() {
+            const select = document.getElementById('packageSelect');
+            if (!select) return;
+            const current = select.value;
+            select.innerHTML = '<option value="">-- Custom --</option>' +
+                packagesCache.filter(p => p.active !== false).map(p => `<option value="${p.id}">${escapeHTML(p.name)}</option>`).join('');
+            select.value = current;
+        }
+
+        function populateQuickAddSelect() {
+            const select = document.getElementById('quickAddPricingItem');
+            if (!select) return;
+            const activeItems = pricingItemsCache.filter(p => p.active !== false);
+            select.innerHTML = '<option value="">+ Quick add from price list...</option>' +
+                activeItems.map(p => `<option value="${p.id}">${escapeHTML(p.category ? p.category + ' - ' : '')}${escapeHTML(p.name)} (RM ${p.price})</option>`).join('');
         }
 
         // ------------------------------------------------------------
