@@ -196,6 +196,7 @@
                 <button onclick="switchTab('quotations')" id="tabQuotations" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Quotations</button>
                 <button onclick="switchTab('analytics')" id="tabAnalytics" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Analytics</button>
                 <button onclick="switchTab('generate')" id="tabGenerate" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Generate Quotation</button>
+                <button onclick="switchTab('calendar')" id="tabCalendar" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Calendar</button>
             </div>
 
             <!-- TAB 1: UNREAD INQUIRIES -->
@@ -382,6 +383,24 @@
                     </div>
                 </section>
             </div>
+
+            <!-- TAB 6: CALENDAR -->
+            <div id="tabCalendarContent" class="tab-content">
+                <section class="bg-white rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <button onclick="changeAdminCalMonth(-1)" class="text-dark px-3 py-1 hover:text-gold transition text-lg">‹</button>
+                        <h2 id="adminCalMonthLabel" class="text-lg font-semibold"></h2>
+                        <button onclick="changeAdminCalMonth(1)" class="text-dark px-3 py-1 hover:text-gold transition text-lg">›</button>
+                    </div>
+                    <div id="adminCalGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                    <div class="flex flex-wrap items-center gap-4 mt-4 text-xs text-gray-500">
+                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-emerald-200"></span> Deposit Paid / Completed</span>
+                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-amber-200"></span> Sent / Waiting Deposit</span>
+                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-gray-200"></span> Draft / Inquiry Only</span>
+                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-red-200"></span> Cancelled</span>
+                    </div>
+                </section>
+            </div>
         </div>
     </main>
 
@@ -509,6 +528,140 @@
             if (activeBtn) {
                 activeBtn.className = 'pb-3 px-2 text-sm tab-active whitespace-nowrap';
             }
+
+            if (tab === 'calendar') {
+                loadAdminCalendar();
+            }
+        }
+
+        // ------------------------------------------------------------
+        // ADMIN CALENDAR
+        // ------------------------------------------------------------
+        let adminCalYear = new Date().getFullYear();
+        let adminCalMonth = new Date().getMonth() + 1; // 1-12
+        let adminCalEvents = { quotations: [], inquiries_only: [] };
+
+        const ADMIN_CAL_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+        function changeAdminCalMonth(delta) {
+            adminCalMonth += delta;
+            if (adminCalMonth < 1) { adminCalMonth = 12; adminCalYear -= 1; }
+            if (adminCalMonth > 12) { adminCalMonth = 1; adminCalYear += 1; }
+            loadAdminCalendar();
+        }
+
+        async function loadAdminCalendar() {
+            const label = document.getElementById('adminCalMonthLabel');
+            const grid = document.getElementById('adminCalGrid');
+            if (!grid) return;
+
+            if (label) label.textContent = `${ADMIN_CAL_MONTH_NAMES[adminCalMonth - 1]} ${adminCalYear}`;
+            grid.innerHTML = '<div class="col-span-7 text-gray-400 py-6">Loading...</div>';
+
+            try {
+                const monthParam = `${adminCalYear}-${String(adminCalMonth).padStart(2, '0')}`;
+                const res = await fetch(`${CONFIG.API_URL}/api/calendar/admin?month=${monthParam}`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                if (!res.ok) throw new Error('Failed to load calendar');
+
+                const result = await res.json();
+                adminCalEvents = result.data || { quotations: [], inquiries_only: [] };
+                renderAdminCalendar();
+
+            } catch (err) {
+                console.error('Load admin calendar error:', err);
+                grid.innerHTML = '<div class="col-span-7 text-red-500 py-6">Failed to load calendar</div>';
+            }
+        }
+
+        function adminCalDayColor(dayEvents) {
+            if (dayEvents.some(e => e.status === 'deposit_paid' || e.status === 'completed')) return 'bg-emerald-200';
+            if (dayEvents.some(e => e.status === 'cancelled') && dayEvents.every(e => e.status === 'cancelled')) return 'bg-red-200';
+            if (dayEvents.some(e => e.status === 'sent' || e.status === 'waiting_deposit')) return 'bg-amber-200';
+            if (dayEvents.length > 0) return 'bg-gray-200';
+            return '';
+        }
+
+        function renderAdminCalendar() {
+            const grid = document.getElementById('adminCalGrid');
+            if (!grid) return;
+
+            const eventsByDay = {};
+            adminCalEvents.quotations.forEach(q => {
+                const d = (q.event_date || '').split('T')[0];
+                if (!d) return;
+                (eventsByDay[d] = eventsByDay[d] || []).push({ ...q, source: 'quotation' });
+            });
+            adminCalEvents.inquiries_only.forEach(i => {
+                const d = (i.event_date || '').split('T')[0];
+                if (!d) return;
+                (eventsByDay[d] = eventsByDay[d] || []).push({ ...i, status: i.inquiry_status, source: 'inquiry' });
+            });
+
+            const firstDay = new Date(adminCalYear, adminCalMonth - 1, 1).getDay();
+            const daysInMonth = new Date(adminCalYear, adminCalMonth, 0).getDate();
+
+            let html = '';
+            ['S','M','T','W','T','F','S'].forEach(d => {
+                html += `<div class="text-gray-400 font-medium py-1">${d}</div>`;
+            });
+            for (let i = 0; i < firstDay; i++) html += `<div></div>`;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const str = `${adminCalYear}-${String(adminCalMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const dayEvents = eventsByDay[str] || [];
+                const color = adminCalDayColor(dayEvents);
+                const clickable = dayEvents.length > 0;
+                html += `
+                    <div class="rounded-lg py-1.5 ${color} ${clickable ? 'cursor-pointer hover:ring-2 hover:ring-gold' : ''}" ${clickable ? `onclick="showAdminCalDay('${str}')"` : ''}>
+                        <div>${d}</div>
+                        ${dayEvents.length > 0 ? `<div class="text-[10px] text-gray-600">${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
+            window.__adminCalEventsByDay = eventsByDay;
+        }
+
+        function showAdminCalDay(dateStr) {
+            const dayEvents = (window.__adminCalEventsByDay || {})[dateStr] || [];
+            if (dayEvents.length === 0) return;
+
+            document.getElementById('modalTitle').textContent = `Events on ${formatDate(dateStr)}`;
+
+            let html = '<div class="space-y-3">';
+            dayEvents.forEach(e => {
+                html += `
+                    <div class="border rounded-xl p-3 text-sm">
+                        <div class="flex justify-between items-center">
+                            <strong>${escapeHTML(e.customer_name || 'Unknown')}</strong>
+                            ${e.source === 'quotation' ? getStatusBadge(e.status) : getInquiryStatusBadge(e.status)}
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            ${escapeHTML(e.event_type || '-')} | Phone: ${escapeHTML(e.phone || '-')}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            ${e.source === 'quotation' ? `Quotation ${e.quotation_no || '#' + e.id}` : `Inquiry #${e.id} (no quotation yet)`}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('inquiryModal').classList.add('active');
         }
 
         // ------------------------------------------------------------

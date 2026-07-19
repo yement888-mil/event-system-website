@@ -83,6 +83,20 @@
             <div>
                 <label class="block text-sm font-medium mb-1 text-dark">Event Date *</label>
                 <input type="date" id="event_date" required class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none">
+
+                <div class="mt-3 bg-white border border-gray-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <button type="button" id="calPrevBtn" class="text-dark px-2 py-1 hover:text-gold transition">‹</button>
+                        <span id="calMonthLabel" class="text-sm font-medium text-dark"></span>
+                        <button type="button" id="calNextBtn" class="text-dark px-2 py-1 hover:text-gold transition">›</button>
+                    </div>
+                    <div id="calGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                    <div class="flex items-center gap-4 mt-3 text-xs text-[#333333]">
+                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-white border border-gray-300"></span> Available</span>
+                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-red-200"></span> Unavailable</span>
+                    </div>
+                    <p id="calLoading" class="text-xs text-gray-400 mt-2">Loading availability...</p>
+                </div>
             </div>
             
             <div>
@@ -137,5 +151,6 @@
 
     <script src="config.js"></script>
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/availability-calendar.js"></script>
 </body>
 </html>
