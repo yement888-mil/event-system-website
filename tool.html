@@ -475,7 +475,7 @@
         });
 
         // ------------------------------------------------------------
-        // GENERATE QUOTATION - FIXED
+        // GENERATE QUOTATION - FIXED payload structure
         // ------------------------------------------------------------
         async function generateQuotation() {
             if (savingQuotation) return;
@@ -506,17 +506,14 @@
                 const validUntil = new Date(now);
                 validUntil.setDate(validUntil.getDate() + 7);
 
-                // Build the payload with ALL required fields
+                // Build payload matching backend expectations
+                // Backend expects: inquiry_id, items (JSON string), total, deposit, balance, status
                 const payload = {
                     inquiry_id: inq.id,
-                    items: items,
+                    items: JSON.stringify(items), // Send as JSON string
                     total: total,
                     deposit: deposit,
                     balance: balance,
-                    valid_until: validUntil.toISOString().split('T')[0],
-                    customer_name: inq.customer_name || '',
-                    phone: inq.phone || '',
-                    event_date: inq.event_date || '',
                     status: 'draft'
                 };
 
@@ -529,46 +526,36 @@
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
                         body: JSON.stringify(payload)
                     });
-                    if (!response.ok) {
-                        const errData = await response.json();
-                        throw new Error(errData.message || 'Update failed');
-                    }
-                    const result = await response.json();
-                    if (result.success) {
-                        alert('Quotation updated successfully!');
-                    } else {
-                        throw new Error(result.message || 'Update failed');
-                    }
-                    editingQuotationId = null;
                 } else {
                     response = await fetch(`${CONFIG.API_URL}/api/quotation`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
                         body: JSON.stringify(payload)
                     });
-                    if (!response.ok) {
-                        const errData = await response.json();
-                        throw new Error(errData.message || 'Save failed');
-                    }
-                    const result = await response.json();
-                    if (result.success) {
-                        alert('Quotation saved successfully!');
-                    } else {
-                        throw new Error(result.message || 'Save failed');
-                    }
                 }
 
-                // Refresh and reset
-                await loadQuotations();
-                document.getElementById('whatsappOutput').classList.add('hidden');
-                document.getElementById('copyBtn').classList.add('hidden');
-                // Reset form
-                const container = document.getElementById('serviceRows');
-                container.innerHTML = '';
-                addServiceRow('', '');
-                calculate();
-                document.getElementById('inquirySelect').value = '';
-                document.getElementById('quotationForm').classList.add('hidden');
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.message || 'Request failed');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(editingQuotationId ? 'Quotation updated successfully!' : 'Quotation saved successfully!');
+                    editingQuotationId = null;
+                    // Refresh and reset
+                    await loadQuotations();
+                    document.getElementById('whatsappOutput').classList.add('hidden');
+                    document.getElementById('copyBtn').classList.add('hidden');
+                    const container = document.getElementById('serviceRows');
+                    container.innerHTML = '';
+                    addServiceRow('', '');
+                    calculate();
+                    document.getElementById('inquirySelect').value = '';
+                    document.getElementById('quotationForm').classList.add('hidden');
+                } else {
+                    throw new Error(result.message || 'Operation failed');
+                }
 
             } catch (err) {
                 console.error('Save error:', err);
