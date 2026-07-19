@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quotation Tool | Dekor By</title>
+    <title>Dekor By Ana | Owner Dashboard</title>
     <script src="https://cdn.tailwindcss.com">
     </script>
     <script>
@@ -22,15 +22,13 @@
 <body class="bg-[#F8F8F8] text-[#1A1A1A]">
 
     <header class="bg-dark text-white py-4 px-5">
-        <div class="max-w-4xl mx-auto flex items-center justify-between">
-            <span class="text-gold font-semibold">Quotation Tool</span>
-            <button onclick="logout()" class="text-gray-400 text-xs hover:text-white">
-                Logout
-            </button>
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <span class="text-gold font-semibold">Dekor By Ana</span>
+            <button onclick="logout()" class="text-gray-400 text-xs hover:text-white">Logout</button>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-5 py-8">
+    <main class="max-w-6xl mx-auto px-5 py-8">
 
         <!-- Password Gate -->
         <div id="passwordGate" class="text-center py-16">
@@ -41,19 +39,41 @@
             <p id="passwordError" class="text-red-500 text-xs mt-2 hidden">Incorrect password</p>
         </div>
 
-        <!-- Main Tool (hidden until password) -->
+        <!-- Main Tool -->
         <div id="toolContent" class="hidden">
 
-            <!-- Inquiry List -->
-            <section class="mb-8">
-                <h2 class="text-lg font-semibold mb-3">Latest Inquiries</h2>
-                <div id="inquiryList" class="space-y-2">
-                    <p class="text-sm text-gray-500">Loading...</p>
+            <!-- DASHBOARD -->
+            <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">New Inquiries</p>
+                    <p class="text-2xl font-bold" id="statNewInquiries">0</p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Quotations Sent</p>
+                    <p class="text-2xl font-bold" id="statSent">0</p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Deposit Pending</p>
+                    <p class="text-2xl font-bold text-gold" id="statDepositPending">RM 0</p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Upcoming Events</p>
+                    <p class="text-2xl font-bold" id="statUpcoming">0</p>
                 </div>
             </section>
 
+            <!-- Customer Search -->
+            <section class="bg-white rounded-2xl p-6 shadow-sm mb-8">
+                <h2 class="text-lg font-semibold mb-3">Find Customer</h2>
+                <div class="flex gap-3">
+                    <input type="text" id="customerSearch" placeholder="Search by name, phone..." class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm" />
+                    <button onclick="searchCustomer()" class="bg-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Search</button>
+                </div>
+                <div id="searchResults" class="mt-3 space-y-2"></div>
+            </section>
+
             <!-- Quotation Generator -->
-            <section class="bg-white rounded-2xl p-6 shadow-sm">
+            <section class="bg-white rounded-2xl p-6 shadow-sm mb-8">
                 <h2 class="text-lg font-semibold mb-4">Generate Quotation</h2>
 
                 <div class="mb-4">
@@ -66,50 +86,59 @@
                 <div id="quotationForm" class="hidden space-y-4">
                     <div class="bg-[#F8F8F8] p-4 rounded-xl text-sm" id="inquiryPreview"></div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-sm">Decoration (RM)</label>
-                            <input type="number" id="priceDeco" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0" />
+                    <!-- Package Templates -->
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Package Template</label>
+                        <select id="packageSelect" onchange="applyPackage()" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm">
+                            <option value="">-- Custom --</option>
+                            <option value="birthday_basic">Birthday Basic</option>
+                            <option value="birthday_premium">Birthday Premium</option>
+                            <option value="wedding">Wedding Package</option>
+                            <option value="corporate">Corporate Event</option>
+                        </select>
+                    </div>
+
+                    <!-- Dynamic Services -->
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Services</label>
+                        <div id="serviceRows" class="space-y-2">
+                            <div class="flex gap-2 items-center">
+                                <input type="text" placeholder="Service name" class="service-name w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                                <input type="number" placeholder="Price (RM)" class="service-price w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                                <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">✕</button>
+                            </div>
                         </div>
-                        <div>
-                            <label class="text-sm">Photography (RM)</label>
-                            <input type="number" id="pricePhoto" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0" />
-                        </div>
-                        <div>
-                            <label class="text-sm">Catering (RM)</label>
-                            <input type="number" id="priceCatering" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0" />
-                        </div>
-                        <div>
-                            <label class="text-sm">Magic Show (RM)</label>
-                            <input type="number" id="priceMagic" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="0" />
-                        </div>
+                        <button onclick="addServiceRow()" class="text-gold text-sm font-medium hover:underline mt-2">+ Add Service</button>
                     </div>
 
                     <div class="bg-[#F5F0E6] p-4 rounded-xl text-sm space-y-1">
                         <p>Total: <strong id="totalPrice">RM 0</strong></p>
                         <p>Deposit (30%): <strong id="depositPrice">RM 0</strong></p>
                         <p>Balance: <strong id="balancePrice">RM 0</strong></p>
+                        <p>Valid Until: <strong id="validUntil">-</strong></p>
                     </div>
 
-                    <!-- Two buttons: Save & WhatsApp -->
-                    <button id="saveQuotationBtn" onclick="generateQuotation()" class="w-full bg-dark text-white py-3 rounded-full font-semibold hover:bg-gold hover:text-dark transition">
-                        Generate & Save Quotation
+                    <button onclick="generateQuotation()" class="w-full bg-dark text-white py-3 rounded-full font-semibold hover:bg-gold hover:text-dark transition">
+                        <span id="saveQuotationText">Generate & Save Quotation</span>
                     </button>
 
-                    <button onclick="generateWhatsApp()" class="w-full border-2 border-dark text-dark py-3 rounded-full font-semibold hover:bg-dark hover:text-white transition">
-                        Generate WhatsApp Message
-                    </button>
+                    <!-- WhatsApp & PDF -->
+                    <div class="flex gap-3">
+                        <button onclick="generateWhatsApp()" class="w-full border-2 border-green-600 text-green-600 py-3 rounded-full font-semibold hover:bg-green-600 hover:text-white transition">
+                            📱 WhatsApp
+                        </button>
+                        <button onclick="generatePDF()" class="w-full border-2 border-dark text-dark py-3 rounded-full font-semibold hover:bg-dark hover:text-white transition">
+                            📄 PDF
+                        </button>
+                    </div>
 
                     <div id="whatsappOutput" class="hidden bg-[#F8F8F8] p-4 rounded-xl text-sm whitespace-pre-line"></div>
-
-                    <button id="copyBtn" class="hidden w-full border-2 border-dark text-dark py-2 rounded-full font-medium text-sm hover:bg-dark hover:text-white transition" onclick="copyToClipboard()">
-                        Copy Text
-                    </button>
+                    <button id="copyBtn" class="hidden w-full border-2 border-dark text-dark py-2 rounded-full font-medium text-sm hover:bg-dark hover:text-white transition" onclick="copyToClipboard()">Copy Text</button>
                 </div>
             </section>
 
             <!-- Quotation History -->
-            <section class="mt-8 bg-white rounded-2xl p-6 shadow-sm">
+            <section class="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 class="text-lg font-semibold mb-4">Quotation History</h2>
                 <div id="quotationHistory" class="space-y-3">
                     <p class="text-sm text-gray-500">Loading...</p>
@@ -118,36 +147,68 @@
         </div>
     </main>
 
-    <!-- CONFIG: Correct Railway backend -->
     <script>
         const CONFIG = {
             API_URL: 'https://event-system-backend-production.up.railway.app'
         };
-    </script>
 
-    <script>
         // ------------------------------------------------------------
         // STATE
         // ------------------------------------------------------------
         let adminToken = localStorage.getItem('adminToken') || '';
         let editingQuotationId = null;
         let savingQuotation = false;
+        let allInquiries = [];
+
+        // ------------------------------------------------------------
+        // PACKAGE TEMPLATES
+        // ------------------------------------------------------------
+        const PACKAGES = {
+            birthday_basic: [
+                { name: 'Backdrop', price: 800 },
+                { name: 'Balloon Decoration', price: 200 },
+                { name: 'Cake Table Setup', price: 150 }
+            ],
+            birthday_premium: [
+                { name: 'Backdrop', price: 1800 },
+                { name: 'Balloon Decoration', price: 300 },
+                { name: 'Cake Table Setup', price: 500 },
+                { name: 'Photography', price: 400 }
+            ],
+            wedding: [
+                { name: 'Wedding Arch', price: 2500 },
+                { name: 'Flower Decoration', price: 1200 },
+                { name: 'Cake Table Setup', price: 600 },
+                { name: 'Photography', price: 1500 },
+                { name: 'Sound System', price: 800 }
+            ],
+            corporate: [
+                { name: 'Stage Setup', price: 2000 },
+                { name: 'Backdrop', price: 1500 },
+                { name: 'Photography', price: 1200 },
+                { name: 'Catering Setup', price: 1000 }
+            ]
+        };
+
+        function applyPackage() {
+            const pkg = document.getElementById('packageSelect').value;
+            if (!pkg || !PACKAGES[pkg]) return;
+            const container = document.getElementById('serviceRows');
+            container.innerHTML = '';
+            PACKAGES[pkg].forEach(s => addServiceRow(s.name, s.price));
+            calculate();
+        }
 
         // ------------------------------------------------------------
         // HELPERS
         // ------------------------------------------------------------
         function escapeHTML(str) {
             if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
 
         // ------------------------------------------------------------
-        // AUTH / PASSWORD
+        // AUTH
         // ------------------------------------------------------------
         async function checkPassword() {
             const input = document.getElementById('toolPassword').value;
@@ -171,8 +232,39 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert('Login failed. Check API or network.');
+                alert('Login failed.');
             }
+        }
+
+        // ------------------------------------------------------------
+        // DASHBOARD STATS
+        // ------------------------------------------------------------
+        function updateDashboard(quotations, inquiries) {
+            const now = new Date();
+            const thisMonth = now.getMonth();
+            const thisYear = now.getFullYear();
+
+            const newInquiries = inquiries.filter(i => {
+                const d = new Date(i.created_at);
+                return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+            }).length;
+
+            const sent = quotations.filter(q => q.status === 'sent' || q.status === 'waiting_deposit').length;
+
+            const depositPending = quotations
+                .filter(q => q.status === 'waiting_deposit')
+                .reduce((sum, q) => sum + (q.deposit || 0), 0);
+
+            const upcoming = inquiries.filter(i => {
+                if (!i.event_date) return false;
+                const d = new Date(i.event_date);
+                return d >= now;
+            }).length;
+
+            document.getElementById('statNewInquiries').textContent = newInquiries;
+            document.getElementById('statSent').textContent = sent;
+            document.getElementById('statDepositPending').textContent = 'RM ' + depositPending;
+            document.getElementById('statUpcoming').textContent = upcoming;
         }
 
         // ------------------------------------------------------------
@@ -183,13 +275,13 @@
                 const res = await fetch(`${CONFIG.API_URL}/api/inquiry`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
-                if (!res.ok) throw new Error('Failed to fetch inquiries');
+                if (!res.ok) throw new Error('Failed');
                 const data = await res.json();
-                renderInquiries(data.data || []);
+                allInquiries = data.data || [];
+                renderInquiries(allInquiries);
             } catch (err) {
                 console.error(err);
-                document.getElementById('inquiryList').innerHTML =
-                    '<p class="text-red-500 text-sm">Failed to load inquiries</p>';
+                document.getElementById('inquiryList').innerHTML = '<p class="text-red-500 text-sm">Failed to load inquiries</p>';
             }
         }
 
@@ -201,19 +293,60 @@
                 select.innerHTML = '<option value="">-- Select --</option>';
                 return;
             }
-            list.innerHTML = inquiries.map(inq => `
+            list.innerHTML = inquiries.slice(0, 5).map(inq => `
                 <div class="bg-white rounded-xl p-3 text-sm border">
-                    <strong>${escapeHTML(inq.customer_name)}</strong> |
-                    ${escapeHTML(inq.event_type || '-')}
+                    <strong>${escapeHTML(inq.customer_name)}</strong> | ${escapeHTML(inq.event_type || '-')}
+                    <br>Event: ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('en-MY') : '-'}
                 </div>
             `).join('');
 
             select.innerHTML = '<option value="">-- Select --</option>' +
                 inquiries.map(inq => `
-                    <option value='${JSON.stringify(inq).replace(/'/g,"&#39;")}'>
-                        ${escapeHTML(inq.customer_name)}
-                    </option>
+                    <option value='${JSON.stringify(inq).replace(/'/g,"&#39;")}'>${escapeHTML(inq.customer_name)}</option>
                 `).join('');
+        }
+
+        // ------------------------------------------------------------
+        // SEARCH CUSTOMER
+        // ------------------------------------------------------------
+        function searchCustomer() {
+            const q = document.getElementById('customerSearch').value.toLowerCase().trim();
+            const results = document.getElementById('searchResults');
+            if (!q) { results.innerHTML = ''; return; }
+            const found = allInquiries.filter(i =>
+                i.customer_name?.toLowerCase().includes(q) ||
+                i.phone?.includes(q)
+            );
+            if (found.length === 0) {
+                results.innerHTML = '<p class="text-sm text-gray-500">No customers found</p>';
+                return;
+            }
+            results.innerHTML = found.map(i => `
+                <div class="bg-white border rounded-xl p-3 text-sm flex justify-between items-center">
+                    <div>
+                        <strong>${escapeHTML(i.customer_name)}</strong>
+                        <span class="text-gray-400">| ${escapeHTML(i.phone || '-')}</span>
+                        <br>${escapeHTML(i.event_type || '-')} | ${i.event_date ? new Date(i.event_date).toLocaleDateString('en-MY') : '-'}
+                    </div>
+                    <button onclick="selectInquiry(${i.id})" class="bg-gold text-white px-3 py-1 rounded text-xs">Select</button>
+                </div>
+            `).join('');
+        }
+
+        function selectInquiry(id) {
+            const select = document.getElementById('inquirySelect');
+            for (let i = 0; i < select.options.length; i++) {
+                try {
+                    const val = JSON.parse(select.options[i].value);
+                    if (val.id === id) {
+                        select.selectedIndex = i;
+                        select.dispatchEvent(new Event('change'));
+                        document.getElementById('searchResults').innerHTML = '';
+                        document.getElementById('customerSearch').value = '';
+                        return;
+                    }
+                } catch (e) {}
+            }
         }
 
         // ------------------------------------------------------------
@@ -224,19 +357,17 @@
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
-                if (!res.ok) throw new Error('Failed to fetch quotations');
+                if (!res.ok) throw new Error('Failed');
                 const data = await res.json();
                 const quotations = (data.data || []).map(q => {
-                    if (typeof q.items === 'string') {
-                        try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; }
-                    }
+                    if (typeof q.items === 'string') { try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; } }
                     return q;
                 });
                 renderQuotations(quotations);
+                updateDashboard(quotations, allInquiries);
             } catch (err) {
                 console.error(err);
-                document.getElementById('quotationHistory').innerHTML =
-                    '<p class="text-red-500 text-sm">Failed to load quotations</p>';
+                document.getElementById('quotationHistory').innerHTML = '<p class="text-red-500 text-sm">Failed to load quotations</p>';
             }
         }
 
@@ -248,18 +379,22 @@
             }
             box.innerHTML = quotations.map(q => `
                 <div class="border rounded-xl p-4 text-sm">
-                    <strong>${escapeHTML(q.customer_name)}</strong><br>
-                    Quotation No: Q-${String(q.id).padStart(5,'0')}<br>
-                    Total: RM ${q.total}<br>
-                    Status:
-                    <select onchange="updateQuotationStatus(${q.id},this.value)" class="border rounded">
+                    <strong>${escapeHTML(q.customer_name || 'Unknown')}</strong>
+                    ${q.phone ? `| 📱 ${escapeHTML(q.phone)}` : ''}
+                    <br>Q-${String(q.id).padStart(5,'0')} | RM ${q.total}
+                    <br>Event: ${q.event_date ? new Date(q.event_date).toLocaleDateString('en-MY') : '-'}
+                    <br>Status:
+                    <select onchange="updateQuotationStatus(${q.id},this.value)" class="border rounded text-xs">
                         <option ${q.status==='draft'?'selected':''}>draft</option>
                         <option ${q.status==='sent'?'selected':''}>sent</option>
-                        <option ${q.status==='paid'?'selected':''}>paid</option>
+                        <option ${q.status==='waiting_deposit'?'selected':''}>waiting_deposit</option>
+                        <option ${q.status==='deposit_paid'?'selected':''}>deposit_paid</option>
+                        <option ${q.status==='completed'?'selected':''}>completed</option>
                         <option ${q.status==='cancelled'?'selected':''}>cancelled</option>
                     </select>
-                    <div class="mt-3 flex gap-2">
-                        <button onclick="editQuotation(${q.id})" class="bg-dark text-white px-3 py-1 rounded text-xs">Edit</button>
+                    <div class="mt-3 flex gap-2 flex-wrap">
+                        <button onclick="duplicateQuotation(${q.id})" class="bg-gold text-white px-3 py-1 rounded text-xs">Duplicate</button>
+                        <button onclick="markPaid(${q.id})" class="bg-green-600 text-white px-3 py-1 rounded text-xs">Mark Paid</button>
                         <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-1 rounded text-xs">Delete</button>
                     </div>
                 </div>
@@ -267,285 +402,300 @@
         }
 
         // ------------------------------------------------------------
-        // INQUIRY SELECT → SHOW FORM
+        // DUPLICATE QUOTATION
+        // ------------------------------------------------------------
+        async function duplicateQuotation(id) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                const data = await res.json();
+                const q = data.data || data.quotation || data;
+                if (!q) return alert('Quotation not found');
+                const items = typeof q.items === 'string' ? JSON.parse(q.items) : (q.items || []);
+                const total = items.reduce((s, i) => s + i.price, 0);
+                const deposit = Math.round(total * 0.3);
+                const balance = Math.round(total * 0.7);
+                const now = new Date();
+                const validUntil = new Date(now);
+                validUntil.setDate(validUntil.getDate() + 7);
+
+                const createRes = await fetch(`${CONFIG.API_URL}/api/quotation`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({
+                        inquiry_id: q.inquiry_id,
+                        items,
+                        total,
+                        deposit,
+                        balance,
+                        valid_until: validUntil.toISOString().split('T')[0]
+                    })
+                });
+                if (createRes.ok) {
+                    alert('Quotation duplicated successfully');
+                    loadQuotations();
+                } else {
+                    throw new Error('Duplicate failed');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Duplicate failed: ' + err.message);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // MARK PAID
+        // ------------------------------------------------------------
+        async function markPaid(id) {
+            if (!confirm('Mark this quotation as Deposit Paid?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ status: 'deposit_paid' })
+                });
+                if (res.ok) {
+                    alert('Marked as Deposit Paid');
+                    loadQuotations();
+                } else {
+                    throw new Error('Update failed');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed: ' + err.message);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // DYNAMIC SERVICES
+        // ------------------------------------------------------------
+        function addServiceRow(name = '', price = '') {
+            const container = document.getElementById('serviceRows');
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 items-center';
+            row.innerHTML = `
+                <input type="text" placeholder="Service name" value="${escapeHTML(name)}" class="service-name w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                <input type="number" placeholder="Price (RM)" value="${price}" class="service-price w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">✕</button>
+            `;
+            container.appendChild(row);
+            row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', calculate));
+        }
+
+        function removeServiceRow(btn) {
+            const container = document.getElementById('serviceRows');
+            if (container.children.length <= 1) return alert('At least one service required.');
+            btn.closest('.flex').remove();
+            calculate();
+        }
+
+        // ------------------------------------------------------------
+        // INQUIRY SELECT
         // ------------------------------------------------------------
         document.getElementById('inquirySelect').addEventListener('change', function() {
             if (!this.value) {
                 document.getElementById('quotationForm').classList.add('hidden');
-                document.getElementById('whatsappOutput').classList.add('hidden');
-                document.getElementById('copyBtn').classList.add('hidden');
                 return;
             }
             const inq = JSON.parse(this.value);
             document.getElementById('quotationForm').classList.remove('hidden');
             document.getElementById('inquiryPreview').innerHTML = `
                 <strong>${escapeHTML(inq.customer_name)}</strong><br>
-                ${escapeHTML(inq.event_type || '-')}
+                ${escapeHTML(inq.event_type || '-')} | ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('en-MY') : '-'}
             `;
-            // Reset prices if not editing
-            if (!editingQuotationId) {
-                ['priceDeco', 'pricePhoto', 'priceCatering', 'priceMagic'].forEach(id => {
-                    document.getElementById(id).value = 0;
-                });
-                calculate();
-            }
-            // Hide previous whatsapp output
+            // Reset services
+            const container = document.getElementById('serviceRows');
+            container.innerHTML = '';
+            addServiceRow('', '');
+            calculate();
+            const now = new Date();
+            const valid = new Date(now);
+            valid.setDate(valid.getDate() + 7);
+            document.getElementById('validUntil').textContent = valid.toLocaleDateString('en-MY');
             document.getElementById('whatsappOutput').classList.add('hidden');
             document.getElementById('copyBtn').classList.add('hidden');
         });
 
         // ------------------------------------------------------------
-        // CALCULATE TOTALS
+        // CALCULATE
         // ------------------------------------------------------------
         function calculate() {
-            const values = ['priceDeco', 'pricePhoto', 'priceCatering', 'priceMagic']
-                .map(id => Number(document.getElementById(id).value) || 0);
-            const total = values.reduce((a, b) => a + b, 0);
+            const prices = document.querySelectorAll('.service-price');
+            let total = 0;
+            prices.forEach(inp => { total += parseFloat(inp.value) || 0; });
             document.getElementById('totalPrice').textContent = 'RM ' + total;
             document.getElementById('depositPrice').textContent = 'RM ' + Math.round(total * 0.3);
             document.getElementById('balancePrice').textContent = 'RM ' + Math.round(total * 0.7);
         }
-
-        ['priceDeco', 'pricePhoto', 'priceCatering', 'priceMagic'].forEach(id => {
-            document.getElementById(id).addEventListener('input', calculate);
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('service-price')) calculate();
         });
 
         // ------------------------------------------------------------
-        // GENERATE / SAVE QUOTATION (Create or Update)
+        // GENERATE QUOTATION
         // ------------------------------------------------------------
         async function generateQuotation() {
             if (savingQuotation) return;
             savingQuotation = true;
             const btn = document.getElementById('saveQuotationBtn');
             btn.disabled = true;
-            btn.textContent = 'Saving...';
+            document.getElementById('saveQuotationText').innerText = 'Saving...';
 
             try {
                 const selectEl = document.getElementById('inquirySelect');
-                if (!selectEl.value) {
-                    alert('Please select an inquiry first.');
-                    return;
-                }
+                if (!selectEl.value) { alert('Select an inquiry'); return; }
                 const inq = JSON.parse(selectEl.value);
 
-                const prices = {
-                    Decoration: Number(document.getElementById('priceDeco').value) || 0,
-                    Photography: Number(document.getElementById('pricePhoto').value) || 0,
-                    Catering: Number(document.getElementById('priceCatering').value) || 0,
-                    'Magic Show': Number(document.getElementById('priceMagic').value) || 0
-                };
-                const items = Object.keys(prices)
-                    .filter(name => prices[name] > 0)
-                    .map(name => ({ name, price: prices[name] }));
+                const nameInputs = document.querySelectorAll('.service-name');
+                const priceInputs = document.querySelectorAll('.service-price');
+                const items = [];
+                for (let i = 0; i < nameInputs.length; i++) {
+                    const name = nameInputs[i].value.trim();
+                    const price = parseFloat(priceInputs[i].value) || 0;
+                    if (name && price > 0) items.push({ name, price });
+                }
+                if (items.length === 0) { alert('Add at least one service'); return; }
 
-                const total = Object.values(prices).reduce((a, b) => a + b, 0);
+                const total = items.reduce((s, i) => s + i.price, 0);
                 const deposit = Math.round(total * 0.3);
                 const balance = Math.round(total * 0.7);
+                const now = new Date();
+                const validUntil = new Date(now);
+                validUntil.setDate(validUntil.getDate() + 7);
+
+                const body = {
+                    inquiry_id: inq.id,
+                    items,
+                    total,
+                    deposit,
+                    balance,
+                    valid_until: validUntil.toISOString().split('T')[0],
+                    customer_name: inq.customer_name,
+                    phone: inq.phone || '',
+                    event_date: inq.event_date || ''
+                };
 
                 let response;
                 if (editingQuotationId) {
-                    // UPDATE
                     response = await fetch(`${CONFIG.API_URL}/api/quotation/${editingQuotationId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                        body: JSON.stringify({ items, total, deposit, balance })
+                        body: JSON.stringify(body)
                     });
                     if (!response.ok) throw new Error('Update failed');
                     const result = await response.json();
-                    if (result.success) {
-                        alert('Quotation updated successfully!');
-                    } else {
-                        throw new Error(result.message || 'Update error');
-                    }
+                    if (result.success) alert('Quotation updated!');
+                    else throw new Error(result.message);
                     editingQuotationId = null;
                 } else {
-                    // CREATE
                     response = await fetch(`${CONFIG.API_URL}/api/quotation`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                        body: JSON.stringify({ inquiry_id: inq.id, items, total, deposit, balance })
+                        body: JSON.stringify(body)
                     });
                     if (!response.ok) throw new Error('Save failed');
                     const result = await response.json();
-                    if (result.success) {
-                        alert('Quotation saved successfully!');
-                    } else {
-                        throw new Error(result.message || 'Save error');
-                    }
+                    if (result.success) alert('Quotation saved!');
+                    else throw new Error(result.message);
                 }
-
-                // Refresh history
                 await loadQuotations();
-
-                // Do NOT hide the form or clear the inquiry selection.
-                // Keep the form visible so user can immediately generate WhatsApp.
-                // Also hide any previous whatsapp output.
                 document.getElementById('whatsappOutput').classList.add('hidden');
                 document.getElementById('copyBtn').classList.add('hidden');
-
-                // Optionally reset price inputs? No, keep them so user can adjust and re-save.
-                // But we keep the values.
-
             } catch (err) {
                 console.error(err);
                 alert('Error: ' + err.message);
             } finally {
                 savingQuotation = false;
                 btn.disabled = false;
-                btn.textContent = 'Generate & Save Quotation';
+                document.getElementById('saveQuotationText').innerText = editingQuotationId ? 'Update Quotation' : 'Generate & Save Quotation';
             }
         }
 
         // ------------------------------------------------------------
-        // GENERATE WHATSAPP MESSAGE
+        // WHATSAPP
         // ------------------------------------------------------------
         function generateWhatsApp() {
             const select = document.getElementById('inquirySelect');
-            if (!select.value) {
-                alert('Please select inquiry first');
-                return;
-            }
+            if (!select.value) { alert('Select an inquiry'); return; }
             const inq = JSON.parse(select.value);
-
-            const d = Number(document.getElementById('priceDeco').value) || 0;
-            const p = Number(document.getElementById('pricePhoto').value) || 0;
-            const c = Number(document.getElementById('priceCatering').value) || 0;
-            const m = Number(document.getElementById('priceMagic').value) || 0;
-
-            const total = d + p + c + m;
-            if (total <= 0) {
-                alert('Please enter quotation amount first');
-                return;
+            const nameInputs = document.querySelectorAll('.service-name');
+            const priceInputs = document.querySelectorAll('.service-price');
+            const items = [];
+            let total = 0;
+            for (let i = 0; i < nameInputs.length; i++) {
+                const name = nameInputs[i].value.trim();
+                const price = parseFloat(priceInputs[i].value) || 0;
+                if (name && price > 0) { items.push({ name, price });
+                    total += price; }
             }
+            if (total <= 0) { alert('Enter service prices'); return; }
             const deposit = Math.round(total * 0.3);
             const balance = Math.round(total * 0.7);
 
-            const date = inq.event_date ?
-                new Date(inq.event_date).toLocaleDateString('en-MY') :
-                '-';
-
-            let message = [];
-            message.push(`Hi ${inq.customer_name},`);
-            message.push('');
-            message.push('Thank you for your inquiry.');
-            message.push('');
-            message.push('QUOTATION');
-            message.push('--------------------');
-            message.push(`Event: ${inq.event_type || '-'}`);
-            message.push(`Date: ${date}`);
-            message.push(`Guests: ${inq.guest_count || '-'} pax`);
-            message.push('');
-            message.push('Services');
-            if (d) message.push(`Decoration: RM ${d}`);
-            if (p) message.push(`Photography: RM ${p}`);
-            if (c) message.push(`Catering: RM ${c}`);
-            if (m) message.push(`Magic Show: RM ${m}`);
-            message.push('');
-            message.push('--------------------');
-            message.push(`Total: RM ${total}`);
-            message.push(`Deposit (30%): RM ${deposit}`);
-            message.push(`Balance: RM ${balance}`);
-            message.push('');
-            message.push('Payment Details');
-            // Update with your real bank details
-            message.push('Maybank');
-            message.push('Account No: 5xxxxx');
-            message.push('Dekor By Ana');
-            message.push('');
-            message.push('Thank you. Please reply if you have any questions.');
+            let msg = [`Hi ${inq.customer_name},`, '', 'Thank you for your inquiry.', '', 'QUOTATION', '--------------------'];
+            msg.push(`Event: ${inq.event_type || '-'}`);
+            msg.push(`Date: ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('en-MY') : '-'}`);
+            msg.push(`Guests: ${inq.guest_count || '-'} pax`, '');
+            msg.push('Services');
+            items.forEach(i => msg.push(`${i.name}: RM ${i.price}`));
+            msg.push('', '--------------------');
+            msg.push(`Total: RM ${total}`);
+            msg.push(`Deposit (30%): RM ${deposit}`);
+            msg.push(`Balance: RM ${balance}`);
+            const now = new Date();
+            const valid = new Date(now);
+            valid.setDate(valid.getDate() + 7);
+            msg.push('', `Valid until: ${valid.toLocaleDateString('en-MY')}`);
+            msg.push('', 'Payment Details', 'Maybank | 5xxxxx | Dekor By Ana', '', 'Thank you.');
 
             const output = document.getElementById('whatsappOutput');
-            output.textContent = message.join('\n');
+            output.textContent = msg.join('\n');
             output.classList.remove('hidden');
             document.getElementById('copyBtn').classList.remove('hidden');
 
-            // Auto-scroll to the message
-            output.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // ------------------------------------------------------------
-        // EDIT QUOTATION
-        // ------------------------------------------------------------
-        async function editQuotation(id) {
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
-                if (!res.ok) throw new Error('Failed to fetch quotation');
-                const data = await res.json();
-                const q = data.data;
-                if (!q) throw new Error('No data');
-
-                if (typeof q.items === 'string') {
-                    try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; }
-                }
-
-                editingQuotationId = q.id;
-                document.getElementById('quotationForm').classList.remove('hidden');
-
-                const find = (name) => q.items.find(x => x.name === name)?.price || 0;
-                document.getElementById('priceDeco').value = find('Decoration');
-                document.getElementById('pricePhoto').value = find('Photography');
-                document.getElementById('priceCatering').value = find('Catering');
-                document.getElementById('priceMagic').value = find('Magic Show');
-
-                document.getElementById('inquiryPreview').innerHTML = `
-                    <strong>${escapeHTML(q.customer_name)}</strong><br>
-                    ${escapeHTML(q.event_type || '')}
-                `;
-
-                // Try to select matching inquiry in dropdown
-                const select = document.getElementById('inquirySelect');
-                const options = select.options;
-                let found = false;
-                for (let i = 0; i < options.length; i++) {
-                    try {
-                        const optVal = JSON.parse(options[i].value);
-                        if (optVal.id === q.inquiry_id) {
-                            select.selectedIndex = i;
-                            found = true;
-                            break;
-                        }
-                    } catch (e) {}
-                }
-
-                calculate();
-                document.getElementById('whatsappOutput').classList.add('hidden');
-                document.getElementById('copyBtn').classList.add('hidden');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            } catch (err) {
-                console.error(err);
-                alert('Failed to load quotation for editing: ' + err.message);
+            // Open WhatsApp directly
+            const phone = inq.phone || '';
+            if (phone) {
+                const url = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg.join('\n'))}`;
+                window.open(url, '_blank');
+            } else {
+                output.scrollIntoView({ behavior: 'smooth' });
             }
         }
 
         // ------------------------------------------------------------
-        // DELETE QUOTATION
+        // PDF (placeholder)
+        // ------------------------------------------------------------
+        function generatePDF() {
+            alert('PDF generation will be available soon. Use WhatsApp or Copy Text for now.');
+        }
+
+        // ------------------------------------------------------------
+        // COPY
+        // ------------------------------------------------------------
+        function copyToClipboard() {
+            const text = document.getElementById('whatsappOutput').textContent;
+            if (!text) return alert('Nothing to copy');
+            navigator.clipboard.writeText(text).then(() => alert('Copied!')).catch(() => alert('Copy failed'));
+        }
+
+        // ------------------------------------------------------------
+        // DELETE / STATUS
         // ------------------------------------------------------------
         async function deleteQuotation(id) {
-            if (!confirm('Delete this quotation?')) return;
+            if (!confirm('Delete?')) return;
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
                     method: 'DELETE',
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
-                if (!res.ok) throw new Error('Delete failed');
-                const data = await res.json();
-                if (data.success) {
-                    alert('Quotation deleted');
-                    await loadQuotations();
-                } else {
-                    throw new Error(data.message || 'Delete error');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Delete failed: ' + err.message);
-            }
+                if (res.ok) { alert('Deleted');
+                    loadQuotations(); } else throw new Error('Delete failed');
+            } catch (err) { console.error(err);
+                alert('Delete failed'); }
         }
 
-        // ------------------------------------------------------------
-        // UPDATE STATUS
-        // ------------------------------------------------------------
         async function updateQuotationStatus(id, status) {
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
@@ -553,30 +703,8 @@
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
                     body: JSON.stringify({ status })
                 });
-                if (!res.ok) throw new Error('Status update failed');
-                const data = await res.json();
-                if (data.success) {
-                    await loadQuotations();
-                } else {
-                    throw new Error(data.message || 'Status update error');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Status update failed: ' + err.message);
-            }
-        }
-
-        // ------------------------------------------------------------
-        // COPY TO CLIPBOARD
-        // ------------------------------------------------------------
-        function copyToClipboard() {
-            const text = document.getElementById('whatsappOutput').textContent;
-            if (!text) return alert('Nothing to copy');
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Quotation copied successfully');
-            }).catch(() => {
-                alert('Copy failed');
-            });
+                if (res.ok) loadQuotations();
+            } catch (err) { console.error(err); }
         }
 
         // ------------------------------------------------------------
@@ -589,9 +717,6 @@
             document.getElementById('passwordGate').classList.remove('hidden');
             document.getElementById('quotationForm').classList.add('hidden');
             document.getElementById('inquirySelect').value = '';
-            document.getElementById('whatsappOutput').classList.add('hidden');
-            document.getElementById('copyBtn').classList.add('hidden');
-            editingQuotationId = null;
         }
 
         // ------------------------------------------------------------
@@ -603,6 +728,7 @@
                 document.getElementById('toolContent').classList.remove('hidden');
                 loadInquiries();
                 loadQuotations();
+                if (document.getElementById('serviceRows').children.length === 0) addServiceRow('', '');
             }
         };
     </script>
