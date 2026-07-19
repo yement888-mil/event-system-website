@@ -521,6 +521,13 @@
             return new Date(dateStr).toLocaleDateString('en-MY');
         }
 
+        // Converts a date value from the API into YYYY-MM-DD, the format
+        // required by an <input type="date"> value attribute.
+        function toDateInputValue(dateStr) {
+            if (!dateStr) return '';
+            return String(dateStr).split('T')[0];
+        }
+
         function formatDateTime(dateStr) {
             if (!dateStr) return '-';
             return new Date(dateStr).toLocaleString('en-MY');
@@ -920,6 +927,16 @@
                         </button>
                     </div>
                 </div>
+                <div class="mt-4">
+                    <strong>Reschedule Event Date:</strong>
+                    <div class="flex items-center gap-2 mt-2">
+                        <input type="date" id="rescheduleDate_${inq.id}" value="${toDateInputValue(inq.event_date)}" class="border rounded-xl text-sm px-3 py-2">
+                        <button onclick="rescheduleInquiry(${inq.id})" class="border-2 border-dark text-dark px-4 py-2 rounded-xl text-sm font-medium hover:bg-dark hover:text-white transition">
+                            Reschedule
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">This also updates the linked quotation, calendar, and reminders automatically.</p>
+                </div>
                 <div class="mt-4 text-xs text-gray-400">
                     Submitted: ${formatDateTime(inq.created_at)}
                 </div>
@@ -961,6 +978,55 @@
             } catch (err) {
                 console.error('Update inquiry status error:', err);
                 alert('Failed to update status: ' + err.message);
+            }
+        }
+
+        async function rescheduleInquiry(id, force = false) {
+            try {
+                const input = document.getElementById(`rescheduleDate_${id}`);
+                if (!input || !input.value) {
+                    alert('Please pick a new date');
+                    return;
+                }
+                const newDate = input.value;
+
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/reschedule`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ new_date: newDate, force })
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                if (res.status === 409) {
+                    const err = await res.json();
+                    const who = err.conflict?.customer_name || 'another customer';
+                    const confirmMsg = `${formatDate(newDate)} already has a confirmed booking for ${who} (${err.conflict?.quotation_no || '-'}).\n\nReschedule to this date anyway?`;
+                    if (confirm(confirmMsg)) {
+                        await rescheduleInquiry(id, true);
+                    }
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to reschedule');
+                }
+
+                await loadInquiries();
+                await loadQuotations();
+                closeModal();
+
+            } catch (err) {
+                console.error('Reschedule error:', err);
+                alert('Failed to reschedule: ' + err.message);
             }
         }
 
