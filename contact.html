@@ -130,6 +130,11 @@
                 <label class="block text-sm font-medium mb-1 text-dark">Message</label>
                 <textarea id="message" rows="3" class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none" placeholder="Tell us about your event requests"></textarea>
             </div>
+
+            <label class="flex items-start gap-3 text-xs text-[#333333]">
+                <input type="checkbox" id="agreeTerms" required class="w-4 h-4 mt-0.5">
+                <span>I agree to the <a href="terms.html" target="_blank" class="text-gold hover:underline">Terms &amp; Conditions</a> and <a href="privacy.html" target="_blank" class="text-gold hover:underline">Privacy Notice</a>, and consent to my data being used to process this inquiry.</span>
+            </label>
             
             <button type="submit" id="submitBtn" class="w-full bg-dark text-white py-4 rounded-full font-semibold text-base hover:bg-gold hover:text-dark transition">
                 Submit Inquiry
@@ -146,6 +151,11 @@
 
     <footer class="bg-dark border-t border-gray-800 text-center py-8 px-5 mt-8">
         <p class="text-gold text-lg mb-2">✦</p>
+        <div class="flex justify-center gap-4 text-xs text-gray-400 mb-3">
+            <a href="terms.html" class="hover:text-gold transition">Terms &amp; Conditions</a>
+            <span>|</span>
+            <a href="privacy.html" class="hover:text-gold transition">Privacy Notice</a>
+        </div>
         <p class="text-gray-500 text-xs">© 2026 Decor By. All rights reserved.</p>
     </footer>
 

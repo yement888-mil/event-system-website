@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms & Conditions | Decor By</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: '#C9A84C',
+                        dark: '#1A1A1A',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[#F8F8F8] text-[#1A1A1A]">
+
+    <a href="https://wa.me/60123456789" target="_blank" 
+       class="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition hover:scale-110" 
+       style="background-color: #25D366;">
+        <span class="text-white text-2xl">💬</span>
+    </a>
+
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2">
+                <span class="text-gold text-2xl">✦</span>
+                <span class="text-lg font-semibold tracking-tight text-dark">Decor By</span>
+            </a>
+            <nav class="hidden md:flex gap-8 text-sm">
+                <a href="index.html" class="text-[#333333] hover:text-dark transition">Home</a>
+                <a href="gallery.html" class="text-[#333333] hover:text-dark transition">Gallery</a>
+                <a href="services.html" class="text-[#333333] hover:text-dark transition">Services</a>
+                <a href="faq.html" class="text-[#333333] hover:text-dark transition">FAQ</a>
+                <a href="contact.html" class="bg-dark text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Contact</a>
+            </nav>
+            <button id="menuBtn" class="md:hidden text-2xl text-dark">☰</button>
+        </div>
+        <div id="mobileMenu" class="hidden md:hidden px-5 pb-4 space-y-2 text-sm font-medium bg-white">
+            <a href="index.html" class="block py-2 text-[#333333] pl-3">Home</a>
+            <a href="gallery.html" class="block py-2 text-[#333333] pl-3">Gallery</a>
+            <a href="services.html" class="block py-2 text-[#333333] pl-3">Services</a>
+            <a href="faq.html" class="block py-2 text-[#333333] pl-3">FAQ</a>
+            <a href="contact.html" class="block py-2 text-white bg-dark text-center rounded-full mt-2">Contact</a>
+        </div>
+    </header>
+
+    <section class="max-w-2xl mx-auto px-5 py-12">
+        <div class="text-center mb-10">
+            <div class="gold-line mb-4"></div>
+            <h2 class="text-2xl font-light tracking-tight">Terms &amp; Conditions</h2>
+            <p class="text-[#333333] text-sm mt-3">Please read this before booking. By submitting an inquiry or paying a deposit, you agree to the terms below.</p>
+        </div>
+
+        <div class="space-y-6 text-sm text-[#333333] leading-relaxed">
+
+            <div class="bg-white p-6 rounded-2xl">
+                <h3 class="font-semibold text-dark text-base mb-2">1. Quotations</h3>
+                <p>All quotations are estimates based on the details you provide (event type, date, guest count, and requested services). Prices may change if these details change. Each quotation has a validity period shown on the document - after that date, we may need to requote before confirming your booking.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl">
+                <h3 class="font-semibold text-dark text-base mb-2">2. Booking &amp; Deposit</h3>
+                <p>Your event date is only reserved once a deposit is received and confirmed by us. Submitting an inquiry or receiving a quotation does not reserve your date - other customers may still book the same date until your deposit is confirmed.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl">
+                <h3 class="font-semibold text-dark text-base mb-2">3. Cancellation &amp; Refund Policy</h3>
+                <p class="mb-2">If you need to cancel a confirmed booking:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Cancellations made well in advance of the event date may be eligible for a full or partial refund of the deposit, at our discretion.</li>
+                    <li>Cancellations made close to the event date may not be eligible for a refund, as resources and time may already have been committed on your behalf.</li>
+                    <li>Refund decisions and amounts (if any) will be communicated to you directly and recorded on our end for reference.</li>
+                </ul>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl">
+                <h3 class="font-semibold text-dark text-base mb-2">4. Rescheduling</h3>
+                <p>If you need to change your event date, contact us as early as possible via WhatsApp. Rescheduling is subject to availability of the new date. If the new date already has a confirmed booking, we will let you know and work with you to find an alternative.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl">
+                <h3 class="font-semibold text-dark text-base mb-2">5. Balance Payment</h3>
+                <p>The remaining balance is due before the event date, unless otherwise agreed with us in writing (including via WhatsApp).</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl">
+                <h3 class="font-semibold text-dark text-base mb-2">6. Changes to Services</h3>
+                <p>If you add, remove, or change requested services after a quotation has been issued, we will provide an updated quotation reflecting the new total. Previous quotation versions are kept on file for reference.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl">
+                <h3 class="font-semibold text-dark text-base mb-2">7. Contact</h3>
+                <p>Questions about these terms can be sent to us via WhatsApp or through our <a href="contact.html" class="text-gold hover:underline">contact form</a>.</p>
+            </div>
+
+            <p class="text-xs text-gray-400 text-center pt-2">Last updated: July 2026</p>
+
+        </div>
+    </section>
+
+    <footer class="bg-dark border-t border-gray-800 text-center py-8 px-5 mt-8">
+        <p class="text-gold text-lg mb-2">✦</p>
+        <div class="flex justify-center gap-4 text-xs text-gray-400 mb-3">
+            <a href="terms.html" class="hover:text-gold transition">Terms &amp; Conditions</a>
+            <span>|</span>
+            <a href="privacy.html" class="hover:text-gold transition">Privacy Notice</a>
+        </div>
+        <p class="text-gray-500 text-xs">© 2026 Decor By. All rights reserved.</p>
+    </footer>
+
+    <script src="config.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
