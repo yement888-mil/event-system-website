@@ -81,6 +81,10 @@
         .status-deposit_paid { background: #d1fae5; color: #065f46; }
         .status-completed { background: #a7f3d0; color: #065f46; }
         .status-cancelled { background: #fecaca; color: #991b1b; }
+        .status-new { background: #e5e7eb; color: #374151; }
+        .status-contacted { background: #dbeafe; color: #1d4ed8; }
+        .status-quotation_sent { background: #ede9fe; color: #6d28d9; }
+        .status-confirmed { background: #d1fae5; color: #065f46; }
         
         .table-container {
             max-height: 500px;
@@ -214,6 +218,13 @@
                         <option value="">All Status</option>
                         <option value="unread">Unread</option>
                         <option value="read">Read</option>
+                        <option value="new">Pipeline: New</option>
+                        <option value="contacted">Pipeline: Contacted</option>
+                        <option value="quotation_sent">Pipeline: Quotation Sent</option>
+                        <option value="waiting_deposit">Pipeline: Waiting Deposit</option>
+                        <option value="confirmed">Pipeline: Confirmed</option>
+                        <option value="completed">Pipeline: Completed</option>
+                        <option value="cancelled">Pipeline: Cancelled</option>
                     </select>
                 </div>
                 <div id="allInquiryList" class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
@@ -462,6 +473,23 @@
             return `<span class="status-badge ${classes[status] || 'status-draft'}">${status || 'draft'}</span>`;
         }
 
+        const INQUIRY_STATUSES = ['new', 'contacted', 'quotation_sent', 'waiting_deposit', 'confirmed', 'completed', 'cancelled'];
+        const INQUIRY_STATUS_LABELS = {
+            'new': 'New',
+            'contacted': 'Contacted',
+            'quotation_sent': 'Quotation Sent',
+            'waiting_deposit': 'Waiting Deposit',
+            'confirmed': 'Confirmed',
+            'completed': 'Completed',
+            'cancelled': 'Cancelled'
+        };
+
+        function getInquiryStatusBadge(status) {
+            const cls = 'status-' + (status || 'new');
+            const label = INQUIRY_STATUS_LABELS[status] || 'New';
+            return `<span class="status-badge ${cls}">${label}</span>`;
+        }
+
         // ------------------------------------------------------------
         // TABS
         // ------------------------------------------------------------
@@ -585,6 +613,12 @@
                 }
             }
             
+            let statusOptionsHtml = '';
+            INQUIRY_STATUSES.forEach(s => {
+                const selected = (inq.status || 'new') === s ? 'selected' : '';
+                statusOptionsHtml += `<option ${selected} value="${s}">${INQUIRY_STATUS_LABELS[s]}</option>`;
+            });
+
             document.getElementById('modalBody').innerHTML = `
                 <div class="inquiry-detail-grid">
                     <div><strong>ID:</strong> #${inq.id}</div>
@@ -593,7 +627,7 @@
                     <div><strong>Event Type:</strong> ${escapeHTML(inq.event_type || '-')}</div>
                     <div><strong>Event Date:</strong> ${formatDate(inq.event_date)}</div>
                     <div><strong>Guests:</strong> ${inq.guest_count || '-'}</div>
-                    <div><strong>Status:</strong> ${inq.is_read ? 'Read' : 'Unread'}</div>
+                    <div><strong>Read Status:</strong> ${inq.is_read ? 'Read' : 'Unread'}</div>
                 </div>
                 <div class="mt-4">
                     <strong>Services Requested:</strong>
@@ -603,6 +637,17 @@
                     <strong>Message:</strong>
                     <p class="mt-1 text-sm bg-gray-50 p-3 rounded">${escapeHTML(inq.message || 'No message')}</p>
                 </div>
+                <div class="mt-4">
+                    <strong>Pipeline Status:</strong>
+                    <div class="flex items-center gap-2 mt-2">
+                        <select id="pipelineStatus_${inq.id}" class="border rounded-xl text-sm px-3 py-2">
+                            ${statusOptionsHtml}
+                        </select>
+                        <button onclick="updateInquiryStatus(${inq.id})" class="bg-gold text-dark px-4 py-2 rounded-xl text-sm font-medium hover:bg-yellow-600 transition">
+                            Update
+                        </button>
+                    </div>
+                </div>
                 <div class="mt-4 text-xs text-gray-400">
                     Submitted: ${formatDateTime(inq.created_at)}
                 </div>
@@ -610,6 +655,41 @@
             `;
             
             document.getElementById('inquiryModal').classList.add('active');
+        }
+
+        async function updateInquiryStatus(id) {
+            try {
+                const select = document.getElementById(`pipelineStatus_${id}`);
+                if (!select) return;
+                const newStatus = select.value;
+
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to update status');
+                }
+
+                await loadInquiries();
+                closeModal();
+
+            } catch (err) {
+                console.error('Update inquiry status error:', err);
+                alert('Failed to update status: ' + err.message);
+            }
         }
 
         function closeModal() {
@@ -700,6 +780,7 @@
                                     Mark Read
                                 </button>
                             </div>
+                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}</div>
                             <div class="text-xs text-gray-500 mt-1">
                                 ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
                             </div>
@@ -722,7 +803,8 @@
                     String(i.id).includes(searchTerm);
                 const matchStatus = statusFilter === '' ? true :
                     statusFilter === 'unread' ? !i.is_read :
-                    statusFilter === 'read' ? i.is_read : true;
+                    statusFilter === 'read' ? i.is_read :
+                    INQUIRY_STATUSES.includes(statusFilter) ? (i.status || 'new') === statusFilter : true;
                 return matchSearch && matchStatus;
             });
 
@@ -743,6 +825,7 @@
                                     ${inq.is_read ? 'Read' : 'Unread'}
                                 </span>
                             </div>
+                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}</div>
                             <div class="text-xs text-gray-500 mt-1">
                                 ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
                             </div>
