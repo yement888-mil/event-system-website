@@ -353,6 +353,9 @@
                         <button id="saveQuotationBtn" onclick="generateQuotation()" class="w-full bg-dark text-white py-3 rounded-full font-semibold hover:bg-gold hover:text-dark transition">
                             <span id="saveQuotationText">Generate & Save Quotation</span>
                         </button>
+                        <button id="cancelEditBtn" onclick="cancelEditQuotation()" class="hidden w-full border-2 border-gray-300 text-gray-500 py-2 rounded-full font-medium text-sm hover:bg-gray-100 transition">
+                            Cancel Edit
+                        </button>
 
                         <div class="flex gap-3">
                             <button onclick="generateWhatsApp()" class="w-full border-2 border-green-600 text-green-600 py-3 rounded-full font-semibold hover:bg-green-600 hover:text-white transition">
@@ -800,6 +803,75 @@
             `;
         }
 
+        // ------------------------------------------------------------
+        // EDIT EXISTING QUOTATION
+        // ------------------------------------------------------------
+        function editQuotation(id) {
+            const q = allQuotations.find(x => x.id === id);
+            if (!q) return;
+
+            selectedInquiry = {
+                id: q.inquiry_id,
+                customer_name: q.customer_name,
+                phone: q.phone,
+                event_type: q.event_type,
+                event_date: q.event_date,
+                guest_count: q.guest_count
+            };
+            editingQuotationId = q.id;
+
+            switchTab('generate');
+            document.getElementById('quotationForm').classList.remove('hidden');
+
+            document.getElementById('inquiryPreview').innerHTML = `
+                <strong>#${q.inquiry_id} - ${escapeHTML(q.customer_name || 'Unknown')}</strong><br>
+                ${escapeHTML(q.event_type || '-')} | ${formatDate(q.event_date)}
+                <br>Phone: ${escapeHTML(q.phone || '-')}
+                <br><span class="text-gold font-medium">Editing ${q.quotation_no || 'Quotation #' + q.id}</span>
+            `;
+
+            let items = q.items;
+            if (typeof items === 'string') {
+                try { items = JSON.parse(items); } catch (e) { items = []; }
+            }
+            const container = document.getElementById('serviceRows');
+            container.innerHTML = '';
+            if (Array.isArray(items) && items.length > 0) {
+                items.forEach(item => addServiceRow(item.name, item.price));
+            } else {
+                addServiceRow('', '');
+            }
+            calculate();
+
+            document.getElementById('whatsappOutput').classList.add('hidden');
+            document.getElementById('copyBtn').classList.add('hidden');
+            document.getElementById('inquirySearchResult').innerHTML = '';
+            document.getElementById('inquiryIdSearch').value = '';
+
+            const saveText = document.getElementById('saveQuotationText');
+            if (saveText) saveText.innerText = 'Update Quotation';
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            if (cancelBtn) cancelBtn.classList.remove('hidden');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEditQuotation() {
+            editingQuotationId = null;
+            selectedInquiry = null;
+            document.getElementById('quotationForm').classList.add('hidden');
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            if (cancelBtn) cancelBtn.classList.add('hidden');
+            const saveText = document.getElementById('saveQuotationText');
+            if (saveText) saveText.innerText = 'Generate & Save Quotation';
+            const container = document.getElementById('serviceRows');
+            if (container) {
+                container.innerHTML = '';
+                addServiceRow('', '');
+            }
+            calculate();
+        }
+
         function loadInquiryForQuotation(id) {
             const inq = allInquiries.find(i => i.id === id);
             if (!inq) return;
@@ -943,6 +1015,7 @@
                                 Update
                             </button>
                             <button onclick="viewQuotationHistory(${q.id})" class="bg-gray-200 text-dark px-3 py-0.5 rounded text-xs hover:bg-gray-300 transition">History</button>
+                            <button onclick="editQuotation(${q.id})" class="bg-blue-100 text-blue-700 px-3 py-0.5 rounded text-xs hover:bg-blue-200 transition">Edit</button>
                             <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-0.5 rounded text-xs hover:bg-red-700 transition">Delete</button>
                         </div>
                     </div>
@@ -1330,6 +1403,8 @@
                     document.getElementById('quotationForm').classList.add('hidden');
                     document.getElementById('inquirySearchResult').innerHTML = '';
                     document.getElementById('inquiryIdSearch').value = '';
+                    document.getElementById('cancelEditBtn')?.classList.add('hidden');
+                    document.getElementById('saveQuotationText').innerText = 'Generate & Save Quotation';
                     switchTab('quotations');
                 } else {
                     throw new Error(result.message || 'Operation failed');
@@ -1433,9 +1508,13 @@
                     let html = '<div class="space-y-3">';
                     versions.forEach((v, index) => {
                         const isLatest = index === 0;
+                        let versionItems = v.items;
+                        if (typeof versionItems === 'string') {
+                            try { versionItems = JSON.parse(versionItems); } catch (e) { versionItems = []; }
+                        }
                         let itemsHtml = '';
-                        if (v.items && v.items.length > 0) {
-                            itemsHtml = v.items.map(item =>
+                        if (Array.isArray(versionItems) && versionItems.length > 0) {
+                            itemsHtml = versionItems.map(item =>
                                 `<span class="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs mr-1">${escapeHTML(item.name)}: RM ${item.price}</span>`
                             ).join(' ');
                         }
