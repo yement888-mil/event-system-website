@@ -942,6 +942,7 @@
                             <button onclick="updateQuotationStatus(${q.id})" class="bg-gold text-dark px-3 py-0.5 rounded text-xs font-medium hover:bg-yellow-600 transition">
                                 Update
                             </button>
+                            <button onclick="viewQuotationHistory(${q.id})" class="bg-gray-200 text-dark px-3 py-0.5 rounded text-xs hover:bg-gray-300 transition">History</button>
                             <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-0.5 rounded text-xs hover:bg-red-700 transition">Delete</button>
                         </div>
                     </div>
@@ -1398,6 +1399,74 @@
         // ------------------------------------------------------------
         // DELETE QUOTATION
         // ------------------------------------------------------------
+        // ------------------------------------------------------------
+        // VERSION HISTORY
+        // ------------------------------------------------------------
+        async function viewQuotationHistory(id) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}/versions`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to load history');
+                }
+
+                const result = await res.json();
+                const versions = result.data || [];
+
+                document.getElementById('modalTitle').textContent = `Quotation #${id} - Version History`;
+
+                if (versions.length === 0) {
+                    document.getElementById('modalBody').innerHTML = '<p class="text-sm text-gray-500">No version history found.</p>';
+                } else {
+                    let html = '<div class="space-y-3">';
+                    versions.forEach((v, index) => {
+                        const isLatest = index === 0;
+                        let itemsHtml = '';
+                        if (v.items && v.items.length > 0) {
+                            itemsHtml = v.items.map(item =>
+                                `<span class="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs mr-1">${escapeHTML(item.name)}: RM ${item.price}</span>`
+                            ).join(' ');
+                        }
+                        html += `
+                            <div class="border rounded-xl p-3 text-sm ${isLatest ? 'border-gold bg-yellow-50' : ''}">
+                                <div class="flex justify-between items-center">
+                                    <strong>Version ${v.version_number}${isLatest ? ' (current)' : ''}</strong>
+                                    <span class="text-xs text-gray-400">${formatDateTime(v.created_at)}</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 mt-2 text-xs">
+                                    <div><span class="text-gray-400">Total:</span> <strong>RM ${v.total}</strong></div>
+                                    <div><span class="text-gray-400">Deposit:</span> RM ${v.deposit || 0}</div>
+                                    <div><span class="text-gray-400">Balance:</span> RM ${v.balance || 0}</div>
+                                </div>
+                                <div class="mt-2">${itemsHtml || '-'}</div>
+                                <div class="mt-1 text-xs text-gray-400">By: ${escapeHTML(v.created_by || 'unknown')}</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    document.getElementById('modalBody').innerHTML = html;
+                }
+
+                document.getElementById('inquiryModal').classList.add('active');
+
+            } catch (err) {
+                console.error('History fetch error:', err);
+                alert('Failed to load version history: ' + err.message);
+            }
+        }
+
         async function deleteQuotation(id) {
             if (!confirm('Delete this quotation?')) return;
             try {
