@@ -13,6 +13,7 @@
                     colors: {
                         gold: '#C9A84C',
                         dark: '#1A1A1A',
+                        unread: '#FFF8E7',
                     }
                 }
             }
@@ -62,10 +63,21 @@
                 </div>
             </section>
 
-            <!-- Latest Inquiries (always visible) -->
+            <!-- UNREAD INQUIRIES (Latest) -->
             <section class="mb-8">
-                <h2 class="text-lg font-semibold mb-3">Latest Inquiries</h2>
-                <div id="inquiryList" class="space-y-2">
+                <h2 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                    📬 Unread Inquiries
+                    <span id="unreadCount" class="bg-gold text-dark text-xs px-2 py-0.5 rounded-full">0</span>
+                </h2>
+                <div id="unreadInquiryList" class="space-y-2">
+                    <p class="text-sm text-gray-500">Loading...</p>
+                </div>
+            </section>
+
+            <!-- ALL INQUIRIES (Read + Unread) -->
+            <section class="mb-8">
+                <h2 class="text-lg font-semibold mb-3">All Inquiries</h2>
+                <div id="allInquiryList" class="space-y-2 max-h-60 overflow-y-auto">
                     <p class="text-sm text-gray-500">Loading...</p>
                 </div>
             </section>
@@ -246,28 +258,24 @@
         }
 
         // ------------------------------------------------------------
-        // DASHBOARD STATS - FIXED
+        // DASHBOARD STATS
         // ------------------------------------------------------------
         function updateDashboard(quotations, inquiries) {
             const now = new Date();
             const thisMonth = now.getMonth();
             const thisYear = now.getFullYear();
 
-            // New Inquiries (this month)
             const newInquiries = inquiries.filter(i => {
                 const d = new Date(i.created_at);
                 return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
             }).length;
 
-            // Quotations Sent - any status except draft and cancelled
             const sent = quotations.filter(q => 
                 q.status !== 'draft' && q.status !== 'cancelled'
             ).length;
 
-            // Total Deposit across ALL quotations
             const totalDeposit = quotations.reduce((sum, q) => sum + (parseFloat(q.deposit) || 0), 0);
 
-            // Upcoming Events
             const upcoming = inquiries.filter(i => {
                 if (!i.event_date) return false;
                 const d = new Date(i.event_date);
@@ -281,7 +289,31 @@
         }
 
         // ------------------------------------------------------------
-        // LOAD INQUIRIES
+        // MARK INQUIRY AS READ
+        // ------------------------------------------------------------
+        async function markAsRead(id) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/read`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${adminToken}` 
+                    }
+                });
+                
+                if (res.ok) {
+                    // Reload inquiries to refresh the list
+                    await loadInquiries();
+                } else {
+                    console.error('Failed to mark as read');
+                }
+            } catch (err) {
+                console.error('Error marking as read:', err);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // LOAD INQUIRIES - Split into Unread and All
         // ------------------------------------------------------------
         async function loadInquiries() {
             try {
@@ -294,30 +326,61 @@
                 renderInquiries(allInquiries);
             } catch (err) {
                 console.error(err);
-                document.getElementById('inquiryList').innerHTML = '<p class="text-red-500 text-sm">Failed to load inquiries</p>';
+                document.getElementById('unreadInquiryList').innerHTML = '<p class="text-red-500 text-sm">Failed to load inquiries</p>';
+                document.getElementById('allInquiryList').innerHTML = '<p class="text-red-500 text-sm">Failed to load inquiries</p>';
             }
         }
 
         function renderInquiries(inquiries) {
-            const list = document.getElementById('inquiryList');
+            const unreadList = document.getElementById('unreadInquiryList');
+            const allList = document.getElementById('allInquiryList');
             const select = document.getElementById('inquirySelect');
+            
             if (!inquiries || inquiries.length === 0) {
-                list.innerHTML = 'No inquiries yet';
+                unreadList.innerHTML = 'No unread inquiries';
+                allList.innerHTML = 'No inquiries yet';
                 select.innerHTML = '<option value="">-- Select --</option>';
                 return;
             }
-            list.innerHTML = inquiries.map(inq => `
-                <div class="bg-white rounded-xl p-3 text-sm border">
+
+            // Split into unread and read
+            const unread = inquiries.filter(i => !i.is_read);
+            const read = inquiries.filter(i => i.is_read);
+
+            // Update unread count badge
+            document.getElementById('unreadCount').textContent = unread.length;
+
+            // Render UNREAD inquiries (with highlight and mark as read button)
+            if (unread.length === 0) {
+                unreadList.innerHTML = '<p class="text-sm text-gray-500">✨ All caught up! No unread inquiries.</p>';
+            } else {
+                unreadList.innerHTML = unread.map(inq => `
+                    <div class="bg-[#FFF8E7] border-l-4 border-gold rounded-xl p-3 text-sm flex justify-between items-center">
+                        <div>
+                            <strong>${escapeHTML(inq.customer_name)}</strong> | ${escapeHTML(inq.event_type || '-')}
+                            <br>📅 ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('en-MY') : '-'}
+                            <br>📱 ${escapeHTML(inq.phone || '-')}
+                            <br>🕐 ${inq.created_at ? new Date(inq.created_at).toLocaleString('en-MY') : '-'}
+                        </div>
+                        <button onclick="markAsRead(${inq.id})" class="bg-gold text-dark px-3 py-1 rounded text-xs font-medium hover:bg-yellow-600 transition whitespace-nowrap ml-2">
+                            ✓ Mark as Read
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // Render ALL inquiries (for reference)
+            allList.innerHTML = inquiries.map(inq => `
+                <div class="bg-white rounded-xl p-3 text-sm border ${inq.is_read ? 'opacity-60' : 'border-l-4 border-l-gold'}">
                     <strong>${escapeHTML(inq.customer_name)}</strong> | ${escapeHTML(inq.event_type || '-')}
-                    <br>Event Date: ${inq.event_date ? new Date(inq.event_date).toLocaleDateString('en-MY') : '-'}
-                    <br>Phone: ${escapeHTML(inq.phone || '-')}
-                    <br>Inquiry: ${inq.created_at ? new Date(inq.created_at).toLocaleDateString('en-MY') : '-'}
+                    <br>${inq.is_read ? '📖 Read' : '🆕 Unread'} | ${inq.created_at ? new Date(inq.created_at).toLocaleDateString('en-MY') : '-'}
                 </div>
             `).join('');
 
+            // Render dropdown (ALL inquiries)
             select.innerHTML = '<option value="">-- Select --</option>' +
                 inquiries.map(inq => `
-                    <option value='${JSON.stringify(inq).replace(/'/g,"&#39;")}'>${escapeHTML(inq.customer_name)}</option>
+                    <option value='${JSON.stringify(inq).replace(/'/g,"&#39;")}'>${escapeHTML(inq.customer_name)} ${inq.is_read ? '✓' : '🆕'}</option>
                 `).join('');
         }
 
@@ -342,6 +405,7 @@
                         <strong>${escapeHTML(i.customer_name)}</strong>
                         <span class="text-gray-400">| ${escapeHTML(i.phone || '-')}</span>
                         <br>${escapeHTML(i.event_type || '-')} | ${i.event_date ? new Date(i.event_date).toLocaleDateString('en-MY') : '-'}
+                        ${i.is_read ? '' : '<span class="text-gold text-xs ml-2">🆕 New</span>'}
                     </div>
                     <button onclick="selectInquiry(${i.id})" class="bg-gold text-white px-3 py-1 rounded text-xs">Select</button>
                 </div>
@@ -585,7 +649,7 @@
         }
 
         // ------------------------------------------------------------
-        // UPDATE STATUS - Using PATCH endpoint
+        // UPDATE STATUS
         // ------------------------------------------------------------
         async function updateQuotationStatus(id) {
             try {
@@ -598,7 +662,6 @@
                 const newStatus = statusSelect.value;
                 console.log('Updating quotation', id, 'to status:', newStatus);
                 
-                // Use the PATCH route for status-only updates
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}/status`, {
                     method: 'PATCH',
                     headers: { 
