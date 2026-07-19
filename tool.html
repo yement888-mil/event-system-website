@@ -388,6 +388,14 @@
 
             <!-- TAB 6: CALENDAR -->
             <div id="tabCalendarContent" class="tab-content">
+                <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
+                    <h2 class="text-lg font-semibold mb-1">Upcoming Reminders</h2>
+                    <p class="text-xs text-gray-400 mb-4">Confirmed events (deposit paid) in the next 7 days. Click to send the customer a WhatsApp reminder.</p>
+                    <div id="upcomingRemindersList" class="space-y-2">
+                        <p class="text-sm text-gray-400">Loading...</p>
+                    </div>
+                </section>
+
                 <section class="bg-white rounded-2xl p-6 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
                         <button onclick="changeAdminCalMonth(-1)" class="text-dark px-3 py-1 hover:text-gold transition text-lg">‹</button>
@@ -403,6 +411,7 @@
                     </div>
                 </section>
             </div>
+
 
             <!-- TAB 7: SERVICES & PRICING -->
             <div id="tabCatalogContent" class="tab-content">
@@ -561,6 +570,7 @@
 
             if (tab === 'calendar') {
                 loadAdminCalendar();
+                loadUpcomingReminders();
             }
         }
 
@@ -692,6 +702,77 @@
 
             document.getElementById('modalBody').innerHTML = html;
             document.getElementById('inquiryModal').classList.add('active');
+        }
+
+        // ------------------------------------------------------------
+        // UPCOMING REMINDERS (customer-facing, one-click send)
+        // ------------------------------------------------------------
+        async function loadUpcomingReminders() {
+            const el = document.getElementById('upcomingRemindersList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-400">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/calendar/upcoming-reminders?days=7`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error('Failed to load reminders');
+
+                const result = await res.json();
+                const events = result.data || [];
+
+                if (events.length === 0) {
+                    el.innerHTML = '<p class="text-sm text-gray-400">No confirmed events in the next 7 days.</p>';
+                    return;
+                }
+
+                el.innerHTML = events.map(e => {
+                    const daysUntil = Math.ceil((new Date(e.event_date) - new Date(new Date().toDateString())) / (1000 * 60 * 60 * 24));
+                    return `
+                        <div class="flex justify-between items-center border rounded-xl p-3 text-sm">
+                            <div>
+                                <strong>${escapeHTML(e.customer_name)}</strong>
+                                <span class="text-xs text-gray-400 ml-2">${formatDate(e.event_date)} (in ${daysUntil} day${daysUntil === 1 ? '' : 's'})</span>
+                                <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(e.event_type || '-')} | ${e.guest_count || '-'} pax | ${escapeHTML(e.quotation_no || '')}</div>
+                            </div>
+                            <button onclick='sendCustomerReminder(${JSON.stringify(e).replace(/'/g, "&#39;")})' class="bg-green-600 text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-green-700 transition whitespace-nowrap">
+                                Send Reminder
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Load upcoming reminders error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load reminders.</p>';
+            }
+        }
+
+        function sendCustomerReminder(event) {
+            const phone = (event.phone || '').replace(/[^0-9]/g, '');
+            if (!phone) {
+                alert('This customer has no phone number on file.');
+                return;
+            }
+
+            const eventDate = formatDate(event.event_date);
+            const msg = [
+                `Hi ${event.customer_name},`,
+                '',
+                `Just a friendly reminder that your event (${event.event_type || 'event'}) is coming up soon on ${eventDate}.`,
+                '',
+                `Guests: ${event.guest_count || '-'} pax`,
+                `Quotation: ${event.quotation_no || '-'}`,
+                '',
+                `We're looking forward to it! Let us know if there's anything you need before the day.`,
+                '',
+                'Thank you.'
+            ].join('\n');
+
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
         }
 
         // ------------------------------------------------------------
