@@ -8,6 +8,10 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js">
+    </script>
     <script>
         tailwind.config = {
             theme: {
@@ -2413,10 +2417,131 @@
         }
 
         // ------------------------------------------------------------
-        // PDF (placeholder)
+        // PDF
         // ------------------------------------------------------------
         function generatePDF() {
-            alert('PDF generation will be available soon. For now, use WhatsApp or Copy Text.');
+            if (!selectedInquiry) {
+                alert('Please search and select an inquiry first');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf || {};
+            if (!jsPDF) {
+                alert('PDF library failed to load. Please check your internet connection and try again.');
+                return;
+            }
+
+            const inq = selectedInquiry;
+            const nameInputs = document.querySelectorAll('.service-name');
+            const priceInputs = document.querySelectorAll('.service-price');
+            const items = [];
+            let total = 0;
+            for (let i = 0; i < nameInputs.length; i++) {
+                const name = nameInputs[i].value.trim();
+                const price = parseFloat(priceInputs[i].value) || 0;
+                if (name && price > 0) { items.push({ name, price }); total += price; }
+            }
+            if (total <= 0) { alert('Enter service prices'); return; }
+            const deposit = Math.round(total * 0.3);
+            const balance = Math.round(total * 0.7);
+
+            // Use the real quotation number if this is an existing/saved
+            // quotation being edited; otherwise this is a not-yet-saved
+            // draft, so label it clearly rather than guessing a number.
+            let quotationNo = 'DRAFT';
+            if (editingQuotationId) {
+                const existing = allQuotations.find(q => q.id === editingQuotationId);
+                if (existing?.quotation_no) quotationNo = existing.quotation_no;
+            }
+
+            const valid = new Date();
+            valid.setDate(valid.getDate() + 7);
+
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // Header
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text('Dekor By Ana', 14, 20);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text('Event Decoration & Styling', 14, 26);
+
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('QUOTATION', pageWidth - 14, 20, { align: 'right' });
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(quotationNo, pageWidth - 14, 26, { align: 'right' });
+            doc.text(`Valid until: ${valid.toLocaleDateString('en-MY')}`, pageWidth - 14, 31, { align: 'right' });
+
+            doc.setDrawColor(200);
+            doc.line(14, 35, pageWidth - 14, 35);
+
+            // Customer + event details
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('Bill To', 14, 44);
+            doc.setFont(undefined, 'normal');
+            doc.text(inq.customer_name || '-', 14, 50);
+            doc.text(inq.phone || '-', 14, 55);
+
+            doc.setFont(undefined, 'bold');
+            doc.text('Event Details', pageWidth - 14, 44, { align: 'right' });
+            doc.setFont(undefined, 'normal');
+            doc.text(`${inq.event_type || '-'}`, pageWidth - 14, 50, { align: 'right' });
+            doc.text(`${formatDate(inq.event_date)}`, pageWidth - 14, 55, { align: 'right' });
+            doc.text(`${inq.guest_count || '-'} pax`, pageWidth - 14, 60, { align: 'right' });
+
+            // Items table
+            doc.autoTable({
+                startY: 68,
+                head: [['Service', 'Amount (RM)']],
+                body: items.map(i => [i.name, i.price.toFixed(2)]),
+                theme: 'grid',
+                headStyles: { fillColor: [201, 168, 76], textColor: [26, 26, 26] },
+                styles: { fontSize: 10 },
+                columnStyles: { 1: { halign: 'right' } }
+            });
+
+            const afterTableY = doc.lastAutoTable.finalY + 8;
+
+            doc.setFontSize(10);
+            doc.text('Total:', pageWidth - 60, afterTableY);
+            doc.text(`RM ${total.toFixed(2)}`, pageWidth - 14, afterTableY, { align: 'right' });
+            doc.text('Deposit (30%):', pageWidth - 60, afterTableY + 6);
+            doc.text(`RM ${deposit.toFixed(2)}`, pageWidth - 14, afterTableY + 6, { align: 'right' });
+            doc.setFont(undefined, 'bold');
+            doc.text('Balance:', pageWidth - 60, afterTableY + 12);
+            doc.text(`RM ${balance.toFixed(2)}`, pageWidth - 14, afterTableY + 12, { align: 'right' });
+            doc.setFont(undefined, 'normal');
+
+            // Payment details + notes
+            const notesY = afterTableY + 26;
+            doc.setDrawColor(200);
+            doc.line(14, notesY - 8, pageWidth - 14, notesY - 8);
+            doc.setFont(undefined, 'bold');
+            doc.text('Payment Details', 14, notesY);
+            doc.setFont(undefined, 'normal');
+            doc.text('Maybank | 5xxxxx | Dekor By Ana', 14, notesY + 6);
+
+            doc.setFont(undefined, 'bold');
+            doc.text('Notes', 14, notesY + 18);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            const notes = doc.splitTextToSize(
+                'This quotation is an estimate and is valid until the date shown above. A 30% deposit is required to secure your booking date; the balance is due before the event. Prices are subject to change if event requirements change.',
+                pageWidth - 28
+            );
+            doc.text(notes, 14, notesY + 24);
+
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(`Generated: ${new Date().toLocaleString('en-MY')}`, 14, doc.internal.pageSize.getHeight() - 10);
+
+            const fileName = `Quotation_${quotationNo}_${(inq.customer_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            doc.save(fileName);
         }
 
         // ------------------------------------------------------------
