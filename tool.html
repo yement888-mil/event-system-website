@@ -371,7 +371,9 @@
                 if (!res.ok) throw new Error('Failed');
                 const data = await res.json();
                 allQuotations = (data.data || []).map(q => {
-                    if (typeof q.items === 'string') { try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; } }
+                    if (typeof q.items === 'string') { 
+                        try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; } 
+                    }
                     return q;
                 });
                 renderQuotations(allQuotations);
@@ -388,27 +390,40 @@
                 box.innerHTML = 'No quotations yet';
                 return;
             }
-            box.innerHTML = quotations.map(q => `
-                <div class="border rounded-xl p-4 text-sm">
-                    <strong>${escapeHTML(q.customer_name || 'Unknown')}</strong>
-                    ${q.phone ? `| 📱 ${escapeHTML(q.phone)}` : ''}
-                    <br>Q-${String(q.id).padStart(5,'0')} | RM ${q.total}
-                    <br>Event: ${q.event_date ? new Date(q.event_date).toLocaleDateString('en-MY') : '-'}
-                    <br>Status:
-                    <select id="status_${q.id}" class="border rounded text-xs">
-                        <option ${q.status==='draft'?'selected':''}>draft</option>
-                        <option ${q.status==='sent'?'selected':''}>sent</option>
-                        <option ${q.status==='waiting_deposit'?'selected':''}>waiting_deposit</option>
-                        <option ${q.status==='deposit_paid'?'selected':''}>deposit_paid</option>
-                        <option ${q.status==='completed'?'selected':''}>completed</option>
-                        <option ${q.status==='cancelled'?'selected':''}>cancelled</option>
-                    </select>
-                    <button onclick="updateQuotationStatus(${q.id})" class="bg-gold text-white px-3 py-1 rounded text-xs ml-2">Update Status</button>
-                    <div class="mt-3 flex gap-2">
-                        <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-1 rounded text-xs">Delete</button>
+            
+            let html = '';
+            quotations.forEach(q => {
+                const statusOptions = ['draft', 'sent', 'waiting_deposit', 'deposit_paid', 'completed', 'cancelled'];
+                let optionsHtml = '';
+                statusOptions.forEach(s => {
+                    const selected = q.status === s ? 'selected' : '';
+                    optionsHtml += `<option ${selected} value="${s}">${s}</option>`;
+                });
+                
+                html += `
+                    <div class="border rounded-xl p-4 text-sm" id="quotation_${q.id}">
+                        <strong>${escapeHTML(q.customer_name || 'Unknown')}</strong>
+                        ${q.phone ? `| 📱 ${escapeHTML(q.phone)}` : ''}
+                        <br>Q-${String(q.id).padStart(5,'0')} | RM ${q.total}
+                        <br>Event: ${q.event_date ? new Date(q.event_date).toLocaleDateString('en-MY') : '-'}
+                        <br>
+                        <div class="flex items-center gap-2 mt-2">
+                            <label class="text-sm font-medium">Status:</label>
+                            <select id="status_${q.id}" class="border rounded text-xs px-2 py-1">
+                                ${optionsHtml}
+                            </select>
+                            <button onclick="updateQuotationStatus(${q.id})" class="bg-gold text-white px-4 py-1 rounded text-xs font-medium hover:bg-yellow-600 transition">
+                                Update Status
+                            </button>
+                        </div>
+                        <div class="mt-3 flex gap-2">
+                            <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition">Delete</button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            });
+            
+            box.innerHTML = html;
         }
 
         // ------------------------------------------------------------
@@ -578,6 +593,7 @@
                 }
                 
                 const newStatus = statusSelect.value;
+                console.log('Updating quotation', id, 'to status:', newStatus);
                 
                 // First, get the current quotation data
                 const getRes = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
@@ -615,8 +631,13 @@
                 });
                 
                 if (res.ok) {
-                    alert(`Status updated to "${newStatus}" successfully!`);
-                    await loadQuotations();
+                    const result = await res.json();
+                    if (result.success) {
+                        alert(`Status updated to "${newStatus}" successfully!`);
+                        await loadQuotations();
+                    } else {
+                        alert('Status update failed: ' + (result.message || 'Unknown error'));
+                    }
                 } else {
                     const errData = await res.json();
                     alert('Status update failed: ' + (errData.message || 'Unknown error'));
