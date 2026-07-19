@@ -123,6 +123,19 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #C9A84C;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-[#F8F8F8] text-[#1A1A1A]">
@@ -138,7 +151,7 @@
 
         <!-- Password Gate -->
         <div id="passwordGate" class="text-center py-16">
-            <div class="text-gold text-4xl mb-4">🔐</div>
+            <div class="text-gold text-4xl mb-4">&#128274;</div>
             <h2 class="text-xl font-semibold mb-2">Password Required</h2>
             <input type="password" id="toolPassword" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-center mt-4 w-64" placeholder="Enter password" />
             <button onclick="checkPassword()" class="block mx-auto mt-3 bg-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Unlock</button>
@@ -185,7 +198,10 @@
             <div id="tabUnreadContent" class="tab-content active">
                 <h2 class="text-lg font-semibold mb-3">Unread Inquiries</h2>
                 <div id="unreadInquiryList" class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-                    <p class="text-sm text-gray-500">Loading...</p>
+                    <div class="text-center py-8">
+                        <div class="loading-spinner"></div>
+                        <p class="text-sm text-gray-500 mt-2">Loading inquiries...</p>
+                    </div>
                 </div>
             </div>
 
@@ -201,7 +217,10 @@
                     </select>
                 </div>
                 <div id="allInquiryList" class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-                    <p class="text-sm text-gray-500">Loading...</p>
+                    <div class="text-center py-8">
+                        <div class="loading-spinner"></div>
+                        <p class="text-sm text-gray-500 mt-2">Loading inquiries...</p>
+                    </div>
                 </div>
             </div>
 
@@ -221,7 +240,10 @@
                     </select>
                 </div>
                 <div id="quotationHistory" class="space-y-3 max-h-[600px] overflow-y-auto">
-                    <p class="text-sm text-gray-500">Loading...</p>
+                    <div class="text-center py-8">
+                        <div class="loading-spinner"></div>
+                        <p class="text-sm text-gray-500 mt-2">Loading quotations...</p>
+                    </div>
                 </div>
             </div>
 
@@ -315,7 +337,7 @@
                                 <div class="flex gap-2 items-center">
                                     <input type="text" placeholder="Service name" class="service-name w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
                                     <input type="number" placeholder="Price (RM)" class="service-price w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                                    <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">✕</button>
+                                    <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">&#10005;</button>
                                 </div>
                             </div>
                             <button onclick="addServiceRow()" class="text-gold text-sm font-medium hover:underline mt-2">+ Add Service</button>
@@ -463,13 +485,26 @@
         // ------------------------------------------------------------
         async function checkPassword() {
             const input = document.getElementById('toolPassword').value;
+            const errorEl = document.getElementById('passwordError');
+            
+            if (!input) {
+                errorEl.textContent = 'Please enter password';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/admin/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: 'admin', password: input })
                 });
-                if (!res.ok) throw new Error('API error');
+
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || 'Login failed');
+                }
+
                 const data = await res.json();
                 if (data.success) {
                     adminToken = data.token;
@@ -483,11 +518,13 @@
                     
                     loadAllData();
                 } else {
-                    document.getElementById('passwordError').classList.remove('hidden');
+                    errorEl.textContent = 'Invalid credentials';
+                    errorEl.classList.remove('hidden');
                 }
             } catch (err) {
-                console.error(err);
-                alert('Login failed.');
+                console.error('Login error:', err);
+                errorEl.textContent = err.message || 'Login failed';
+                errorEl.classList.remove('hidden');
             }
         }
 
@@ -536,9 +573,13 @@
             
             let servicesHtml = '';
             if (inq.services_requested) {
-                const services = typeof inq.services_requested === 'string' ? 
-                    JSON.parse(inq.services_requested) : inq.services_requested;
-                servicesHtml = services.map(s => `<span class="bg-gray-100 px-2 py-1 rounded text-xs mr-1">${escapeHTML(s)}</span>`).join(' ');
+                try {
+                    const services = typeof inq.services_requested === 'string' ? 
+                        JSON.parse(inq.services_requested) : inq.services_requested;
+                    servicesHtml = services.map(s => `<span class="bg-gray-100 px-2 py-1 rounded text-xs mr-1">${escapeHTML(s)}</span>`).join(' ');
+                } catch(e) {
+                    servicesHtml = escapeHTML(inq.services_requested);
+                }
             }
             
             document.getElementById('modalBody').innerHTML = `
@@ -576,14 +617,46 @@
         // LOAD INQUIRIES
         // ------------------------------------------------------------
         async function loadInquiries() {
+            const unreadList = document.getElementById('unreadInquiryList');
+            const allList = document.getElementById('allInquiryList');
+            
+            // Show loading state
+            if (unreadList) {
+                unreadList.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="loading-spinner"></div>
+                        <p class="text-sm text-gray-500 mt-2">Loading inquiries...</p>
+                    </div>
+                `;
+            }
+            if (allList) {
+                allList.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="loading-spinner"></div>
+                        <p class="text-sm text-gray-500 mt-2">Loading inquiries...</p>
+                    </div>
+                `;
+            }
+
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/inquiry`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
+                
+                if (res.status === 401) {
+                    // Token expired, redirect to login
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    return;
+                }
+                
                 if (!res.ok) {
                     const err = await res.json();
-                    throw new Error(err.error || 'Failed to load');
+                    throw new Error(err.error || 'Failed to load inquiries');
                 }
+                
                 const data = await res.json();
                 allInquiries = data.data || [];
                 filteredInquiries = [...allInquiries];
@@ -591,8 +664,6 @@
                 updateStats();
             } catch (err) {
                 console.error('Load inquiries error:', err);
-                const unreadList = document.getElementById('unreadInquiryList');
-                const allList = document.getElementById('allInquiryList');
                 if (unreadList) unreadList.innerHTML = `<p class="text-red-500 text-sm">Error: ${err.message}</p>`;
                 if (allList) allList.innerHTML = `<p class="text-red-500 text-sm">Error: ${err.message}</p>`;
             }
@@ -603,16 +674,12 @@
             const allList = document.getElementById('allInquiryList');
             
             if (!inquiries || inquiries.length === 0) {
-                if (unreadList) unreadList.innerHTML = 'All caught up!';
-                if (allList) allList.innerHTML = 'No inquiries yet';
+                if (unreadList) unreadList.innerHTML = '<p class="text-sm text-gray-500">No unread inquiries</p>';
+                if (allList) allList.innerHTML = '<p class="text-sm text-gray-500">No inquiries yet</p>';
                 return;
             }
 
             const unread = inquiries.filter(i => !i.is_read);
-            const read = inquiries.filter(i => i.is_read);
-
-            const unreadCount = document.getElementById('unreadCount');
-            if (unreadCount) unreadCount.textContent = unread.length;
 
             // Render UNREAD inquiries
             if (unreadList) {
@@ -659,6 +726,8 @@
             if (allList) {
                 if (filtered.length === 0 && (searchTerm || statusFilter)) {
                     allList.innerHTML = '<p class="text-sm text-gray-500">No inquiries match your filters</p>';
+                } else if (filtered.length === 0) {
+                    allList.innerHTML = '<p class="text-sm text-gray-500">No inquiries yet</p>';
                 } else {
                     allList.innerHTML = filtered.map(inq => `
                         <div class="bg-white rounded-xl p-3 text-sm border hover:shadow transition cursor-pointer inquiry-card ${inq.is_read ? '' : 'border-l-4 border-l-gold'}" onclick="viewInquiry(${inq.id})">
@@ -702,10 +771,18 @@
                 return;
             }
             
+            // First check if we have inquiries loaded
+            if (!allInquiries || allInquiries.length === 0) {
+                resultDiv.innerHTML = '<p class="text-yellow-500 text-sm">No inquiries found in the system. Please submit an inquiry first.</p>';
+                document.getElementById('quotationForm').classList.add('hidden');
+                return;
+            }
+            
             const inquiry = allInquiries.find(i => i.id === id);
             
             if (!inquiry) {
-                resultDiv.innerHTML = `<p class="text-red-500 text-sm">No inquiry found with ID #${id}</p>`;
+                const availableIds = allInquiries.map(i => i.id).join(', ');
+                resultDiv.innerHTML = `<p class="text-red-500 text-sm">No inquiry found with ID #${id}. Available IDs: ${availableIds}</p>`;
                 document.getElementById('quotationForm').classList.add('hidden');
                 return;
             }
@@ -732,9 +809,13 @@
             
             let servicesStr = '';
             if (inq.services_requested) {
-                const services = typeof inq.services_requested === 'string' ? 
-                    JSON.parse(inq.services_requested) : inq.services_requested;
-                servicesStr = services.join(', ');
+                try {
+                    const services = typeof inq.services_requested === 'string' ? 
+                        JSON.parse(inq.services_requested) : inq.services_requested;
+                    servicesStr = services.join(', ');
+                } catch(e) {
+                    servicesStr = inq.services_requested;
+                }
             }
             
             document.getElementById('inquiryPreview').innerHTML = `
@@ -762,14 +843,36 @@
         // LOAD QUOTATIONS
         // ------------------------------------------------------------
         async function loadQuotations() {
+            const historyEl = document.getElementById('quotationHistory');
+            
+            // Show loading state
+            if (historyEl) {
+                historyEl.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="loading-spinner"></div>
+                        <p class="text-sm text-gray-500 mt-2">Loading quotations...</p>
+                    </div>
+                `;
+            }
+
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
+                
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    return;
+                }
+                
                 if (!res.ok) {
                     const err = await res.json();
-                    throw new Error(err.error || 'Failed to load');
+                    throw new Error(err.error || 'Failed to load quotations');
                 }
+                
                 const data = await res.json();
                 allQuotations = (data.data || []).map(q => {
                     if (typeof q.items === 'string') { 
@@ -783,8 +886,7 @@
                 updateAnalytics();
             } catch (err) {
                 console.error('Load quotations error:', err);
-                const history = document.getElementById('quotationHistory');
-                if (history) history.innerHTML = `<p class="text-red-500 text-sm">Error: ${err.message}</p>`;
+                if (historyEl) historyEl.innerHTML = `<p class="text-red-500 text-sm">Error: ${err.message}</p>`;
             }
         }
 
@@ -793,7 +895,7 @@
             if (!box) return;
             
             if (!quotations || quotations.length === 0) {
-                box.innerHTML = 'No quotations yet';
+                box.innerHTML = '<p class="text-sm text-gray-500">No quotations yet</p>';
                 return;
             }
             
@@ -820,7 +922,7 @@
                                 <strong class="text-base">#${q.id} - ${escapeHTML(q.customer_name || 'Unknown')}</strong>
                                 ${q.phone ? `<span class="text-gray-400 text-xs">| ${escapeHTML(q.phone)}</span>` : ''}
                             </div>
-                            <span class="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">Q-${String(q.id).padStart(5,'0')}</span>
+                            <span class="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">${q.quotation_no || 'Q-' + String(q.id).padStart(5,'0')}</span>
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-xs">
                             <div><span class="text-gray-400">Event:</span> ${formatDate(q.event_date)}</div>
@@ -856,7 +958,7 @@
             filteredQuotations = allQuotations.filter(q => {
                 const matchSearch = q.customer_name?.toLowerCase().includes(search) || 
                     String(q.id).includes(search) ||
-                    `Q-${String(q.id).padStart(5,'0')}`.toLowerCase().includes(search);
+                    (q.quotation_no || '').toLowerCase().includes(search);
                 const matchStatus = status ? q.status === status : true;
                 return matchSearch && matchStatus;
             });
@@ -894,7 +996,7 @@
         }
 
         // ------------------------------------------------------------
-        // ANALYTICS - Revenue based on Event Date
+        // ANALYTICS
         // ------------------------------------------------------------
         function updateAnalytics() {
             const monthInput = document.getElementById('analyticsMonth');
@@ -902,19 +1004,16 @@
             
             const [year, month] = monthInput.value.split('-').map(Number);
             
-            // Filter quotations where event_date is in the selected month
             const monthQuotations = allQuotations.filter(q => {
                 if (!q.event_date) return false;
                 const d = new Date(q.event_date);
                 return d.getMonth() === (month - 1) && d.getFullYear() === year;
             });
             
-            // Filter completed/deposit_paid quotations for revenue
             const revenueQuotations = monthQuotations.filter(q => 
                 q.status === 'completed' || q.status === 'deposit_paid'
             );
             
-            // Calculate revenue by service type
             let totalRevenue = 0;
             let decoRevenue = 0;
             let photoRevenue = 0;
@@ -940,18 +1039,12 @@
                 }
             });
             
-            // Total events in month
             const totalEvents = monthQuotations.length;
-            
-            // Completed events
             const completedEvents = monthQuotations.filter(q => q.status === 'completed').length;
-            
-            // Pending deposits
             const pendingDeposits = monthQuotations
                 .filter(q => q.status === 'waiting_deposit' || q.status === 'sent')
                 .reduce((sum, q) => sum + (parseFloat(q.deposit) || 0), 0);
             
-            // Update UI
             const totalRevenueEl = document.getElementById('analyticsTotalRevenue');
             const decoEl = document.getElementById('analyticsDecoRevenue');
             const photoEl = document.getElementById('analyticsPhotoRevenue');
@@ -970,7 +1063,7 @@
             if (pendingEl) pendingEl.textContent = 'RM ' + pendingDeposits;
             if (completedEl) completedEl.textContent = completedEvents;
             
-            // Monthly chart (last 6 months) - based on event_date
+            // Monthly chart
             const months = [];
             for (let i = 5; i >= 0; i--) {
                 const d = new Date();
@@ -1021,7 +1114,6 @@
             const [year, month] = monthInput.value.split('-').map(Number);
             const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
             
-            // Filter quotations by event_date
             const monthQuotations = allQuotations.filter(q => {
                 if (!q.event_date) return false;
                 const d = new Date(q.event_date);
@@ -1033,7 +1125,6 @@
                 return;
             }
             
-            // Prepare data for export
             const data = monthQuotations.map(q => {
                 let servicesStr = '';
                 if (q.items && q.items.length > 0) {
@@ -1041,7 +1132,7 @@
                 }
                 
                 return {
-                    'Quotation ID': `Q-${String(q.id).padStart(5,'0')}`,
+                    'Quotation ID': q.quotation_no || 'Q-' + String(q.id).padStart(5,'0'),
                     'Customer': q.customer_name || 'Unknown',
                     'Phone': q.phone || '-',
                     'Event Date': formatDate(q.event_date),
@@ -1054,12 +1145,10 @@
                 };
             });
             
-            // Calculate summary
             const totalRevenue = data.reduce((sum, row) => sum + row['Total (RM)'], 0);
             const totalDeposits = data.reduce((sum, row) => sum + row['Deposit (RM)'], 0);
             const totalBalance = data.reduce((sum, row) => sum + row['Balance (RM)'], 0);
             
-            // Add summary row
             data.push({
                 'Quotation ID': '--- SUMMARY ---',
                 'Customer': '',
@@ -1078,7 +1167,7 @@
             XLSX.utils.book_append_sheet(wb, ws, 'Quotations');
             
             const colWidths = [
-                { wch: 15 }, // Quotation ID
+                { wch: 20 }, // Quotation ID
                 { wch: 20 }, // Customer
                 { wch: 15 }, // Phone
                 { wch: 15 }, // Event Date
@@ -1106,7 +1195,7 @@
             row.innerHTML = `
                 <input type="text" placeholder="Service name" value="${escapeHTML(name)}" class="service-name w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
                 <input type="number" placeholder="Price (RM)" value="${price}" class="service-price w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">✕</button>
+                <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">&#10005;</button>
             `;
             container.appendChild(row);
             row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', calculate));
@@ -1209,9 +1298,18 @@
                     });
                 }
 
+                if (response.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
                 if (!response.ok) {
                     const errData = await response.json();
-                    throw new Error(errData.message || 'Request failed');
+                    throw new Error(errData.error || errData.message || 'Request failed');
                 }
 
                 const result = await response.json();
@@ -1270,6 +1368,15 @@
                     body: JSON.stringify({ status: newStatus })
                 });
                 
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+                
                 if (res.ok) {
                     const result = await res.json();
                     if (result.success) {
@@ -1298,12 +1405,27 @@
                     method: 'DELETE',
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
+                
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+                
                 if (res.ok) {
                     alert('Quotation deleted');
                     await loadQuotations();
-                } else throw new Error('Delete failed');
-            } catch (err) { console.error(err);
-                alert('Delete failed'); }
+                } else {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Delete failed');
+                }
+            } catch (err) { 
+                console.error(err);
+                alert('Delete failed: ' + err.message);
+            }
         }
 
         // ------------------------------------------------------------
@@ -1387,7 +1509,6 @@
             document.getElementById('toolContent').classList.add('hidden');
             document.getElementById('passwordGate').classList.remove('hidden');
             document.getElementById('quotationForm').classList.add('hidden');
-            document.getElementById('inquirySelect').value = '';
         }
 
         // ------------------------------------------------------------
