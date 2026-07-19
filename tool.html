@@ -103,22 +103,52 @@
 
     <script src="config.js"></script>
     <script>
-        const TOOL_PASSWORD = 'decor2026';
+        let adminToken = '';
 
-        function checkPassword() {
+        async function checkPassword() {
             const input = document.getElementById('toolPassword').value;
-            if (input === TOOL_PASSWORD) {
-                document.getElementById('passwordGate').classList.add('hidden');
-                document.getElementById('toolContent').classList.remove('hidden');
-                loadInquiries();
-            } else {
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: input
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    adminToken = data.token;
+
+                    document.getElementById('passwordGate').classList.add('hidden');
+                    document.getElementById('toolContent').classList.remove('hidden');
+
+                    loadInquiries();
+
+                } else {
+                    document.getElementById('passwordError').classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('Login error:', error);
+
+                document.getElementById('passwordError').textContent = 'Login failed';
                 document.getElementById('passwordError').classList.remove('hidden');
             }
         }
 
         async function loadInquiries() {
             try {
-                const res = await fetch(`${CONFIG.API_URL}/api/inquiry`);
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry`, {
+                    headers: {
+                        Authorization: `Bearer ${adminToken}`
+                    }
+                });
                 const data = await res.json();
                 
                 const list = document.getElementById('inquiryList');
