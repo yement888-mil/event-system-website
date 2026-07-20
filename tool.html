@@ -214,6 +214,7 @@
                 <button onclick="switchTab('generate')" id="tabGenerate" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Generate Quotation</button>
                 <button onclick="switchTab('calendar')" id="tabCalendar" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Calendar</button>
                 <button onclick="switchTab('catalog')" id="tabCatalog" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Services &amp; Pricing</button>
+                <button onclick="switchTab('customers')" id="tabCustomers" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Customers</button>
                 <button onclick="switchTab('account')" id="tabAccount" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Account</button>
             </div>
 
@@ -480,6 +481,17 @@
                 </section>
             </div>
 
+            <!-- TAB 9: CUSTOMERS -->
+            <div id="tabCustomersContent" class="tab-content">
+                <section class="bg-white rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">Customers</h2>
+                        <input type="text" id="customerSearchInput" onkeyup="filterCustomers()" placeholder="Search by name or phone..." class="border border-gray-200 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div id="customersList" class="space-y-2"></div>
+                </section>
+            </div>
+
             <!-- TAB 8: ACCOUNT -->
             <div id="tabAccountContent" class="tab-content">
                 <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
@@ -632,6 +644,9 @@
             }
             if (tab === 'account' && adminRole === 'owner') {
                 loadStaffAccounts();
+            }
+            if (tab === 'customers') {
+                loadCustomers();
             }
         }
 
@@ -959,6 +974,7 @@
                     <div><strong>Guests:</strong> ${inq.guest_count || '-'}</div>
                     <div><strong>Read Status:</strong> ${inq.is_read ? 'Read' : 'Unread'}</div>
                 </div>
+                ${inq.customer_id ? `<button onclick="viewCustomerDetail(${inq.customer_id})" class="mt-3 text-xs text-gold hover:underline">View this customer's full booking history &rarr;</button>` : ''}
                 <div class="mt-4">
                     <strong>Services Requested:</strong>
                     <div class="mt-2">${servicesHtml || '-'}</div>
@@ -2956,6 +2972,133 @@
                     throw new Error(err.error || 'Failed to delete account');
                 }
                 await loadStaffAccounts();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // CUSTOMERS
+        // ------------------------------------------------------------
+        let allCustomers = [];
+
+        async function loadCustomers() {
+            const el = document.getElementById('customersList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-400">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/customers`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    return;
+                }
+                if (!res.ok) throw new Error('Failed to load customers');
+
+                const result = await res.json();
+                allCustomers = result.data || [];
+                renderCustomers(allCustomers);
+
+            } catch (err) {
+                console.error('Load customers error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load customers.</p>';
+            }
+        }
+
+        function renderCustomers(customers) {
+            const el = document.getElementById('customersList');
+            if (!el) return;
+            if (customers.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400">No customers yet.</p>';
+                return;
+            }
+            el.innerHTML = customers.map(c => {
+                const inquiryCount = parseInt(c.inquiry_count) || 0;
+                const isRepeat = inquiryCount > 1;
+                return `
+                    <div onclick="viewCustomerDetail(${c.id})" class="flex flex-wrap justify-between items-center gap-2 border rounded-xl p-3 text-sm cursor-pointer hover:border-gold transition">
+                        <div>
+                            <strong>${escapeHTML(c.name || 'Unknown')}</strong>
+                            ${isRepeat ? `<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full ml-2">Repeat customer</span>` : ''}
+                            <div class="text-xs text-gray-400 mt-0.5">${escapeHTML(c.phone)}</div>
+                        </div>
+                        <div class="text-xs text-gray-500 text-right">
+                            <div>${inquiryCount} inquir${inquiryCount === 1 ? 'y' : 'ies'} - ${c.quotation_count || 0} quotation${c.quotation_count == 1 ? '' : 's'}</div>
+                            <div class="text-gray-400">Last: ${c.last_inquiry_at ? formatDate(c.last_inquiry_at) : '-'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterCustomers() {
+            const query = document.getElementById('customerSearchInput').value.toLowerCase();
+            const filtered = allCustomers.filter(c =>
+                (c.name || '').toLowerCase().includes(query) ||
+                (c.phone || '').includes(query)
+            );
+            renderCustomers(filtered);
+        }
+
+        async function viewCustomerDetail(id) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/customers/${id}`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to load customer');
+                const result = await res.json();
+                const { customer, history } = result.data;
+
+                document.getElementById('modalTitle').textContent = customer.name || 'Customer';
+
+                const historyHtml = history.map(h => `
+                    <div class="border rounded-xl p-3 text-sm mb-2">
+                        <div class="flex justify-between items-center">
+                            <strong>${escapeHTML(h.event_type || 'Inquiry')}</strong>
+                            ${getInquiryStatusBadge(h.status)}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">${formatDate(h.event_date)} - submitted ${formatDateTime(h.created_at)}</div>
+                        ${h.quotation_no ? `<div class="text-xs mt-1">Quotation: <strong>${escapeHTML(h.quotation_no)}</strong> ${getStatusBadge(h.quotation_status)} - RM ${h.total || 0}</div>` : '<div class="text-xs text-gray-400 mt-1">No quotation yet</div>'}
+                    </div>
+                `).join('') || '<p class="text-sm text-gray-400">No history found.</p>';
+
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="mb-4">
+                        <div class="text-sm"><strong>Phone:</strong> ${escapeHTML(customer.phone)}</div>
+                        <div class="text-sm mt-1"><strong>Email:</strong> ${escapeHTML(customer.email || '-')}</div>
+                        <div class="text-sm mt-1"><strong>Customer since:</strong> ${formatDate(customer.first_seen_at)}</div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="text-sm font-medium">Notes</label>
+                        <textarea id="customerNotesInput" rows="2" class="w-full border rounded-xl px-3 py-2 text-sm mt-1">${escapeHTML(customer.notes || '')}</textarea>
+                        <button onclick="saveCustomerNotes(${customer.id})" class="mt-2 bg-gold text-dark px-3 py-1.5 rounded-full text-xs font-medium hover:bg-yellow-600 transition">Save Notes</button>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-2">Booking History (${history.length})</h3>
+                    ${historyHtml}
+                `;
+                document.getElementById('inquiryModal').classList.add('active');
+
+            } catch (err) {
+                alert('Failed to load customer: ' + err.message);
+            }
+        }
+
+        async function saveCustomerNotes(id) {
+            try {
+                const notes = document.getElementById('customerNotesInput').value;
+                const res = await fetch(`${CONFIG.API_URL}/api/customers/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ notes })
+                });
+                if (!res.ok) throw new Error('Failed to save notes');
+                await loadCustomers();
+                alert('Notes saved.');
             } catch (err) {
                 alert('Error: ' + err.message);
             }
