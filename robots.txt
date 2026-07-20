@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /tool.html
+Disallow: /booking.html
+
+Sitemap: https://yement888-mil.github.io/event-system-website/sitemap.xml
