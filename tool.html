@@ -495,11 +495,20 @@
 
                 <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
                     <h2 class="text-lg font-semibold mb-1">Gallery</h2>
-                    <p class="text-xs text-gray-400 mb-4">Photos shown on your website's Gallery page. Paste an image link (e.g. from Google Drive or Imgur) - direct file upload is coming later.</p>
+                    <p class="text-xs text-gray-400 mb-4">Photos shown on your website's Gallery page.</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                         <input type="text" id="gal_title" placeholder="Title (optional)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
                         <input type="text" id="gal_category" placeholder="Category (e.g. Decoration)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
-                        <input type="text" id="gal_image_url" placeholder="Image URL" class="md:col-span-2 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <div class="md:col-span-2 flex flex-wrap items-center gap-2">
+                            <input type="text" id="gal_image_url" placeholder="Image URL (or upload a photo below)" class="flex-1 min-w-[200px] border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                            <label class="bg-gray-100 text-dark px-3 py-2 rounded-xl text-sm cursor-pointer hover:bg-gray-200 transition whitespace-nowrap">
+                                <span id="galUploadLabel">Upload Photo</span>
+                                <input type="file" id="gal_image_file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="uploadGalleryPhoto()" class="hidden">
+                            </label>
+                        </div>
+                        <div id="galUploadPreview" class="hidden md:col-span-2">
+                            <img id="galUploadPreviewImg" class="h-24 rounded-lg object-cover">
+                        </div>
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="gal_active" checked> Active (visible on website)</label>
                     </div>
                     <div class="flex gap-2 mb-4">
@@ -2064,6 +2073,10 @@
             document.getElementById('gal_active').checked = g.active !== false;
             document.getElementById('galSaveLabel').textContent = 'Update Photo';
             document.getElementById('galCancelBtn').classList.remove('hidden');
+            if (g.image_url) {
+                document.getElementById('galUploadPreviewImg').src = g.image_url;
+                document.getElementById('galUploadPreview').classList.remove('hidden');
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -2075,6 +2088,55 @@
             document.getElementById('gal_active').checked = true;
             document.getElementById('galSaveLabel').textContent = 'Add Photo';
             document.getElementById('galCancelBtn').classList.add('hidden');
+            document.getElementById('gal_image_file').value = '';
+            document.getElementById('galUploadPreview').classList.add('hidden');
+        }
+
+        async function uploadGalleryPhoto() {
+            const fileInput = document.getElementById('gal_image_file');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const label = document.getElementById('galUploadLabel');
+            const originalText = label.textContent;
+            label.textContent = 'Uploading...';
+
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const res = await fetch(`${CONFIG.API_URL}/api/upload/image`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${adminToken}` },
+                    body: formData
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Upload failed');
+                }
+
+                const result = await res.json();
+                document.getElementById('gal_image_url').value = result.url;
+
+                const preview = document.getElementById('galUploadPreview');
+                const previewImg = document.getElementById('galUploadPreviewImg');
+                previewImg.src = result.url;
+                preview.classList.remove('hidden');
+
+            } catch (err) {
+                alert('Upload failed: ' + err.message);
+            } finally {
+                label.textContent = originalText;
+            }
         }
 
         async function saveGalleryItem() {
