@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Decor By | Owner Dashboard</title>
+    <title>Dekor By Ana | Owner Dashboard</title>
     <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com">
     </script>
@@ -492,6 +492,34 @@
                     </div>
                     <div id="packagesList" class="space-y-2 mt-4"></div>
                 </section>
+
+                <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
+                    <h2 class="text-lg font-semibold mb-1">Gallery</h2>
+                    <p class="text-xs text-gray-400 mb-4">Photos shown on your website's Gallery page. Paste an image link (e.g. from Google Drive or Imgur) - direct file upload is coming later.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <input type="text" id="gal_title" placeholder="Title (optional)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="gal_category" placeholder="Category (e.g. Decoration)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="gal_image_url" placeholder="Image URL" class="md:col-span-2 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="gal_active" checked> Active (visible on website)</label>
+                    </div>
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="saveGalleryItem()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="galSaveLabel">Add Photo</span></button>
+                        <button id="galCancelBtn" onclick="resetGalleryForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
+                    </div>
+                    <div id="galleryAdminList" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+                </section>
+
+                <section class="bg-white rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold mb-1">FAQ</h2>
+                    <p class="text-xs text-gray-400 mb-4">Shown on your website's FAQ page.</p>
+                    <input type="text" id="faq_question" placeholder="Question" class="border border-gray-200 rounded-xl px-3 py-2 text-sm w-full mb-3">
+                    <textarea id="faq_answer" placeholder="Answer" rows="2" class="border border-gray-200 rounded-xl px-3 py-2 text-sm w-full mb-3"></textarea>
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="saveFaqItem()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="faqSaveLabel">Add FAQ</span></button>
+                        <button id="faqCancelBtn" onclick="resetFaqForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
+                    </div>
+                    <div id="faqAdminList" class="space-y-2"></div>
+                </section>
             </div>
 
             <!-- TAB 9: CUSTOMERS -->
@@ -570,6 +598,10 @@
         let editingServiceId = null;
         let editingPricingItemId = null;
         let editingPackageId = null;
+        let galleryCache = [];
+        let faqCache = [];
+        let editingGalleryItemId = null;
+        let editingFaqItemId = null;
 
         // ------------------------------------------------------------
         // PACKAGE TEMPLATES
@@ -1965,10 +1997,12 @@
         // ------------------------------------------------------------
         async function loadCatalog() {
             try {
-                const [svcRes, itemsRes, pkgRes] = await Promise.all([
+                const [svcRes, itemsRes, pkgRes, galRes, faqRes] = await Promise.all([
                     fetch(`${CONFIG.API_URL}/api/services/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/pricing/items`, { headers: { Authorization: `Bearer ${adminToken}` } }),
-                    fetch(`${CONFIG.API_URL}/api/pricing/packages`, { headers: { Authorization: `Bearer ${adminToken}` } })
+                    fetch(`${CONFIG.API_URL}/api/pricing/packages`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/gallery/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/faq/admin`, { headers: { Authorization: `Bearer ${adminToken}` } })
                 ]);
 
                 if (svcRes.status === 401 || itemsRes.status === 401 || pkgRes.status === 401) return;
@@ -1976,19 +2010,192 @@
                 const svcData = await svcRes.json();
                 const itemsData = await itemsRes.json();
                 const pkgData = await pkgRes.json();
+                const galData = await galRes.json();
+                const faqData = await faqRes.json();
 
                 servicesCache = svcData.data || [];
                 pricingItemsCache = itemsData.data || [];
                 packagesCache = pkgData.data || [];
+                galleryCache = galData.data || [];
+                faqCache = faqData.data || [];
 
                 renderServicesAdminList();
                 renderPricingItemsList();
                 renderPackagesList();
                 populatePackageSelect();
                 populateQuickAddSelect();
+                renderGalleryAdminList();
+                renderFaqAdminList();
 
             } catch (err) {
                 console.error('Load catalog error:', err);
+            }
+        }
+
+        // ---- Gallery ----
+        function renderGalleryAdminList() {
+            const el = document.getElementById('galleryAdminList');
+            if (!el) return;
+            if (galleryCache.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400 col-span-full">No photos yet.</p>';
+                return;
+            }
+            el.innerHTML = galleryCache.map(g => `
+                <div class="border rounded-xl overflow-hidden text-xs ${g.active ? '' : 'opacity-50'}">
+                    <img src="${escapeHTML(g.image_url)}" class="w-full aspect-square object-cover" onerror="this.style.display='none'">
+                    <div class="p-2">
+                        <div class="truncate">${escapeHTML(g.title || g.category || 'Untitled')}</div>
+                        <div class="flex gap-1 mt-1">
+                            <button onclick="editGalleryItem(${g.id})" class="flex-1 bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 transition">Edit</button>
+                            <button onclick="deleteGalleryItem(${g.id})" class="flex-1 bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 transition">Del</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editGalleryItem(id) {
+            const g = galleryCache.find(x => x.id === id);
+            if (!g) return;
+            editingGalleryItemId = id;
+            document.getElementById('gal_title').value = g.title || '';
+            document.getElementById('gal_category').value = g.category || '';
+            document.getElementById('gal_image_url').value = g.image_url || '';
+            document.getElementById('gal_active').checked = g.active !== false;
+            document.getElementById('galSaveLabel').textContent = 'Update Photo';
+            document.getElementById('galCancelBtn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetGalleryForm() {
+            editingGalleryItemId = null;
+            document.getElementById('gal_title').value = '';
+            document.getElementById('gal_category').value = '';
+            document.getElementById('gal_image_url').value = '';
+            document.getElementById('gal_active').checked = true;
+            document.getElementById('galSaveLabel').textContent = 'Add Photo';
+            document.getElementById('galCancelBtn').classList.add('hidden');
+        }
+
+        async function saveGalleryItem() {
+            const image_url = document.getElementById('gal_image_url').value.trim();
+            if (!image_url) { alert('Image URL is required'); return; }
+
+            const payload = {
+                title: document.getElementById('gal_title').value.trim(),
+                category: document.getElementById('gal_category').value.trim(),
+                image_url,
+                active: document.getElementById('gal_active').checked
+            };
+
+            try {
+                const url = editingGalleryItemId ? `${CONFIG.API_URL}/api/gallery/${editingGalleryItemId}` : `${CONFIG.API_URL}/api/gallery`;
+                const method = editingGalleryItemId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save photo');
+                }
+                resetGalleryForm();
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deleteGalleryItem(id) {
+            if (!confirm('Delete this photo?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/gallery/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to delete photo');
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // ---- FAQ ----
+        function renderFaqAdminList() {
+            const el = document.getElementById('faqAdminList');
+            if (!el) return;
+            if (faqCache.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400">No FAQs yet.</p>';
+                return;
+            }
+            el.innerHTML = faqCache.map(f => `
+                <div class="border rounded-xl p-3 text-sm ${f.active ? '' : 'opacity-50'}">
+                    <div class="flex justify-between items-start gap-2">
+                        <strong>${escapeHTML(f.question)}</strong>
+                        <div class="flex gap-2 flex-shrink-0">
+                            <button onclick="editFaqItem(${f.id})" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">Edit</button>
+                            <button onclick="deleteFaqItem(${f.id})" class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">${escapeHTML(f.answer)}</p>
+                </div>
+            `).join('');
+        }
+
+        function editFaqItem(id) {
+            const f = faqCache.find(x => x.id === id);
+            if (!f) return;
+            editingFaqItemId = id;
+            document.getElementById('faq_question').value = f.question || '';
+            document.getElementById('faq_answer').value = f.answer || '';
+            document.getElementById('faqSaveLabel').textContent = 'Update FAQ';
+            document.getElementById('faqCancelBtn').classList.remove('hidden');
+        }
+
+        function resetFaqForm() {
+            editingFaqItemId = null;
+            document.getElementById('faq_question').value = '';
+            document.getElementById('faq_answer').value = '';
+            document.getElementById('faqSaveLabel').textContent = 'Add FAQ';
+            document.getElementById('faqCancelBtn').classList.add('hidden');
+        }
+
+        async function saveFaqItem() {
+            const question = document.getElementById('faq_question').value.trim();
+            const answer = document.getElementById('faq_answer').value.trim();
+            if (!question || !answer) { alert('Question and answer are required'); return; }
+
+            try {
+                const url = editingFaqItemId ? `${CONFIG.API_URL}/api/faq/${editingFaqItemId}` : `${CONFIG.API_URL}/api/faq`;
+                const method = editingFaqItemId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ question, answer, active: true })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save FAQ');
+                }
+                resetFaqForm();
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deleteFaqItem(id) {
+            if (!confirm('Delete this FAQ item?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/faq/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to delete FAQ');
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
 

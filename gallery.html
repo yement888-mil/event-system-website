@@ -71,23 +71,12 @@
             <h2 class="text-2xl font-light tracking-tight">Our Gallery</h2>
         </div>
         
-        <div class="flex gap-2 mb-8 overflow-x-auto pb-2 justify-center flex-wrap">
+        <div class="flex gap-2 mb-8 overflow-x-auto pb-2 justify-center flex-wrap" id="galleryFilters">
             <button class="filter-btn bg-dark text-white px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap" data-filter="all">All</button>
-            <button class="filter-btn bg-white text-dark border border-gray-200 px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap" data-filter="deco">Decoration</button>
-            <button class="filter-btn bg-white text-dark border border-gray-200 px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap" data-filter="photo">Photography</button>
-            <button class="filter-btn bg-white text-dark border border-gray-200 px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap" data-filter="catering">Catering</button>
-            <button class="filter-btn bg-white text-dark border border-gray-200 px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap" data-filter="magic">Magic Show</button>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" id="galleryGrid">
-            <div class="gallery-item bg-[#F5F0E6] rounded-xl aspect-square flex items-center justify-center text-gold text-4xl" data-category="deco">✦</div>
-            <div class="gallery-item bg-[#F5F0E6] rounded-xl aspect-square flex items-center justify-center text-gold text-4xl" data-category="deco">✦</div>
-            <div class="gallery-item bg-[#F5F0E6] rounded-xl aspect-square flex items-center justify-center text-gold text-4xl" data-category="photo">◈</div>
-            <div class="gallery-item bg-[#F5F0E6] rounded-xl aspect-square flex items-center justify-center text-gold text-4xl" data-category="catering">◆</div>
-            <div class="gallery-item bg-[#F5F0E6] rounded-xl aspect-square flex items-center justify-center text-gold text-4xl" data-category="magic">❖</div>
-            <div class="gallery-item bg-[#F5F0E6] rounded-xl aspect-square flex items-center justify-center text-gold text-4xl" data-category="deco">✦</div>
-            <div class="gallery-item bg-[#F5F0E6] rounded-xl aspect-square flex items-center justify-center text-gold text-4xl" data-category="photo">◈</div>
-            <div class="gallery-item bg-[#F5F0E6] rounded-xl aspect-square flex items-center justify-center text-gold text-4xl" data-category="catering">◆</div>
+            <p class="col-span-full text-center text-sm text-gray-400 py-8">Loading gallery...</p>
         </div>
     </section>
 
@@ -101,6 +90,8 @@
         <p class="text-gray-500 text-xs">© 2026 Decor By. All rights reserved.</p>
     </footer>
 
+    <script src="config.js"></script>
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/gallery-catalog.js"></script>
 </body>
 </html>
