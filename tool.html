@@ -1631,7 +1631,15 @@
                             <button onclick="viewQuotationHistory(${q.id})" class="bg-gray-200 text-dark px-3 py-0.5 rounded text-xs hover:bg-gray-300 transition">History</button>
                             <button onclick="editQuotation(${q.id})" class="bg-blue-100 text-blue-700 px-3 py-0.5 rounded text-xs hover:bg-blue-200 transition">Edit</button>
                             <button onclick="copyBookingLink('${q.booking_token || ''}')" class="bg-purple-100 text-purple-700 px-3 py-0.5 rounded text-xs hover:bg-purple-200 transition">Copy Booking Link</button>
+                            <button onclick="toggleTaskChecklist(${q.id})" class="bg-emerald-100 text-emerald-700 px-3 py-0.5 rounded text-xs hover:bg-emerald-200 transition">Tasks</button>
                             <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-0.5 rounded text-xs hover:bg-red-700 transition">Delete</button>
+                        </div>
+                        <div id="taskPanel_${q.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="newTaskInput_${q.id}" placeholder="Add a task (e.g. confirm caterer)" class="flex-1 border rounded-xl px-3 py-1.5 text-xs" onkeydown="if(event.key==='Enter') addTask(${q.id})">
+                                <button onclick="addTask(${q.id})" class="bg-dark text-white px-3 py-1.5 rounded-xl text-xs hover:bg-gold hover:text-dark transition">Add</button>
+                            </div>
+                            <div id="taskList_${q.id}" class="space-y-1"></div>
                         </div>
                         ${q.status === 'cancelled' ? renderCancellationPanel(q) : ''}
                     </div>
@@ -1931,6 +1939,10 @@
                 addSheet(data.package_items, 'Package Items');
                 addSheet(data.activity_logs, 'Activity Log');
                 addSheet(data.notification_logs, 'Notification Log');
+                addSheet(data.customers, 'Customers');
+                addSheet(data.gallery_items, 'Gallery');
+                addSheet(data.faq_items, 'FAQ');
+                addSheet(data.tasks, 'Tasks');
 
                 const dateStr = new Date().toISOString().split('T')[0];
                 XLSX.writeFile(wb, `Full_Backup_${dateStr}.xlsx`);
@@ -2256,6 +2268,98 @@
                 });
                 if (!res.ok) throw new Error('Failed to delete FAQ');
                 await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // TASK CHECKLIST (per quotation)
+        // ------------------------------------------------------------
+        async function toggleTaskChecklist(quotationId) {
+            const panel = document.getElementById(`taskPanel_${quotationId}`);
+            if (!panel) return;
+            const isHidden = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden');
+            if (isHidden) {
+                await loadTasks(quotationId);
+            }
+        }
+
+        async function loadTasks(quotationId) {
+            const listEl = document.getElementById(`taskList_${quotationId}`);
+            if (!listEl) return;
+            listEl.innerHTML = '<p class="text-xs text-gray-400">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/tasks/quotation/${quotationId}`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to load tasks');
+                const result = await res.json();
+                renderTasks(quotationId, result.data || []);
+            } catch (err) {
+                listEl.innerHTML = '<p class="text-xs text-red-500">Failed to load tasks.</p>';
+            }
+        }
+
+        function renderTasks(quotationId, tasks) {
+            const listEl = document.getElementById(`taskList_${quotationId}`);
+            if (!listEl) return;
+            if (tasks.length === 0) {
+                listEl.innerHTML = '<p class="text-xs text-gray-400">No tasks yet.</p>';
+                return;
+            }
+            listEl.innerHTML = tasks.map(t => `
+                <div class="flex items-center gap-2 text-xs py-1">
+                    <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTaskDone(${t.id}, ${quotationId}, this.checked)">
+                    <span class="flex-1 ${t.done ? 'line-through text-gray-400' : ''}">${escapeHTML(t.title)}</span>
+                    <button onclick="deleteTask(${t.id}, ${quotationId})" class="text-red-400 hover:text-red-600 transition">&#10005;</button>
+                </div>
+            `).join('');
+        }
+
+        async function addTask(quotationId) {
+            const input = document.getElementById(`newTaskInput_${quotationId}`);
+            const title = input.value.trim();
+            if (!title) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ quotation_id: quotationId, title })
+                });
+                if (!res.ok) throw new Error('Failed to add task');
+                input.value = '';
+                await loadTasks(quotationId);
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function toggleTaskDone(taskId, quotationId, done) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/tasks/${taskId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ done })
+                });
+                if (!res.ok) throw new Error('Failed to update task');
+                await loadTasks(quotationId);
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deleteTask(taskId, quotationId) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/tasks/${taskId}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to delete task');
+                await loadTasks(quotationId);
             } catch (err) {
                 alert('Error: ' + err.message);
             }
