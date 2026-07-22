@@ -411,6 +411,11 @@
                         <p class="text-xl font-bold text-gold" id="analyticsTotalRevenue">RM 0</p>
                     </div>
                     <div class="bg-white rounded-2xl p-4 shadow-sm">
+                        <h3 class="text-xs text-gray-400">Margin</h3>
+                        <p class="text-xl font-bold text-emerald-600" id="analyticsMargin">RM 0</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5" id="analyticsMarginCoverage"></p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-4 shadow-sm">
                         <h3 class="text-xs text-gray-400">Decoration Revenue</h3>
                         <p class="text-xl font-bold" id="analyticsDecoRevenue">RM 0</p>
                     </div>
@@ -615,11 +620,12 @@
 
                 <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
                     <h2 class="text-lg font-semibold mb-1">Internal Pricing Items</h2>
-                    <p class="text-xs text-gray-400 mb-4">Your real prices - only used inside quotations, never shown to customers.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                    <p class="text-xs text-gray-400 mb-4">Your real prices - only used inside quotations, never shown to customers. Cost (BAU backlog #37) is what this actually costs you to deliver - optional, used for margin tracking in Analytics.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
                         <input type="text" id="pi_category" placeholder="Category" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
                         <input type="text" id="pi_name" placeholder="Item name" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
                         <input type="number" id="pi_price" placeholder="Price (RM)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="number" id="pi_cost" placeholder="Cost (RM, optional)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
                         <button onclick="savePricingItem()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="piSaveLabel">Add Item</span></button>
                     </div>
                     <button id="piCancelBtn" onclick="resetPricingItemForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-1.5 rounded-full text-xs hover:bg-gray-100 transition mb-3">Cancel Edit</button>
@@ -1970,7 +1976,7 @@
             const container = document.getElementById('serviceRows');
             container.innerHTML = '';
             if (Array.isArray(items) && items.length > 0) {
-                items.forEach(item => addServiceRow(item.name, item.price));
+                items.forEach(item => addServiceRow(item.name, item.price, item.cost));
             } else {
                 addServiceRow('', '');
             }
@@ -2460,7 +2466,22 @@
             let photoRevenue = 0;
             let cateringRevenue = 0;
             let magicRevenue = 0;
-            
+
+            // BAU backlog #37 - margin, computed only from items that
+            // actually have a snapshotted cost (see generateQuotation()).
+            // Items without one contribute to revenue above as always,
+            // but are deliberately left out of margin math entirely -
+            // counting them as 0-cost would silently overstate margin
+            // (a confident-sounding number built on missing data), and
+            // this business is only just starting to record costs, so
+            // most historical quotations won't have any yet. costTracked
+            // item counts let the tile disclose its own coverage instead
+            // of presenting a number that looks more complete than it is.
+            let marginRevenue = 0;
+            let marginCost = 0;
+            let costTrackedItems = 0;
+            let totalLineItems = 0;
+
             revenueQuotations.forEach(q => {
                 totalRevenue += parseFloat(q.total) || 0;
                 if (q.items && q.items.length > 0) {
@@ -2476,9 +2497,18 @@
                         } else if (itemName.includes('magic') || itemName.includes('show')) {
                             magicRevenue += price;
                         }
+
+                        totalLineItems++;
+                        if (item.cost !== undefined && item.cost !== null && item.cost !== '') {
+                            costTrackedItems++;
+                            marginRevenue += price;
+                            marginCost += parseFloat(item.cost) || 0;
+                        }
                     });
                 }
             });
+
+            const margin = marginRevenue - marginCost;
             
             const totalEvents = monthQuotations.length;
             const completedEvents = monthQuotations.filter(q => q.status === 'completed').length;
@@ -2487,6 +2517,8 @@
                 .reduce((sum, q) => sum + (parseFloat(q.deposit) || 0), 0);
             
             const totalRevenueEl = document.getElementById('analyticsTotalRevenue');
+            const marginEl = document.getElementById('analyticsMargin');
+            const marginCoverageEl = document.getElementById('analyticsMarginCoverage');
             const decoEl = document.getElementById('analyticsDecoRevenue');
             const photoEl = document.getElementById('analyticsPhotoRevenue');
             const cateringEl = document.getElementById('analyticsCateringRevenue');
@@ -2494,8 +2526,14 @@
             const eventsEl = document.getElementById('analyticsTotalEvents');
             const pendingEl = document.getElementById('analyticsPending');
             const completedEl = document.getElementById('analyticsCompleted');
-            
+
             if (totalRevenueEl) totalRevenueEl.textContent = 'RM ' + totalRevenue;
+            if (marginEl) marginEl.textContent = 'RM ' + margin;
+            if (marginCoverageEl) {
+                marginCoverageEl.textContent = totalLineItems === 0
+                    ? 'No line items this month'
+                    : `Based on ${costTrackedItems} of ${totalLineItems} line items with cost data`;
+            }
             if (decoEl) decoEl.textContent = 'RM ' + decoRevenue;
             if (photoEl) photoEl.textContent = 'RM ' + photoRevenue;
             if (cateringEl) cateringEl.textContent = 'RM ' + cateringRevenue;
@@ -2701,15 +2739,24 @@
         // ------------------------------------------------------------
         // DYNAMIC SERVICES
         // ------------------------------------------------------------
-        function addServiceRow(name = '', price = '') {
+        // BAU backlog #37 - cost is carried as a hidden input (.service-cost),
+        // parallel to .service-name/.service-price, so generateQuotation()
+        // can read it the same way it reads name/price. Not admin-editable
+        // here directly - it's a snapshot of whatever the pricing catalog's
+        // cost was at the moment this row was added (see
+        // quickAddFromPricingList()), left blank for manually-typed rows
+        // and rows filled from a package template, since neither has a
+        // known cost to snapshot.
+        function addServiceRow(name = '', price = '', cost = '') {
             const container = document.getElementById('serviceRows');
             if (!container) return;
-            
+
             const row = document.createElement('div');
             row.className = 'flex gap-2 items-center';
             row.innerHTML = `
                 <input type="text" placeholder="Service name" value="${escapeHTML(name)}" class="service-name w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
                 <input type="number" placeholder="Price (RM)" value="${price}" class="service-price w-full border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                <input type="hidden" class="service-cost" value="${cost !== null && cost !== undefined ? cost : ''}" />
                 <button onclick="removeServiceRow(this)" class="text-red-500 text-sm px-2">&#10005;</button>
             `;
             container.appendChild(row);
@@ -2749,8 +2796,9 @@
             if (rows.length === 1 && !rows[0].value) {
                 rows[0].value = item.name;
                 container.querySelector('.service-price').value = item.price;
+                container.querySelector('.service-cost').value = item.cost !== null && item.cost !== undefined ? item.cost : '';
             } else {
-                addServiceRow(item.name, item.price);
+                addServiceRow(item.name, item.price, item.cost);
             }
             calculate();
             select.value = '';
@@ -3451,6 +3499,7 @@
                         <strong>${escapeHTML(p.name)}</strong>
                         <span class="text-xs text-gray-400 ml-2">${escapeHTML(p.category || '')}</span>
                         <span class="text-xs text-gray-500 ml-2">RM ${p.price}</span>
+                        ${p.cost !== null && p.cost !== undefined ? `<span class="text-xs text-gray-400 ml-2">Cost: RM ${p.cost}</span>` : ''}
                     </div>
                     <div class="flex gap-2">
                         <button onclick="editPricingItem(${p.id})" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">Edit</button>
@@ -3467,6 +3516,7 @@
             document.getElementById('pi_category').value = p.category || '';
             document.getElementById('pi_name').value = p.name || '';
             document.getElementById('pi_price').value = p.price;
+            document.getElementById('pi_cost').value = p.cost !== null && p.cost !== undefined ? p.cost : '';
             document.getElementById('piSaveLabel').textContent = 'Update Item';
             document.getElementById('piCancelBtn').classList.remove('hidden');
         }
@@ -3476,6 +3526,7 @@
             document.getElementById('pi_category').value = '';
             document.getElementById('pi_name').value = '';
             document.getElementById('pi_price').value = '';
+            document.getElementById('pi_cost').value = '';
             document.getElementById('piSaveLabel').textContent = 'Add Item';
             document.getElementById('piCancelBtn').classList.add('hidden');
         }
@@ -3485,10 +3536,14 @@
             const price = parseFloat(document.getElementById('pi_price').value);
             if (!name || isNaN(price)) { alert('Item name and price are required'); return; }
 
+            const costRaw = document.getElementById('pi_cost').value;
+            const cost = costRaw === '' ? '' : parseFloat(costRaw);
+
             const payload = {
                 category: document.getElementById('pi_category').value.trim(),
                 name,
                 price,
+                cost,
                 active: true
             };
 
@@ -3748,11 +3803,24 @@
 
                 const nameInputs = document.querySelectorAll('.service-name');
                 const priceInputs = document.querySelectorAll('.service-price');
+                const costInputs = document.querySelectorAll('.service-cost');
                 const items = [];
                 for (let i = 0; i < nameInputs.length; i++) {
                     const name = nameInputs[i].value.trim();
                     const price = parseFloat(priceInputs[i].value) || 0;
-                    if (name && price > 0) items.push({ name, price });
+                    if (name && price > 0) {
+                        const item = { name, price };
+                        // BAU backlog #37 - only snapshot cost when it's
+                        // actually known (from the pricing catalog);
+                        // omit it entirely for manual/package rows rather
+                        // than storing 0, so Analytics can tell "no cost
+                        // data" apart from "this item is free to deliver".
+                        const costRaw = costInputs[i] ? costInputs[i].value : '';
+                        if (costRaw !== '' && !isNaN(parseFloat(costRaw))) {
+                            item.cost = parseFloat(costRaw);
+                        }
+                        items.push(item);
+                    }
                 }
                 if (items.length === 0) { alert('Add at least one service'); return; }
 
