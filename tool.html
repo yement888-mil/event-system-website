@@ -220,7 +220,8 @@
 
             <!-- TABS -->
             <div class="flex gap-6 border-b border-gray-200 mb-6 overflow-x-auto">
-                <button onclick="switchTab('unread')" id="tabUnread" class="tab-active pb-3 px-2 text-sm whitespace-nowrap">Unread Inquiries</button>
+                <button onclick="switchTab('today')" id="tabToday" class="tab-active pb-3 px-2 text-sm whitespace-nowrap">Today</button>
+                <button onclick="switchTab('unread')" id="tabUnread" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Unread Inquiries</button>
                 <button onclick="switchTab('allinquiries')" id="tabAllinquiries" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">All Inquiries</button>
                 <button onclick="switchTab('quotations')" id="tabQuotations" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Quotations</button>
                 <button onclick="switchTab('analytics')" id="tabAnalytics" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Analytics</button>
@@ -231,9 +232,55 @@
                 <button onclick="switchTab('account')" id="tabAccount" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Account</button>
             </div>
 
+            <!-- TAB 0: TODAY DASHBOARD -->
+            <!-- Aggregates the things that need admin attention right now,
+                 pulled from data other tabs already have (unread inquiries,
+                 cancellation requests) plus two dashboard-only fetches
+                 (upcoming events, open tasks), so nothing urgent is missed
+                 by having to click through 3+ separate tabs. -->
+            <div id="tabTodayContent" class="tab-content active">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3 text-orange-700">Cancellation Requests</h2>
+                        <div id="todayCancelList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3">Unread Inquiries</h2>
+                        <div id="todayUnreadList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3">Upcoming Events (Next 7 Days)</h2>
+                        <div id="todayUpcomingList" class="upcoming-reminders-target space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-400">Loading...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3">Open Tasks</h2>
+                        <div id="todayTasksList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3">Quotations Expiring Soon</h2>
+                        <div id="todayExpiringList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- TAB 1: UNREAD INQUIRIES -->
-            <div id="tabUnreadContent" class="tab-content active">
-                <h2 class="text-lg font-semibold mb-3">Unread Inquiries</h2>
+            <div id="tabUnreadContent" class="tab-content">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-semibold">Unread Inquiries</h2>
+                    <button onclick="markAllAsRead()" class="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded-full font-medium hover:bg-gray-100 transition">
+                        Mark All as Read
+                    </button>
+                </div>
                 <div id="unreadInquiryList" class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                     <div class="text-center py-8">
                         <div class="loading-spinner"></div>
@@ -259,6 +306,25 @@
                         <option value="completed">Pipeline: Completed</option>
                         <option value="cancelled">Pipeline: Cancelled</option>
                     </select>
+                </div>
+                <div class="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                    <label class="flex items-center gap-1.5">
+                        <input type="checkbox" id="selectAllInquiries" onchange="toggleSelectAllInquiries(this.checked)" />
+                        Select All
+                    </label>
+                    <span id="bulkSelectedCount" class="text-gray-400 text-xs"></span>
+                    <select id="bulkStatusSelect" class="border border-gray-200 rounded-xl px-3 py-1.5 text-xs">
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="quotation_sent">Quotation Sent</option>
+                        <option value="waiting_deposit">Waiting Deposit</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <span class="text-xs text-gray-400">(Cancellations are handled one at a time, from the inquiry detail view)</span>
+                    <button onclick="applyBulkStatus()" class="bg-gold text-dark px-3 py-1.5 rounded-full text-xs font-medium hover:bg-yellow-600 transition">
+                        Apply to Selected
+                    </button>
                 </div>
                 <div id="allInquiryList" class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                     <div class="text-center py-8">
@@ -287,6 +353,29 @@
                     <div class="text-center py-8">
                         <div class="loading-spinner"></div>
                         <p class="text-sm text-gray-500 mt-2">Loading quotations...</p>
+                    </div>
+                </div>
+
+                <!-- Delete safety net: deleting a quotation or inquiry no
+                     longer erases it - it's hidden from the lists above and
+                     kept here, restorable, until an admin cleans it up. -->
+                <div class="mt-6 border-t pt-4">
+                    <button onclick="toggleRecentlyDeleted()" class="text-sm text-gray-500 hover:text-gray-700 underline">
+                        Recently Deleted
+                    </button>
+                    <div id="recentlyDeletedPanel" class="hidden mt-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-sm font-semibold mb-2">Deleted Quotations</h3>
+                            <div id="deletedQuotationsList" class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                <p class="text-sm text-gray-500">Loading...</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold mb-2">Deleted Inquiries</h3>
+                            <div id="deletedInquiriesList" class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                <p class="text-sm text-gray-500">Loading...</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -340,10 +429,22 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl p-6 shadow-sm">
+                <div class="bg-white rounded-2xl p-6 shadow-sm mb-6">
                     <h3 class="font-semibold mb-4">Monthly Revenue Overview</h3>
                     <div id="monthlyChart" class="h-64 flex items-end gap-2">
                         <!-- Will be populated by JS -->
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+                    <h3 class="font-semibold mb-1">Inquiry Funnel &amp; Drop-off</h3>
+                    <p class="text-xs text-gray-400 mb-4">How many inquiries currently sit at each pipeline stage, and which ones have gone stale (no update in 7+ days) before reaching a quotation or a firm answer.</p>
+                    <div id="funnelCounts" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <p class="text-sm text-gray-400 col-span-full">Loading...</p>
+                    </div>
+                    <h4 class="text-sm font-semibold mb-2">Stale Leads (7+ days, no progress)</h4>
+                    <div id="staleLeadsList" class="space-y-2">
+                        <p class="text-sm text-gray-400">Loading...</p>
                     </div>
                 </div>
             </div>
@@ -372,6 +473,20 @@
                             <select id="packageSelect" onchange="applyPackage()" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm">
                                 <option value="">-- Custom --</option>
                             </select>
+                        </div>
+
+                        <!-- Repeat-customer quick-start: only shown when this
+                             inquiry's customer has past quotations to copy from. -->
+                        <div id="copyFromQuotationBox" class="hidden">
+                            <label class="block text-sm font-medium mb-1">Copy Items From This Customer's Previous Quotation</label>
+                            <div class="flex gap-2">
+                                <select id="copyFromQuotationSelect" class="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm">
+                                    <option value="">-- Select a past quotation --</option>
+                                </select>
+                                <button onclick="copyFromPreviousQuotation()" class="bg-dark text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gold hover:text-dark transition whitespace-nowrap">
+                                    Copy
+                                </button>
+                            </div>
                         </div>
 
                         <div>
@@ -425,7 +540,7 @@
                 <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
                     <h2 class="text-lg font-semibold mb-1">Upcoming Reminders</h2>
                     <p class="text-xs text-gray-400 mb-4">Confirmed events (deposit paid) in the next 7 days. Click to send the customer a WhatsApp reminder.</p>
-                    <div id="upcomingRemindersList" class="space-y-2">
+                    <div id="upcomingRemindersList" class="upcoming-reminders-target space-y-2">
                         <p class="text-sm text-gray-400">Loading...</p>
                     </div>
                 </section>
@@ -442,7 +557,27 @@
                         <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-amber-200"></span> Sent / Waiting Deposit</span>
                         <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-gray-200"></span> Draft / Inquiry Only</span>
                         <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-red-200"></span> Cancelled</span>
+                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full border-2 border-purple-400"></span> Peak Period</span>
                     </div>
+                </section>
+
+                <section class="bg-white rounded-2xl p-6 shadow-sm mt-4">
+                    <h2 class="text-lg font-semibold mb-1">Peak Periods</h2>
+                    <p class="text-xs text-gray-400 mb-4">
+                        Mark CNY, Raya, Deepavali, Christmas, or any other busy stretch so it's highlighted on the calendar above.
+                        These shift every year (several are lunar-calendar holidays), so there's no automatic list - enter the dates yourself once a year.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                        <input type="text" id="peak_name" placeholder="Name (e.g. Chinese New Year)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm md:col-span-2">
+                        <input type="date" id="peak_start" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="date" id="peak_end" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="peak_active" checked> Active</label>
+                        <button onclick="savePeakPeriod()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="peakSaveLabel">Add Peak Period</span></button>
+                        <button id="peakCancelBtn" onclick="resetPeakPeriodForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
+                    </div>
+                    <div id="peakPeriodsList" class="space-y-2"></div>
                 </section>
             </div>
 
@@ -502,10 +637,11 @@
                         <div class="md:col-span-2 flex flex-wrap items-center gap-2">
                             <input type="text" id="gal_image_url" placeholder="Image URL (or upload a photo below)" class="flex-1 min-w-[200px] border border-gray-200 rounded-xl px-3 py-2 text-sm">
                             <label class="bg-gray-100 text-dark px-3 py-2 rounded-xl text-sm cursor-pointer hover:bg-gray-200 transition whitespace-nowrap">
-                                <span id="galUploadLabel">Upload Photo</span>
-                                <input type="file" id="gal_image_file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="uploadGalleryPhoto()" class="hidden">
+                                <span id="galUploadLabel">Upload Photo(s)</span>
+                                <input type="file" id="gal_image_file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onchange="uploadGalleryPhoto()" class="hidden">
                             </label>
                         </div>
+                        <p class="text-xs text-gray-400 md:col-span-2 -mt-2">Select multiple files to add them all at once, using the title/category/active settings below for every photo. Select just one to preview and edit its title before adding.</p>
                         <div id="galUploadPreview" class="hidden md:col-span-2">
                             <img id="galUploadPreviewImg" class="h-24 rounded-lg object-cover">
                         </div>
@@ -528,6 +664,18 @@
                         <button id="faqCancelBtn" onclick="resetFaqForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
                     </div>
                     <div id="faqAdminList" class="space-y-2"></div>
+                </section>
+
+                <section class="bg-white rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold mb-1">WhatsApp Message Templates</h2>
+                    <p class="text-xs text-gray-400 mb-4">
+                        Edit the wording used when sending a quotation or event reminder via WhatsApp.
+                        Placeholders like <code>{{customer_name}}</code> are filled in automatically - available tokens:
+                        <code>{{customer_name}}</code>, <code>{{event_type}}</code>, <code>{{event_date}}</code>, <code>{{guest_count}}</code>,
+                        <code>{{quotation_no}}</code>, <code>{{items}}</code>, <code>{{total}}</code>, <code>{{deposit}}</code>, <code>{{balance}}</code>, <code>{{valid_until}}</code>
+                        (not every token applies to every template).
+                    </p>
+                    <div id="messageTemplatesList" class="space-y-4"></div>
                 </section>
             </div>
 
@@ -611,6 +759,10 @@
         let faqCache = [];
         let editingGalleryItemId = null;
         let editingFaqItemId = null;
+        let messageTemplatesCache = [];
+        let adminUsernamesCache = [];
+        let peakPeriodsCache = [];
+        let editingPeakPeriodId = null;
 
         // ------------------------------------------------------------
         // PACKAGE TEMPLATES
@@ -625,9 +777,15 @@
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
 
+        // Always renders in Malaysia time regardless of the viewing
+        // device's own timezone (BAU backlog #15 timezone sanity check) -
+        // without an explicit timeZone, toLocaleDateString/toLocaleString
+        // use the browser's local zone, which is usually Malaysia for this
+        // business's staff but isn't guaranteed (a misconfigured device
+        // clock, or anyone ever logging in while traveling).
         function formatDate(dateStr) {
             if (!dateStr) return '-';
-            return new Date(dateStr).toLocaleDateString('en-MY');
+            return new Date(dateStr).toLocaleDateString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' });
         }
 
         // Converts a date value from the API into YYYY-MM-DD, the format
@@ -639,7 +797,7 @@
 
         function formatDateTime(dateStr) {
             if (!dateStr) return '-';
-            return new Date(dateStr).toLocaleString('en-MY');
+            return new Date(dateStr).toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' });
         }
 
         function getStatusBadge(status) {
@@ -695,6 +853,11 @@
             if (tab === 'calendar') {
                 loadAdminCalendar();
                 loadUpcomingReminders();
+            }
+            if (tab === 'today') {
+                loadUpcomingReminders();
+                loadOpenTasksToday();
+                loadExpiringQuotationsToday();
             }
             if (tab === 'account' && adminRole === 'owner') {
                 loadStaffAccounts();
@@ -755,6 +918,16 @@
             }
         }
 
+        // Returns the matching active peak period's name for a given
+        // YYYY-MM-DD, or null. Plain string comparison works here since
+        // start_date/end_date/dateStr are all already YYYY-MM-DD.
+        function getPeakPeriodForDate(dateStr) {
+            const match = peakPeriodsCache.find(p =>
+                p.active && dateStr >= String(p.start_date).split('T')[0] && dateStr <= String(p.end_date).split('T')[0]
+            );
+            return match ? match.name : null;
+        }
+
         function adminCalDayColor(dayEvents) {
             if (dayEvents.some(e => e.status === 'deposit_paid' || e.status === 'completed')) return 'bg-emerald-200';
             if (dayEvents.some(e => e.status === 'cancelled') && dayEvents.every(e => e.status === 'cancelled')) return 'bg-red-200';
@@ -793,10 +966,12 @@
                 const dayEvents = eventsByDay[str] || [];
                 const color = adminCalDayColor(dayEvents);
                 const clickable = dayEvents.length > 0;
+                const peakName = getPeakPeriodForDate(str);
                 html += `
-                    <div class="rounded-lg py-1.5 ${color} ${clickable ? 'cursor-pointer hover:ring-2 hover:ring-gold' : ''}" ${clickable ? `onclick="showAdminCalDay('${str}')"` : ''}>
+                    <div class="rounded-lg py-1.5 ${color} ${peakName ? 'border-2 border-purple-400' : ''} ${clickable ? 'cursor-pointer hover:ring-2 hover:ring-gold' : ''}" ${clickable ? `onclick="showAdminCalDay('${str}')"` : ''} ${peakName ? `title="${escapeHTML(peakName)}"` : ''}>
                         <div>${d}</div>
                         ${dayEvents.length > 0 ? `<div class="text-[10px] text-gray-600">${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}</div>` : ''}
+                        ${peakName ? `<div class="text-[9px] text-purple-600 truncate px-0.5">${escapeHTML(peakName)}</div>` : ''}
                     </div>
                 `;
             }
@@ -838,9 +1013,12 @@
         // UPCOMING REMINDERS (customer-facing, one-click send)
         // ------------------------------------------------------------
         async function loadUpcomingReminders() {
-            const el = document.getElementById('upcomingRemindersList');
-            if (!el) return;
-            el.innerHTML = '<p class="text-sm text-gray-400">Loading...</p>';
+            // Renders into every matching container - the Calendar tab and
+            // the Today dashboard both show this same list, so they share
+            // one fetch instead of drifting out of sync.
+            const targets = document.querySelectorAll('.upcoming-reminders-target');
+            if (targets.length === 0) return;
+            targets.forEach(el => el.innerHTML = '<p class="text-sm text-gray-400">Loading...</p>');
 
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/calendar/upcoming-reminders?days=7`, {
@@ -854,11 +1032,11 @@
                 const events = result.data || [];
 
                 if (events.length === 0) {
-                    el.innerHTML = '<p class="text-sm text-gray-400">No confirmed events in the next 7 days.</p>';
+                    targets.forEach(el => el.innerHTML = '<p class="text-sm text-gray-400">No confirmed events in the next 7 days.</p>');
                     return;
                 }
 
-                el.innerHTML = events.map(e => {
+                const html = events.map(e => {
                     const daysUntil = Math.ceil((new Date(e.event_date) - new Date(new Date().toDateString())) / (1000 * 60 * 60 * 24));
                     return `
                         <div class="flex flex-wrap justify-between items-center gap-2 border rounded-xl p-3 text-sm">
@@ -873,10 +1051,102 @@
                         </div>
                     `;
                 }).join('');
+                targets.forEach(el => el.innerHTML = html);
 
             } catch (err) {
                 console.error('Load upcoming reminders error:', err);
-                el.innerHTML = '<p class="text-sm text-red-500">Failed to load reminders.</p>';
+                targets.forEach(el => el.innerHTML = '<p class="text-sm text-red-500">Failed to load reminders.</p>');
+            }
+        }
+
+        // ------------------------------------------------------------
+        // TODAY DASHBOARD
+        // ------------------------------------------------------------
+        async function loadOpenTasksToday() {
+            const el = document.getElementById('todayTasksList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/tasks/open`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error('Failed to load open tasks');
+
+                const result = await res.json();
+                const tasks = result.data || [];
+
+                if (tasks.length === 0) {
+                    el.innerHTML = '<p class="text-sm text-gray-500">No open tasks.</p>';
+                    return;
+                }
+
+                const today = new Date(new Date().toDateString());
+                el.innerHTML = tasks.map(t => {
+                    const overdue = t.due_date && new Date(t.due_date) < today;
+                    return `
+                        <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm ${overdue ? 'border-red-300 bg-red-50' : ''}">
+                            <div>
+                                <strong>${escapeHTML(t.title)}</strong>
+                                <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(t.customer_name)} | ${escapeHTML(t.quotation_no || '')}${t.assigned_to_username ? ` | Assigned: ${escapeHTML(t.assigned_to_username)}` : ''}</div>
+                                <div class="text-xs mt-0.5 ${overdue ? 'text-red-600 font-medium' : 'text-gray-400'}">
+                                    ${t.due_date ? `Due ${formatDate(t.due_date)}${overdue ? ' (overdue)' : ''}` : 'No due date'}
+                                </div>
+                            </div>
+                            <button onclick="toggleTaskDone(${t.id}, ${t.quotation_id}, true); loadOpenTasksToday();" class="border border-gray-300 text-gray-600 px-3 py-1 rounded-full text-xs font-medium hover:bg-gray-100 transition whitespace-nowrap">
+                                Done
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Load open tasks error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load open tasks.</p>';
+            }
+        }
+
+        // Quotations that have sat at "sent" for 5+ days with no customer
+        // response, closing in on (or past) the 7-day validity window shown
+        // on the generated PDF - a nudge to follow up before it lapses.
+        async function loadExpiringQuotationsToday() {
+            const el = document.getElementById('todayExpiringList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/expiring`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error('Failed to load expiring quotations');
+
+                const result = await res.json();
+                const rows = result.data || [];
+
+                if (rows.length === 0) {
+                    el.innerHTML = '<p class="text-sm text-gray-500">Nothing expiring soon.</p>';
+                    return;
+                }
+
+                el.innerHTML = rows.map(q => `
+                    <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm ${q.expired ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'}">
+                        <div>
+                            <strong>${escapeHTML(q.quotation_no)}</strong>
+                            <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(q.customer_name)} | RM ${q.total || 0}</div>
+                            <div class="text-xs mt-0.5 ${q.expired ? 'text-red-600 font-medium' : 'text-amber-700'}">
+                                Sent ${q.days_since_sent} day${q.days_since_sent === 1 ? '' : 's'} ago${q.expired ? ' - past the 7-day validity window' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error('Load expiring quotations error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
             }
         }
 
@@ -887,19 +1157,14 @@
                 return;
             }
 
-            const eventDate = formatDate(event.event_date);
-            const msg = [
-                `Hi ${event.customer_name},`,
-                '',
-                `Just a friendly reminder that your event (${event.event_type || 'event'}) is coming up soon on ${eventDate}.`,
-                '',
-                `Guests: ${event.guest_count || '-'} pax`,
-                `Quotation: ${event.quotation_no || '-'}`,
-                '',
-                `We're looking forward to it! Let us know if there's anything you need before the day.`,
-                '',
-                'Thank you.'
-            ].join('\n');
+            const fallback = `Hi {{customer_name}},\n\nJust a friendly reminder that your event ({{event_type}}) is coming up soon on {{event_date}}.\n\nGuests: {{guest_count}} pax\nQuotation: {{quotation_no}}\n\nWe're looking forward to it! Let us know if there's anything you need before the day.\n\nThank you.`;
+            const msg = renderTemplate(getTemplateBody('event_reminder', fallback), {
+                customer_name: event.customer_name,
+                event_type: event.event_type || 'event',
+                event_date: formatDate(event.event_date),
+                guest_count: event.guest_count || '-',
+                quotation_no: event.quotation_no || '-'
+            });
 
             const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
@@ -965,11 +1230,34 @@
             await loadQuotations();
             await loadCatalog();
             updateAnalytics();
+            await loadUpcomingReminders();
+            await loadOpenTasksToday();
+            await loadExpiringQuotationsToday();
         }
 
         // ------------------------------------------------------------
         // MARK INQUIRY AS READ
         // ------------------------------------------------------------
+        async function markAllAsRead() {
+            if (!confirm('Mark all unread inquiries as read?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/mark-all-read`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to mark all as read');
+                }
+
+                await loadInquiries();
+            } catch (err) {
+                console.error('Mark all as read error:', err);
+                alert('Error: ' + err.message);
+            }
+        }
+
         async function markAsRead(id) {
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/read`, {
@@ -1049,6 +1337,13 @@
                     </div>
                 </div>
                 <div class="mt-4">
+                    <strong>Internal Notes (staff only, this inquiry only):</strong>
+                    <textarea id="adminNotes_${inq.id}" rows="2" class="w-full border rounded-xl px-3 py-2 text-sm mt-2" placeholder="e.g. called twice, no answer">${escapeHTML(inq.admin_notes || '')}</textarea>
+                    <button onclick="saveInquiryNotes(${inq.id})" class="mt-2 bg-gold text-dark px-4 py-2 rounded-xl text-sm font-medium hover:bg-yellow-600 transition">
+                        Save Notes
+                    </button>
+                </div>
+                <div class="mt-4">
                     <strong>Reschedule Event Date:</strong>
                     <div class="flex items-center gap-2 mt-2">
                         <input type="date" id="rescheduleDate_${inq.id}" value="${toDateInputValue(inq.event_date)}" class="border rounded-xl text-sm px-3 py-2">
@@ -1065,6 +1360,29 @@
             `;
             
             document.getElementById('inquiryModal').classList.add('active');
+        }
+
+        async function saveInquiryNotes(id) {
+            try {
+                const textarea = document.getElementById(`adminNotes_${id}`);
+                if (!textarea) return;
+
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/notes`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ admin_notes: textarea.value })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save notes');
+                }
+
+                await loadInquiries();
+            } catch (err) {
+                console.error('Save inquiry notes error:', err);
+                alert('Error: ' + err.message);
+            }
         }
 
         async function updateInquiryStatus(id) {
@@ -1214,14 +1532,65 @@
         function renderInquiries(inquiries) {
             const unreadList = document.getElementById('unreadInquiryList');
             const allList = document.getElementById('allInquiryList');
-            
+            const todayUnreadList = document.getElementById('todayUnreadList');
+            const todayCancelList = document.getElementById('todayCancelList');
+
             if (!inquiries || inquiries.length === 0) {
                 if (unreadList) unreadList.innerHTML = '<p class="text-sm text-gray-500">No unread inquiries</p>';
                 if (allList) allList.innerHTML = '<p class="text-sm text-gray-500">No inquiries yet</p>';
+                if (todayUnreadList) todayUnreadList.innerHTML = '<p class="text-sm text-gray-500">No unread inquiries</p>';
+                if (todayCancelList) todayCancelList.innerHTML = '<p class="text-sm text-gray-500">No cancellation requests</p>';
                 return;
             }
 
             const unread = inquiries.filter(i => !i.is_read);
+            const cancelRequests = inquiries.filter(i => i.status === 'cancel_requested');
+
+            // Today dashboard - same unread card markup, reused as-is
+            if (todayUnreadList) {
+                todayUnreadList.innerHTML = unread.length === 0
+                    ? '<p class="text-sm text-gray-500">All caught up! No unread inquiries.</p>'
+                    : unread.map(inq => `
+                        <div class="bg-[#FFF8E7] border-l-4 border-gold rounded-xl p-3 text-sm cursor-pointer hover:shadow transition inquiry-card" onclick="viewInquiry(${inq.id})">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong>
+                                    <span class="text-xs text-gray-400 ml-2">${formatDate(inq.created_at)}</span>
+                                </div>
+                                <button onclick="event.stopPropagation(); markAsRead(${inq.id})" class="bg-gold text-dark px-2 py-0.5 rounded text-xs font-medium hover:bg-yellow-600 transition">
+                                    Mark Read
+                                </button>
+                            </div>
+                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
+                            </div>
+                        </div>
+                    `).join('');
+            }
+
+            // Today dashboard - cancellation requests need admin review before
+            // anything money-related happens, so they get their own panel
+            // rather than being buried in the general inquiries list.
+            if (todayCancelList) {
+                todayCancelList.innerHTML = cancelRequests.length === 0
+                    ? '<p class="text-sm text-gray-500">No cancellation requests.</p>'
+                    : cancelRequests.map(inq => `
+                        <div class="bg-orange-50 border-l-4 border-orange-400 rounded-xl p-3 text-sm cursor-pointer hover:shadow transition inquiry-card" onclick="viewInquiry(${inq.id})">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong>
+                                    <span class="text-xs text-gray-400 ml-2">${formatDate(inq.created_at)}</span>
+                                </div>
+                            </div>
+                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
+                            </div>
+                            <div class="text-xs text-orange-700 mt-1">Review in Quotations/Inquiries tab to confirm cancellation and any refund.</div>
+                        </div>
+                    `).join('');
+            }
 
             // Render UNREAD inquiries
             if (unreadList) {
@@ -1276,9 +1645,12 @@
                     allList.innerHTML = filtered.map(inq => `
                         <div class="bg-white rounded-xl p-3 text-sm border hover:shadow transition cursor-pointer inquiry-card ${inq.is_read ? '' : 'border-l-4 border-l-gold'}" onclick="viewInquiry(${inq.id})">
                             <div class="flex justify-between items-start">
-                                <div>
-                                    <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong>
-                                    <span class="text-xs text-gray-400 ml-2">${formatDate(inq.created_at)}</span>
+                                <div class="flex items-start gap-2">
+                                    <input type="checkbox" class="bulk-inquiry-checkbox mt-1" value="${inq.id}" onclick="event.stopPropagation(); updateBulkSelectedCount();" />
+                                    <div>
+                                        <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong>
+                                        <span class="text-xs text-gray-400 ml-2">${formatDate(inq.created_at)}</span>
+                                    </div>
                                 </div>
                                 <span class="text-xs ${inq.is_read ? 'text-gray-400' : 'text-gold font-medium'}">
                                     ${inq.is_read ? 'Read' : 'Unread'}
@@ -1299,6 +1671,52 @@
 
         function filterInquiries() {
             renderInquiries(allInquiries);
+        }
+
+        // ------------------------------------------------------------
+        // BULK STATUS UPDATE (All Inquiries tab)
+        // ------------------------------------------------------------
+        function toggleSelectAllInquiries(checked) {
+            document.querySelectorAll('.bulk-inquiry-checkbox').forEach(cb => cb.checked = checked);
+            updateBulkSelectedCount();
+        }
+
+        function updateBulkSelectedCount() {
+            const count = document.querySelectorAll('.bulk-inquiry-checkbox:checked').length;
+            const el = document.getElementById('bulkSelectedCount');
+            if (el) el.textContent = count > 0 ? `${count} selected` : '';
+        }
+
+        async function applyBulkStatus() {
+            const ids = [...document.querySelectorAll('.bulk-inquiry-checkbox:checked')].map(cb => parseInt(cb.value));
+            if (ids.length === 0) {
+                alert('Select at least one inquiry first.');
+                return;
+            }
+            const status = document.getElementById('bulkStatusSelect')?.value;
+            if (!status) return;
+            if (!confirm(`Set status to "${INQUIRY_STATUS_LABELS[status] || status}" for ${ids.length} inquiry(ies)?`)) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/bulk-status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ ids, status })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Bulk update failed');
+                }
+
+                const selectAll = document.getElementById('selectAllInquiries');
+                if (selectAll) selectAll.checked = false;
+                await loadInquiries();
+                updateBulkSelectedCount();
+            } catch (err) {
+                console.error('Bulk status update error:', err);
+                alert('Error: ' + err.message);
+            }
         }
 
         // ------------------------------------------------------------
@@ -1387,6 +1805,7 @@
 
             document.getElementById('whatsappOutput').classList.add('hidden');
             document.getElementById('copyBtn').classList.add('hidden');
+            document.getElementById('copyFromQuotationBox')?.classList.add('hidden');
             document.getElementById('inquirySearchResult').innerHTML = '';
             document.getElementById('inquiryIdSearch').value = '';
 
@@ -1441,16 +1860,60 @@
             
             const container = document.getElementById('serviceRows');
             container.innerHTML = '';
-            addServiceRow('', '');
+            const restored = offerToRestoreQuotationDraft(inq.id);
+            if (!restored) addServiceRow('', '');
             calculate();
             const valid = new Date();
             valid.setDate(valid.getDate() + 7);
-            document.getElementById('validUntil').textContent = valid.toLocaleDateString('en-MY');
+            document.getElementById('validUntil').textContent = valid.toLocaleDateString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' });
             document.getElementById('whatsappOutput').classList.add('hidden');
             document.getElementById('copyBtn').classList.add('hidden');
-            
+
+            populateCopyFromQuotationBox(inq);
+
             document.getElementById('inquirySearchResult').innerHTML = '';
             document.getElementById('inquiryIdSearch').value = '';
+        }
+
+        // Repeat-customer quick-start: if this inquiry's customer has any
+        // past quotations, offer to copy that quotation's line items into
+        // this new one instead of rebuilding from scratch or a generic
+        // package template.
+        function populateCopyFromQuotationBox(inq) {
+            const box = document.getElementById('copyFromQuotationBox');
+            const select = document.getElementById('copyFromQuotationSelect');
+            if (!box || !select) return;
+
+            const previous = inq.customer_id
+                ? allQuotations.filter(q => q.customer_id === inq.customer_id && q.inquiry_id !== inq.id)
+                : [];
+
+            if (previous.length === 0) {
+                box.classList.add('hidden');
+                select.innerHTML = '<option value="">-- Select a past quotation --</option>';
+                return;
+            }
+
+            select.innerHTML = '<option value="">-- Select a past quotation --</option>' +
+                previous.map(q => `<option value="${q.id}">${escapeHTML(q.quotation_no)} - RM ${q.total || 0} (${formatDate(q.event_date)})</option>`).join('');
+            box.classList.remove('hidden');
+        }
+
+        function copyFromPreviousQuotation() {
+            const select = document.getElementById('copyFromQuotationSelect');
+            const id = select?.value;
+            if (!id) return;
+            const q = allQuotations.find(x => String(x.id) === String(id));
+            if (!q || !q.items) return;
+
+            const items = typeof q.items === 'string' ? JSON.parse(q.items) : q.items;
+            if (!Array.isArray(items) || items.length === 0) return;
+
+            const container = document.getElementById('serviceRows');
+            if (!container) return;
+            container.innerHTML = '';
+            items.forEach(s => addServiceRow(s.name, s.price));
+            calculate();
         }
 
         // ------------------------------------------------------------
@@ -1637,6 +2100,10 @@
                         <div id="taskPanel_${q.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
                             <div class="flex gap-2 mb-2">
                                 <input type="text" id="newTaskInput_${q.id}" placeholder="Add a task (e.g. confirm caterer)" class="flex-1 border rounded-xl px-3 py-1.5 text-xs" onkeydown="if(event.key==='Enter') addTask(${q.id})">
+                                <select id="newTaskAssignee_${q.id}" class="border rounded-xl px-2 py-1.5 text-xs">
+                                    <option value="">Unassigned</option>
+                                    ${adminUsernamesCache.map(u => `<option value="${u.id}">${escapeHTML(u.username)}</option>`).join('')}
+                                </select>
                                 <button onclick="addTask(${q.id})" class="bg-dark text-white px-3 py-1.5 rounded-xl text-xs hover:bg-gold hover:text-dark transition">Add</button>
                             </div>
                             <div id="taskList_${q.id}" class="space-y-1"></div>
@@ -1696,10 +2163,59 @@
         // ------------------------------------------------------------
         // ANALYTICS
         // ------------------------------------------------------------
+        // Drop-off analytics (BAU backlog #13): computed entirely from
+        // allInquiries, already loaded for the Unread/All Inquiries tabs -
+        // no new endpoint needed. "Stale" means still in a non-terminal
+        // pipeline stage with no update (status change, reschedule, note)
+        // in 7+ days, the same staleness window used elsewhere in this app
+        // (event reminders, quotation expiry).
+        function updateFunnelAnalytics() {
+            const countsEl = document.getElementById('funnelCounts');
+            const staleEl = document.getElementById('staleLeadsList');
+            if (!countsEl || !staleEl) return;
+
+            const counts = {};
+            INQUIRY_STATUSES.forEach(s => counts[s] = 0);
+            allInquiries.forEach(i => {
+                const s = i.status || 'new';
+                counts[s] = (counts[s] || 0) + 1;
+            });
+
+            countsEl.innerHTML = INQUIRY_STATUSES.map(s => `
+                <div class="bg-[#F8F8F8] rounded-xl p-3 text-center">
+                    <p class="text-xs text-gray-400">${INQUIRY_STATUS_LABELS[s]}</p>
+                    <p class="text-lg font-bold">${counts[s] || 0}</p>
+                </div>
+            `).join('');
+
+            const nonTerminal = ['new', 'contacted', 'quotation_sent', 'waiting_deposit'];
+            const now = new Date();
+            const stale = allInquiries
+                .filter(i => nonTerminal.includes(i.status || 'new') && i.updated_at && (now - new Date(i.updated_at)) / 86400000 >= 7)
+                .sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+
+            staleEl.innerHTML = stale.length === 0
+                ? '<p class="text-sm text-gray-500">No stale leads right now.</p>'
+                : stale.map(i => {
+                    const daysSince = Math.floor((now - new Date(i.updated_at)) / 86400000);
+                    return `
+                        <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm cursor-pointer hover:shadow transition" onclick="viewInquiry(${i.id})">
+                            <div>
+                                <strong>#${i.id} - ${escapeHTML(i.customer_name)}</strong>
+                                <div class="mt-0.5">${getInquiryStatusBadge(i.status)}</div>
+                            </div>
+                            <span class="text-xs text-red-600 font-medium whitespace-nowrap">${daysSince} days stale</span>
+                        </div>
+                    `;
+                }).join('');
+        }
+
         function updateAnalytics() {
+            updateFunnelAnalytics();
+
             const monthInput = document.getElementById('analyticsMonth');
             if (!monthInput || !monthInput.value) return;
-            
+
             const [year, month] = monthInput.value.split('-').map(Number);
             
             const monthQuotations = allQuotations.filter(q => {
@@ -2018,12 +2534,15 @@
         // ------------------------------------------------------------
         async function loadCatalog() {
             try {
-                const [svcRes, itemsRes, pkgRes, galRes, faqRes] = await Promise.all([
+                const [svcRes, itemsRes, pkgRes, galRes, faqRes, tplRes, userRes, peakRes] = await Promise.all([
                     fetch(`${CONFIG.API_URL}/api/services/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/pricing/items`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/pricing/packages`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/gallery/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
-                    fetch(`${CONFIG.API_URL}/api/faq/admin`, { headers: { Authorization: `Bearer ${adminToken}` } })
+                    fetch(`${CONFIG.API_URL}/api/faq/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/message-templates`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/admin/usernames`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/peak-periods`, { headers: { Authorization: `Bearer ${adminToken}` } })
                 ]);
 
                 if (svcRes.status === 401 || itemsRes.status === 401 || pkgRes.status === 401) return;
@@ -2033,12 +2552,18 @@
                 const pkgData = await pkgRes.json();
                 const galData = await galRes.json();
                 const faqData = await faqRes.json();
+                const tplData = await tplRes.json();
+                const userData = await userRes.json();
+                const peakData = await peakRes.json();
 
                 servicesCache = svcData.data || [];
                 pricingItemsCache = itemsData.data || [];
                 packagesCache = pkgData.data || [];
                 galleryCache = galData.data || [];
                 faqCache = faqData.data || [];
+                messageTemplatesCache = tplData.data || [];
+                adminUsernamesCache = userData.data || [];
+                peakPeriodsCache = peakData.data || [];
 
                 renderServicesAdminList();
                 renderPricingItemsList();
@@ -2047,10 +2572,25 @@
                 populateQuickAddSelect();
                 renderGalleryAdminList();
                 renderFaqAdminList();
+                renderMessageTemplatesList();
+                renderPeakPeriodsList();
+                renderAdminCalendar();
 
             } catch (err) {
                 console.error('Load catalog error:', err);
             }
+        }
+
+        // Fills {{placeholder}} tokens in an admin-editable template body.
+        // Missing keys resolve to '' rather than leaving the raw token
+        // visible in an outgoing customer message.
+        function renderTemplate(body, vars) {
+            return body.replace(/\{\{(\w+)\}\}/g, (_, key) => (vars[key] !== undefined && vars[key] !== null) ? String(vars[key]) : '');
+        }
+
+        function getTemplateBody(key, fallback) {
+            const tpl = messageTemplatesCache.find(t => t.key === key);
+            return tpl ? tpl.body : fallback;
         }
 
         // ---- Gallery ----
@@ -2106,18 +2646,65 @@
 
         async function uploadGalleryPhoto() {
             const fileInput = document.getElementById('gal_image_file');
-            const file = fileInput.files[0];
-            if (!file) return;
+            const files = [...fileInput.files];
+            if (files.length === 0) return;
 
             const label = document.getElementById('galUploadLabel');
             const originalText = label.textContent;
-            label.textContent = 'Uploading...';
 
+            // Single file: unchanged behavior - upload, preview, let the
+            // admin edit the title before clicking "Add Photo" themselves.
+            if (files.length === 1) {
+                label.textContent = 'Uploading...';
+                try {
+                    const formData = new FormData();
+                    formData.append('image', files[0]);
+
+                    const res = await fetch(`${CONFIG.API_URL}/api/upload/image`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${adminToken}` },
+                        body: formData
+                    });
+
+                    if (res.status === 401) {
+                        localStorage.removeItem('adminToken');
+                        adminToken = '';
+                        document.getElementById('toolContent').classList.add('hidden');
+                        document.getElementById('passwordGate').classList.remove('hidden');
+                        return;
+                    }
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || 'Upload failed');
+                    }
+
+                    const result = await res.json();
+                    document.getElementById('gal_image_url').value = result.url;
+
+                    const preview = document.getElementById('galUploadPreview');
+                    const previewImg = document.getElementById('galUploadPreviewImg');
+                    previewImg.src = result.url;
+                    preview.classList.remove('hidden');
+
+                } catch (err) {
+                    alert('Upload failed: ' + err.message);
+                } finally {
+                    label.textContent = originalText;
+                }
+                return;
+            }
+
+            // Multiple files: upload the whole batch, then create one
+            // gallery item per photo automatically using the shared
+            // title/category/active fields already in the form - editing
+            // each photo's title individually isn't practical for a batch.
+            label.textContent = `Uploading ${files.length} photos...`;
             try {
                 const formData = new FormData();
-                formData.append('image', file);
+                files.forEach(f => formData.append('images', f));
 
-                const res = await fetch(`${CONFIG.API_URL}/api/upload/image`, {
+                const res = await fetch(`${CONFIG.API_URL}/api/upload/images`, {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${adminToken}` },
                     body: formData
@@ -2131,21 +2718,32 @@
                     return;
                 }
 
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.error || 'Upload failed');
+                const result = await res.json();
+                if (!res.ok || !result.urls || result.urls.length === 0) {
+                    throw new Error(result.error || 'Upload failed');
                 }
 
-                const result = await res.json();
-                document.getElementById('gal_image_url').value = result.url;
+                const title = document.getElementById('gal_title').value.trim();
+                const category = document.getElementById('gal_category').value.trim();
+                const active = document.getElementById('gal_active').checked;
 
-                const preview = document.getElementById('galUploadPreview');
-                const previewImg = document.getElementById('galUploadPreviewImg');
-                previewImg.src = result.url;
-                preview.classList.remove('hidden');
+                for (const url of result.urls) {
+                    await fetch(`${CONFIG.API_URL}/api/gallery`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                        body: JSON.stringify({ title, category, image_url: url, active })
+                    });
+                }
+
+                if (result.errors && result.errors.length > 0) {
+                    alert(`Added ${result.urls.length} photo(s). ${result.errors.length} failed:\n${result.errors.join('\n')}`);
+                }
+
+                resetGalleryForm();
+                await loadCatalog();
 
             } catch (err) {
-                alert('Upload failed: ' + err.message);
+                alert('Batch upload failed: ' + err.message);
             } finally {
                 label.textContent = originalText;
             }
@@ -2273,6 +2871,134 @@
             }
         }
 
+        // ---- Peak Periods (BAU backlog #17 - admin calendar holiday awareness) ----
+        function renderPeakPeriodsList() {
+            const el = document.getElementById('peakPeriodsList');
+            if (!el) return;
+            if (peakPeriodsCache.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400">No peak periods added yet.</p>';
+                return;
+            }
+            el.innerHTML = peakPeriodsCache.map(p => `
+                <div class="border rounded-xl p-3 text-sm flex justify-between items-center ${p.active ? '' : 'opacity-50'}">
+                    <div>
+                        <strong>${escapeHTML(p.name)}</strong>
+                        <div class="text-xs text-gray-500 mt-0.5">${formatDate(p.start_date)} - ${formatDate(p.end_date)}${p.active ? '' : ' (inactive)'}</div>
+                    </div>
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button onclick="editPeakPeriod(${p.id})" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">Edit</button>
+                        <button onclick="deletePeakPeriod(${p.id})" class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editPeakPeriod(id) {
+            const p = peakPeriodsCache.find(x => x.id === id);
+            if (!p) return;
+            editingPeakPeriodId = id;
+            document.getElementById('peak_name').value = p.name || '';
+            document.getElementById('peak_start').value = toDateInputValue(p.start_date);
+            document.getElementById('peak_end').value = toDateInputValue(p.end_date);
+            document.getElementById('peak_active').checked = !!p.active;
+            document.getElementById('peakSaveLabel').textContent = 'Update Peak Period';
+            document.getElementById('peakCancelBtn').classList.remove('hidden');
+        }
+
+        function resetPeakPeriodForm() {
+            editingPeakPeriodId = null;
+            document.getElementById('peak_name').value = '';
+            document.getElementById('peak_start').value = '';
+            document.getElementById('peak_end').value = '';
+            document.getElementById('peak_active').checked = true;
+            document.getElementById('peakSaveLabel').textContent = 'Add Peak Period';
+            document.getElementById('peakCancelBtn').classList.add('hidden');
+        }
+
+        async function savePeakPeriod() {
+            const name = document.getElementById('peak_name').value.trim();
+            const start_date = document.getElementById('peak_start').value;
+            const end_date = document.getElementById('peak_end').value;
+            const active = document.getElementById('peak_active').checked;
+
+            if (!name || !start_date || !end_date) { alert('Name, start date, and end date are required'); return; }
+            if (end_date < start_date) { alert('End date must be on or after the start date'); return; }
+
+            try {
+                const url = editingPeakPeriodId ? `${CONFIG.API_URL}/api/peak-periods/${editingPeakPeriodId}` : `${CONFIG.API_URL}/api/peak-periods`;
+                const method = editingPeakPeriodId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ name, start_date, end_date, active })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save peak period');
+                }
+                resetPeakPeriodForm();
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deletePeakPeriod(id) {
+            if (!confirm('Delete this peak period?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/peak-periods/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to delete peak period');
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // ---- WhatsApp Message Templates ----
+        function renderMessageTemplatesList() {
+            const el = document.getElementById('messageTemplatesList');
+            if (!el) return;
+            if (messageTemplatesCache.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400">No templates found.</p>';
+                return;
+            }
+            el.innerHTML = messageTemplatesCache.map(t => `
+                <div class="border rounded-xl p-3">
+                    <label class="block text-sm font-medium mb-1">${escapeHTML(t.label)}</label>
+                    <textarea id="tpl_${t.key}" rows="8" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono">${escapeHTML(t.body)}</textarea>
+                    <button onclick="saveMessageTemplate('${t.key}')" class="mt-2 bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">
+                        Save Template
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function saveMessageTemplate(key) {
+            try {
+                const textarea = document.getElementById(`tpl_${key}`);
+                if (!textarea) return;
+
+                const res = await fetch(`${CONFIG.API_URL}/api/message-templates/${key}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ body: textarea.value })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save template');
+                }
+
+                await loadCatalog();
+                alert('Template saved.');
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
         // ------------------------------------------------------------
         // TASK CHECKLIST (per quotation)
         // ------------------------------------------------------------
@@ -2314,6 +3040,10 @@
                 <div class="flex items-center gap-2 text-xs py-1">
                     <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTaskDone(${t.id}, ${quotationId}, this.checked)">
                     <span class="flex-1 ${t.done ? 'line-through text-gray-400' : ''}">${escapeHTML(t.title)}</span>
+                    <select onchange="reassignTask(${t.id}, ${quotationId}, this.value)" class="border rounded-lg px-1 py-0.5 text-xs">
+                        <option value="" ${!t.assigned_to_admin_id ? 'selected' : ''}>Unassigned</option>
+                        ${adminUsernamesCache.map(u => `<option value="${u.id}" ${String(t.assigned_to_admin_id) === String(u.id) ? 'selected' : ''}>${escapeHTML(u.username)}</option>`).join('')}
+                    </select>
                     <button onclick="deleteTask(${t.id}, ${quotationId})" class="text-red-400 hover:text-red-600 transition">&#10005;</button>
                 </div>
             `).join('');
@@ -2321,6 +3051,7 @@
 
         async function addTask(quotationId) {
             const input = document.getElementById(`newTaskInput_${quotationId}`);
+            const assigneeSelect = document.getElementById(`newTaskAssignee_${quotationId}`);
             const title = input.value.trim();
             if (!title) return;
 
@@ -2328,10 +3059,28 @@
                 const res = await fetch(`${CONFIG.API_URL}/api/tasks`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                    body: JSON.stringify({ quotation_id: quotationId, title })
+                    body: JSON.stringify({
+                        quotation_id: quotationId,
+                        title,
+                        assigned_to_admin_id: assigneeSelect?.value || null
+                    })
                 });
                 if (!res.ok) throw new Error('Failed to add task');
                 input.value = '';
+                await loadTasks(quotationId);
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function reassignTask(taskId, quotationId, adminId) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/tasks/${taskId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ assigned_to_admin_id: adminId || null })
+                });
+                if (!res.ok) throw new Error('Failed to reassign task');
                 await loadTasks(quotationId);
             } catch (err) {
                 alert('Error: ' + err.message);
@@ -2683,10 +3432,69 @@
             if (totalEl) totalEl.textContent = 'RM ' + total;
             if (depositEl) depositEl.textContent = 'RM ' + Math.round(total * 0.3);
             if (balanceEl) balanceEl.textContent = 'RM ' + Math.round(total * 0.7);
+            saveQuotationDraft();
         }
         document.addEventListener('input', function(e) {
             if (e.target.classList.contains('service-price')) calculate();
         });
+
+        // ------------------------------------------------------------
+        // DRAFT AUTO-SAVE (BAU backlog #18) - protects against a browser
+        // crash or session expiry losing an in-progress quotation before
+        // "Save Quotation" is ever clicked. Scoped to building a brand
+        // NEW quotation only (not editing an existing one) - an existing
+        // quotation is already a saved DB row, so the "unsaved work" risk
+        // this protects against doesn't apply there the same way.
+        // ------------------------------------------------------------
+        function quotationDraftKey(inquiryId) {
+            return `quotationDraft_${inquiryId}`;
+        }
+
+        function saveQuotationDraft() {
+            if (!selectedInquiry || editingQuotationId) return;
+            const names = document.querySelectorAll('.service-name');
+            const prices = document.querySelectorAll('.service-price');
+            const items = [];
+            for (let i = 0; i < names.length; i++) {
+                const name = names[i].value.trim();
+                const price = prices[i].value;
+                if (name || price) items.push({ name, price });
+            }
+            if (items.length === 0) {
+                localStorage.removeItem(quotationDraftKey(selectedInquiry.id));
+                return;
+            }
+            localStorage.setItem(quotationDraftKey(selectedInquiry.id), JSON.stringify({ items, savedAt: new Date().toISOString() }));
+        }
+
+        function clearQuotationDraft(inquiryId) {
+            localStorage.removeItem(quotationDraftKey(inquiryId));
+        }
+
+        // Offers to restore an unsaved draft for this inquiry, if one
+        // exists from an earlier session that never got saved. Returns
+        // true if a draft was restored (caller should skip its own
+        // default blank-row setup).
+        function offerToRestoreQuotationDraft(inquiryId) {
+            const raw = localStorage.getItem(quotationDraftKey(inquiryId));
+            if (!raw) return false;
+            try {
+                const draft = JSON.parse(raw);
+                if (!draft.items || draft.items.length === 0) { clearQuotationDraft(inquiryId); return false; }
+
+                const savedAt = draft.savedAt ? new Date(draft.savedAt).toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' }) : 'earlier';
+                const restore = confirm(`An unsaved quotation draft from ${savedAt} was found for this inquiry. Restore it?`);
+                if (!restore) { clearQuotationDraft(inquiryId); return false; }
+
+                const container = document.getElementById('serviceRows');
+                container.innerHTML = '';
+                draft.items.forEach(i => addServiceRow(i.name, i.price));
+                return true;
+            } catch (e) {
+                clearQuotationDraft(inquiryId);
+                return false;
+            }
+        }
 
         // ------------------------------------------------------------
         // GENERATE QUOTATION
@@ -2772,6 +3580,7 @@
                     const depositForPdf = deposit;
                     const balanceForPdf = balance;
 
+                    clearQuotationDraft(inqForPdf.id);
                     editingQuotationId = null;
                     selectedInquiry = null;
                     await loadQuotations();
@@ -2940,13 +3749,13 @@
         }
 
         async function deleteQuotation(id) {
-            if (!confirm('Delete this quotation?')) return;
+            if (!confirm('Delete this quotation? It can be restored afterwards from "Recently Deleted" below the list.')) return;
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}`, {
                     method: 'DELETE',
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
-                
+
                 if (res.status === 401) {
                     localStorage.removeItem('adminToken');
                     adminToken = '';
@@ -2955,17 +3764,127 @@
                     alert('Session expired. Please login again.');
                     return;
                 }
-                
+
                 if (res.ok) {
-                    alert('Quotation deleted');
                     await loadQuotations();
                 } else {
                     const err = await res.json();
                     throw new Error(err.error || 'Delete failed');
                 }
-            } catch (err) { 
+            } catch (err) {
                 console.error(err);
                 alert('Delete failed: ' + err.message);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // RECENTLY DELETED (delete safety net - quotations + inquiries)
+        // ------------------------------------------------------------
+        let recentlyDeletedLoaded = false;
+
+        function toggleRecentlyDeleted() {
+            const panel = document.getElementById('recentlyDeletedPanel');
+            const isHidden = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden');
+            if (isHidden) {
+                loadDeletedQuotations();
+                loadDeletedInquiries();
+            }
+        }
+
+        async function loadDeletedQuotations() {
+            const el = document.getElementById('deletedQuotationsList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/deleted`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to load');
+                const result = await res.json();
+                const rows = result.data || [];
+                el.innerHTML = rows.length === 0
+                    ? '<p class="text-sm text-gray-500">Nothing deleted.</p>'
+                    : rows.map(q => `
+                        <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm">
+                            <div>
+                                <strong>${escapeHTML(q.quotation_no || ('#' + q.id))}</strong>
+                                <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(q.customer_name)} | RM ${q.total || 0}</div>
+                                <div class="text-xs text-gray-400 mt-0.5">Deleted ${formatDateTime(q.deleted_at)}</div>
+                            </div>
+                            <button onclick="restoreQuotation(${q.id})" class="bg-gold text-dark px-3 py-1.5 rounded-full text-xs font-medium hover:bg-yellow-600 transition whitespace-nowrap">
+                                Restore
+                            </button>
+                        </div>
+                    `).join('');
+            } catch (err) {
+                console.error('Load deleted quotations error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
+            }
+        }
+
+        async function loadDeletedInquiries() {
+            const el = document.getElementById('deletedInquiriesList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/deleted`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to load');
+                const result = await res.json();
+                const rows = result.data || [];
+                el.innerHTML = rows.length === 0
+                    ? '<p class="text-sm text-gray-500">Nothing deleted.</p>'
+                    : rows.map(i => `
+                        <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm">
+                            <div>
+                                <strong>#${i.id} - ${escapeHTML(i.customer_name)}</strong>
+                                <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(i.event_type || '-')} | ${formatDate(i.event_date)} | ${escapeHTML(i.phone || '-')}</div>
+                                <div class="text-xs text-gray-400 mt-0.5">Deleted ${formatDateTime(i.deleted_at)}</div>
+                            </div>
+                            <button onclick="restoreInquiry(${i.id})" class="bg-gold text-dark px-3 py-1.5 rounded-full text-xs font-medium hover:bg-yellow-600 transition whitespace-nowrap">
+                                Restore
+                            </button>
+                        </div>
+                    `).join('');
+            } catch (err) {
+                console.error('Load deleted inquiries error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
+            }
+        }
+
+        async function restoreQuotation(id) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}/restore`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Restore failed');
+                }
+                await loadQuotations();
+                await loadDeletedQuotations();
+            } catch (err) {
+                alert('Restore failed: ' + err.message);
+            }
+        }
+
+        async function restoreInquiry(id) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/restore`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Restore failed');
+                }
+                await loadInquiries();
+                await loadDeletedInquiries();
+            } catch (err) {
+                alert('Restore failed: ' + err.message);
             }
         }
 
@@ -2992,25 +3911,25 @@
             if (total <= 0) { alert('Enter service prices'); return; }
             const deposit = Math.round(total * 0.3);
             const balance = Math.round(total * 0.7);
-
-            let msg = [`Hi ${inq.customer_name},`, '', 'Thank you for your inquiry.', '', 'QUOTATION', '--------------------'];
-            msg.push(`Event: ${inq.event_type || '-'}`);
-            msg.push(`Date: ${formatDate(inq.event_date)}`);
-            msg.push(`Guests: ${inq.guest_count || '-'} pax`, '');
-            msg.push('Services');
-            items.forEach(i => msg.push(`${i.name}: RM ${i.price}`));
-            msg.push('', '--------------------');
-            msg.push(`Total: RM ${total}`);
-            msg.push(`Deposit (30%): RM ${deposit}`);
-            msg.push(`Balance: RM ${balance}`);
             const valid = new Date();
             valid.setDate(valid.getDate() + 7);
-            msg.push('', `Valid until: ${valid.toLocaleDateString('en-MY')}`);
-            msg.push('', 'Payment Details', 'Maybank | 5xxxxx | Dekor By Ana', '', 'Thank you.');
+
+            const fallback = `Hi {{customer_name}},\n\nThank you for your inquiry.\n\nQUOTATION\n--------------------\nEvent: {{event_type}}\nDate: {{event_date}}\nGuests: {{guest_count}} pax\n\nServices\n{{items}}\n\n--------------------\nTotal: RM {{total}}\nDeposit (30%): RM {{deposit}}\nBalance: RM {{balance}}\n\nValid until: {{valid_until}}\n\nPayment Details\nMaybank | 5xxxxx | Dekor By Ana\n\nThank you.`;
+            const msgText = renderTemplate(getTemplateBody('quotation', fallback), {
+                customer_name: inq.customer_name,
+                event_type: inq.event_type || '-',
+                event_date: formatDate(inq.event_date),
+                guest_count: inq.guest_count || '-',
+                items: items.map(i => `${i.name}: RM ${i.price}`).join('\n'),
+                total,
+                deposit,
+                balance,
+                valid_until: valid.toLocaleDateString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })
+            });
 
             const output = document.getElementById('whatsappOutput');
             if (output) {
-                output.textContent = msg.join('\n');
+                output.textContent = msgText;
                 output.classList.remove('hidden');
             }
             const copyBtn = document.getElementById('copyBtn');
@@ -3018,7 +3937,7 @@
 
             const phone = inq.phone || '';
             if (phone) {
-                const url = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg.join('\n'))}`;
+                const url = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msgText)}`;
                 window.open(url, '_blank');
             } else {
                 if (output) output.scrollIntoView({ behavior: 'smooth' });
@@ -3055,7 +3974,7 @@
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
             doc.text(quotationNo, pageWidth - 14, 26, { align: 'right' });
-            doc.text(`Valid until: ${valid.toLocaleDateString('en-MY')}`, pageWidth - 14, 31, { align: 'right' });
+            doc.text(`Valid until: ${valid.toLocaleDateString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`, pageWidth - 14, 31, { align: 'right' });
 
             doc.setDrawColor(200);
             doc.line(14, 35, pageWidth - 14, 35);
@@ -3119,7 +4038,7 @@
 
             doc.setFontSize(8);
             doc.setTextColor(150);
-            doc.text(`Generated: ${new Date().toLocaleString('en-MY')}`, 14, doc.internal.pageSize.getHeight() - 10);
+            doc.text(`Generated: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`, 14, doc.internal.pageSize.getHeight() - 10);
 
             const fileName = `Quotation_${quotationNo}_${(inq.customer_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
             doc.save(fileName);
@@ -3431,6 +4350,8 @@
             renderCustomers(filtered);
         }
 
+        let currentCustomerDetail = null;
+
         async function viewCustomerDetail(id) {
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/customers/${id}`, {
@@ -3439,6 +4360,7 @@
                 if (!res.ok) throw new Error('Failed to load customer');
                 const result = await res.json();
                 const { customer, history } = result.data;
+                currentCustomerDetail = { customer, history };
 
                 document.getElementById('modalTitle').textContent = customer.name || 'Customer';
 
@@ -3450,6 +4372,9 @@
                         </div>
                         <div class="text-xs text-gray-400 mt-1">${formatDate(h.event_date)} - submitted ${formatDateTime(h.created_at)}</div>
                         ${h.quotation_no ? `<div class="text-xs mt-1">Quotation: <strong>${escapeHTML(h.quotation_no)}</strong> ${getStatusBadge(h.quotation_status)} - RM ${h.total || 0}</div>` : '<div class="text-xs text-gray-400 mt-1">No quotation yet</div>'}
+                        <button onclick='copyAsNewInquiry(${JSON.stringify(h).replace(/'/g, "&#39;")})' class="mt-2 text-xs border border-gray-300 text-gray-600 px-3 py-1 rounded-full font-medium hover:bg-gray-100 transition">
+                            Copy as New Booking (recurring event)
+                        </button>
                     </div>
                 `).join('') || '<p class="text-sm text-gray-400">No history found.</p>';
 
@@ -3464,13 +4389,137 @@
                         <textarea id="customerNotesInput" rows="2" class="w-full border rounded-xl px-3 py-2 text-sm mt-1">${escapeHTML(customer.notes || '')}</textarea>
                         <button onclick="saveCustomerNotes(${customer.id})" class="mt-2 bg-gold text-dark px-3 py-1.5 rounded-full text-xs font-medium hover:bg-yellow-600 transition">Save Notes</button>
                     </div>
-                    <h3 class="font-semibold text-sm mb-2">Booking History (${history.length})</h3>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-semibold text-sm">Booking History (${history.length})</h3>
+                        <button onclick="exportCustomerHistoryPDF()" class="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded-full font-medium hover:bg-gray-100 transition">
+                            Export PDF
+                        </button>
+                    </div>
                     ${historyHtml}
                 `;
                 document.getElementById('inquiryModal').classList.add('active');
 
             } catch (err) {
                 alert('Failed to load customer: ' + err.message);
+            }
+        }
+
+        // Exports the currently open customer's full booking history to a
+        // PDF - reuses the same jsPDF/autoTable setup as the quotation PDF
+        // (buildAndDownloadPDF above) for a consistent look.
+        function exportCustomerHistoryPDF() {
+            if (!currentCustomerDetail) {
+                alert('Open a customer first.');
+                return;
+            }
+            const { jsPDF } = window.jspdf || {};
+            if (!jsPDF) {
+                alert('PDF library failed to load. Please check your internet connection and try again.');
+                return;
+            }
+
+            const { customer, history } = currentCustomerDetail;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text('Dekor By Ana', 14, 20);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text('Event Decoration & Styling', 14, 26);
+
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('CUSTOMER HISTORY', pageWidth - 14, 20, { align: 'right' });
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(customer.name || '-', pageWidth - 14, 26, { align: 'right' });
+
+            doc.setDrawColor(200);
+            doc.line(14, 35, pageWidth - 14, 35);
+
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text('Customer', 14, 44);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(10);
+            doc.text(`Phone: ${customer.phone || '-'}`, 14, 50);
+            doc.text(`Email: ${customer.email || '-'}`, 14, 55);
+            doc.text(`Customer since: ${formatDate(customer.first_seen_at)}`, 14, 60);
+
+            doc.autoTable({
+                startY: 68,
+                head: [['Event Date', 'Event Type', 'Status', 'Quotation', 'Total (RM)']],
+                body: history.map(h => [
+                    formatDate(h.event_date),
+                    h.event_type || '-',
+                    (INQUIRY_STATUS_LABELS[h.status] || h.status || '-'),
+                    h.quotation_no || '-',
+                    h.total ? Number(h.total).toFixed(2) : '-'
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [201, 168, 76], textColor: [26, 26, 26] },
+                styles: { fontSize: 9 },
+                columnStyles: { 4: { halign: 'right' } }
+            });
+
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(`Generated: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`, 14, doc.internal.pageSize.getHeight() - 10);
+
+            const fileName = `Customer_History_${(customer.name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            doc.save(fileName);
+        }
+
+        // "Copy previous year's event" quick-start for recurring annual
+        // clients (BAU backlog #12). Takes a past history entry from the
+        // currently-open customer, asks only for the new date, and creates
+        // a brand new inquiry from it - it re-enters the normal pipeline
+        // (Unread/All Inquiries -> Generate Quotation) from there, exactly
+        // like any customer-submitted inquiry would.
+        async function copyAsNewInquiry(historyEntry) {
+            if (!currentCustomerDetail) return;
+            const { customer } = currentCustomerDetail;
+
+            const newDate = prompt(`New event date for this recurring booking (YYYY-MM-DD):`, '');
+            if (!newDate) return;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+                alert('Please enter the date as YYYY-MM-DD.');
+                return;
+            }
+
+            let servicesRequested = historyEntry.services_requested;
+            if (typeof servicesRequested === 'string') {
+                try { servicesRequested = JSON.parse(servicesRequested); } catch (e) { servicesRequested = []; }
+            }
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/admin-create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({
+                        customer_name: customer.name,
+                        phone: customer.phone,
+                        event_type: historyEntry.event_type,
+                        event_date: newDate,
+                        guest_count: historyEntry.guest_count,
+                        services_requested: servicesRequested || [],
+                        message: `Recurring booking - copied from ${historyEntry.event_type || 'previous event'} on ${formatDate(historyEntry.event_date)}.`
+                    })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to create inquiry');
+                }
+
+                const result = await res.json();
+                closeModal();
+                await loadInquiries();
+                alert(`New inquiry #${result.data.id} created for ${formatDate(newDate)}. Continue as usual from Unread/All Inquiries.`);
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
 
