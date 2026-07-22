@@ -69,10 +69,28 @@ document.addEventListener('DOMContentLoaded', function() {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             dateInput.min = tomorrow.toISOString().split('T')[0];
-            
+
             const maxDate = new Date();
             maxDate.setMonth(maxDate.getMonth() + 18);
             dateInput.max = maxDate.toISOString().split('T')[0];
+        }
+
+        // BAU backlog #26 - auto-capture "source" from a ?source=Instagram
+        // style query param on ad links, so paid channels get tracked
+        // without the visitor having to do anything; organic visitors just
+        // see the dropdown at its normal blank default and can fill it in
+        // (or not - it's optional) themselves. Case-insensitive match
+        // against the dropdown's own option values, so a link author
+        // doesn't need to get capitalization exactly right.
+        const sourceSelect = document.getElementById('source');
+        if (sourceSelect) {
+            const sourceParam = new URLSearchParams(window.location.search).get('source');
+            if (sourceParam) {
+                const match = Array.from(sourceSelect.options).find(
+                    opt => opt.value && opt.value.toLowerCase() === sourceParam.toLowerCase()
+                );
+                if (match) sourceSelect.value = match.value;
+            }
         }
         
         form.addEventListener('submit', async function(e) {
@@ -105,7 +123,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 guest_count: parseInt(document.getElementById('guest_count').value),
                 services_requested: services,
                 message: document.getElementById('message').value.trim(),
-                idempotency_key: inquiryIdempotencyKey
+                idempotency_key: inquiryIdempotencyKey,
+                source: document.getElementById('source')?.value || ''
             };
 
             try {
