@@ -200,7 +200,7 @@
         <div id="toolContent" class="hidden">
 
             <!-- DASHBOARD STATS -->
-            <section class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <section class="grid grid-cols-2 md:grid-cols-7 gap-4 mb-6">
                 <div class="bg-white rounded-2xl p-4 shadow-sm">
                     <p class="text-xs text-gray-400">Unread</p>
                     <p class="text-2xl font-bold" id="statUnread">0</p>
@@ -220,6 +220,14 @@
                 <div class="bg-white rounded-2xl p-4 shadow-sm">
                     <p class="text-xs text-gray-400">Upcoming Events</p>
                     <p class="text-2xl font-bold" id="statUpcoming">0</p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Revenue Growth (MoM)</p>
+                    <p class="text-2xl font-bold" id="statGrowth">-</p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Conversion Rate</p>
+                    <p class="text-2xl font-bold" id="statConversion">-</p>
                 </div>
             </section>
 
@@ -261,6 +269,12 @@
                         <h2 class="text-lg font-semibold mb-3">Upcoming Events (Next 7 Days)</h2>
                         <div id="todayUpcomingList" class="upcoming-reminders-target space-y-2 max-h-[350px] overflow-y-auto pr-2">
                             <p class="text-sm text-gray-400">Loading...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3 text-red-700">Today's Event Tasks</h2>
+                        <div id="todayEventTasksList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
                         </div>
                     </div>
                     <div>
@@ -318,6 +332,23 @@
                         <option value="cancelled">Pipeline: Cancelled</option>
                     </select>
                 </div>
+                <!-- BAU backlog #13 - widened search. The box above still
+                     filters instantly client-side (name/phone/event/status,
+                     unchanged); "Apply" here re-queries the server with the
+                     same search text plus a date range, also reaching
+                     admin_notes/message and every inquiry (not just what's
+                     currently loaded on this page). -->
+                <div class="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                    <label class="flex items-center gap-1.5 text-xs text-gray-500">Event date from
+                        <input type="date" id="inquiryDateFrom" class="border border-gray-200 rounded-xl px-2 py-1.5 text-sm ml-1">
+                    </label>
+                    <label class="flex items-center gap-1.5 text-xs text-gray-500">to
+                        <input type="date" id="inquiryDateTo" class="border border-gray-200 rounded-xl px-2 py-1.5 text-sm ml-1">
+                    </label>
+                    <button onclick="applyInquiryFilters()" class="border border-gray-300 text-gray-600 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-gray-100 transition">Apply Filters</button>
+                    <button onclick="clearInquiryFilters()" class="text-xs text-gray-400 hover:text-gray-600 transition">Clear</button>
+                    <span class="text-[10px] text-gray-400">Apply also searches notes/messages across every inquiry, not just what's loaded</span>
+                </div>
                 <div class="mb-3 flex flex-wrap items-center gap-2 text-sm">
                     <label class="flex items-center gap-1.5">
                         <input type="checkbox" id="selectAllInquiries" onchange="toggleSelectAllInquiries(this.checked)" />
@@ -359,6 +390,21 @@
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
                     </select>
+                </div>
+                <!-- BAU backlog #13 - widened search, same pattern as
+                     Inquiries: the box above still filters instantly
+                     client-side; "Apply" re-queries the server with the
+                     same search text plus a revenue range, across every
+                     quotation, not just what's currently loaded. -->
+                <div class="mb-4 flex flex-wrap items-center gap-2 text-sm -mt-2">
+                    <label class="flex items-center gap-1.5 text-xs text-gray-500">Revenue min (RM)
+                        <input type="number" id="quotationRevenueMin" class="border border-gray-200 rounded-xl px-2 py-1.5 text-sm ml-1 w-24">
+                    </label>
+                    <label class="flex items-center gap-1.5 text-xs text-gray-500">max (RM)
+                        <input type="number" id="quotationRevenueMax" class="border border-gray-200 rounded-xl px-2 py-1.5 text-sm ml-1 w-24">
+                    </label>
+                    <button onclick="applyQuotationFilters()" class="border border-gray-300 text-gray-600 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-gray-100 transition">Apply Filters</button>
+                    <button onclick="clearQuotationFilters()" class="text-xs text-gray-400 hover:text-gray-600 transition">Clear</button>
                 </div>
                 <div id="quotationHistory" class="space-y-3 max-h-[600px] overflow-y-auto">
                     <div class="text-center py-8">
@@ -418,18 +464,22 @@
                     <div class="bg-white rounded-2xl p-4 shadow-sm">
                         <h3 class="text-xs text-gray-400">Decoration Revenue</h3>
                         <p class="text-xl font-bold" id="analyticsDecoRevenue">RM 0</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5" id="analyticsDecoRequested"></p>
                     </div>
                     <div class="bg-white rounded-2xl p-4 shadow-sm">
                         <h3 class="text-xs text-gray-400">Photography Revenue</h3>
                         <p class="text-xl font-bold" id="analyticsPhotoRevenue">RM 0</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5" id="analyticsPhotoRequested"></p>
                     </div>
                     <div class="bg-white rounded-2xl p-4 shadow-sm">
                         <h3 class="text-xs text-gray-400">Catering Revenue</h3>
                         <p class="text-xl font-bold" id="analyticsCateringRevenue">RM 0</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5" id="analyticsCateringRequested"></p>
                     </div>
                     <div class="bg-white rounded-2xl p-4 shadow-sm">
                         <h3 class="text-xs text-gray-400">Magic Show Revenue</h3>
                         <p class="text-xl font-bold" id="analyticsMagicRevenue">RM 0</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5" id="analyticsMagicRequested"></p>
                     </div>
                     <div class="bg-white rounded-2xl p-4 shadow-sm">
                         <h3 class="text-xs text-gray-400">Total Events</h3>
@@ -463,6 +513,14 @@
                         <p class="text-sm text-gray-400">Loading...</p>
                     </div>
                 </div>
+
+                <div class="bg-white rounded-2xl p-6 shadow-sm mt-4">
+                    <h3 class="font-semibold mb-1">Inquiries by Source</h3>
+                    <p class="text-xs text-gray-400 mb-4">Where inquiries came from (BAU backlog #26) - optional field on the public form, so "Not specified" is expected for anyone who left it blank.</p>
+                    <div id="sourceBreakdown" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <p class="text-sm text-gray-400 col-span-full">Loading...</p>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB 5: GENERATE QUOTATION -->
@@ -483,6 +541,7 @@
 
                     <div id="quotationForm" class="hidden space-y-4">
                         <div class="bg-[#F8F8F8] p-4 rounded-xl text-sm" id="inquiryPreview"></div>
+                        <div id="pairSuggestion"></div>
 
                         <div>
                             <label class="block text-sm font-medium mb-1">Package Template</label>
@@ -594,6 +653,16 @@
                         <button id="peakCancelBtn" onclick="resetPeakPeriodForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
                     </div>
                     <div id="peakPeriodsList" class="space-y-2"></div>
+                </section>
+
+                <section class="bg-white rounded-2xl p-6 shadow-sm mt-4">
+                    <h2 class="text-lg font-semibold mb-1">Calendar Subscription (iCal)</h2>
+                    <p class="text-xs text-gray-400 mb-4">
+                        Read-only feed of confirmed (deposit-paid/completed) events - date and event type only, no customer phone, pricing, or notes.
+                        Subscribe to this link in Google Calendar/Outlook/your phone's calendar app to see bookings alongside everything else.
+                        This link is private to you - don't share it, it has no login of its own (that's how calendar subscriptions work).
+                    </p>
+                    <div id="calendarFeedLink" class="text-sm"></div>
                 </section>
             </div>
 
@@ -835,6 +904,16 @@
         let quotationsOffset = 0;
         let quotationsHasMore = false;
         let quotationsTotalCount = 0;
+        // BAU backlog #13 - server-side filters, only ever set by the
+        // explicit "Apply Filters" button (applyInquiryFilters() /
+        // applyQuotationFilters()) - NOT read live from the search boxes
+        // on every loadInquiries()/loadQuotations() call, since those
+        // functions also get called after routine actions like marking an
+        // inquiry read. Reading a live, unapplied search box value there
+        // would silently narrow the loaded dataset any time the admin
+        // happened to have text sitting in the box.
+        let inquiryServerFilters = { search: '', dateFrom: '', dateTo: '' };
+        let quotationServerFilters = { search: '', revenueMin: '', revenueMax: '' };
         // BAU backlog #4 - idempotency key for the current "Generate
         // Quotation" attempt, tied to which inquiry it was minted for
         // (see generateQuotation()). Reused across a retry of the same
@@ -867,6 +946,13 @@
         let messageTemplatesCache = [];
         let adminUsernamesCache = [];
         let peakPeriodsCache = [];
+        // High-demand weeks (BAU backlog #17) - Set of "YYYY-MM-DD" Monday
+        // week-start strings, matching Postgres's date_trunc('week', ...).
+        let highDemandWeeksCache = new Set();
+        // Frequently-paired services (BAU backlog #18)
+        let frequentPairsCache = [];
+        // BAU backlog #14 - the admin's own iCal subscription token
+        let calendarFeedToken = '';
         let editingPeakPeriodId = null;
 
         // ------------------------------------------------------------
@@ -1167,10 +1253,35 @@
         // ------------------------------------------------------------
         // TODAY DASHBOARD
         // ------------------------------------------------------------
+        function renderTaskCard(t, today) {
+            const overdue = t.due_date && new Date(t.due_date) < today;
+            return `
+                <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm ${overdue ? 'border-red-300 bg-red-50' : ''}">
+                    <div>
+                        <strong>${escapeHTML(t.title)}</strong>
+                        <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(t.customer_name)} | ${escapeHTML(t.quotation_no || '')}${t.assigned_to_username ? ` | Assigned: ${escapeHTML(t.assigned_to_username)}` : ''}</div>
+                        <div class="text-xs mt-0.5 ${overdue ? 'text-red-600 font-medium' : 'text-gray-400'}">
+                            ${t.due_date ? `Due ${formatDate(t.due_date)}${overdue ? ' (overdue)' : ''}` : 'No due date'}
+                        </div>
+                    </div>
+                    <button onclick="toggleTaskDone(${t.id}, ${t.quotation_id}, true); loadOpenTasksToday();" class="border border-gray-300 text-gray-600 px-3 py-1 rounded-full text-xs font-medium hover:bg-gray-100 transition whitespace-nowrap">
+                        Done
+                    </button>
+                </div>
+            `;
+        }
+
+        // BAU backlog #24 - additive grouping alongside the full open-tasks
+        // list below (todayTasksList), not a replacement - filtering the
+        // main list down to just today's events would hide an overdue
+        // task from last week from the one place it's currently impossible
+        // to miss.
         async function loadOpenTasksToday() {
             const el = document.getElementById('todayTasksList');
+            const eventTasksEl = document.getElementById('todayEventTasksList');
             if (!el) return;
             el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+            if (eventTasksEl) eventTasksEl.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
 
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/tasks/open`, {
@@ -1182,34 +1293,26 @@
 
                 const result = await res.json();
                 const tasks = result.data || [];
+                const today = new Date(new Date().toDateString());
+                const todayStr = today.toISOString().split('T')[0];
 
                 if (tasks.length === 0) {
                     el.innerHTML = '<p class="text-sm text-gray-500">No open tasks.</p>';
-                    return;
+                } else {
+                    el.innerHTML = tasks.map(t => renderTaskCard(t, today)).join('');
                 }
 
-                const today = new Date(new Date().toDateString());
-                el.innerHTML = tasks.map(t => {
-                    const overdue = t.due_date && new Date(t.due_date) < today;
-                    return `
-                        <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm ${overdue ? 'border-red-300 bg-red-50' : ''}">
-                            <div>
-                                <strong>${escapeHTML(t.title)}</strong>
-                                <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(t.customer_name)} | ${escapeHTML(t.quotation_no || '')}${t.assigned_to_username ? ` | Assigned: ${escapeHTML(t.assigned_to_username)}` : ''}</div>
-                                <div class="text-xs mt-0.5 ${overdue ? 'text-red-600 font-medium' : 'text-gray-400'}">
-                                    ${t.due_date ? `Due ${formatDate(t.due_date)}${overdue ? ' (overdue)' : ''}` : 'No due date'}
-                                </div>
-                            </div>
-                            <button onclick="toggleTaskDone(${t.id}, ${t.quotation_id}, true); loadOpenTasksToday();" class="border border-gray-300 text-gray-600 px-3 py-1 rounded-full text-xs font-medium hover:bg-gray-100 transition whitespace-nowrap">
-                                Done
-                            </button>
-                        </div>
-                    `;
-                }).join('');
+                if (eventTasksEl) {
+                    const eventTasks = tasks.filter(t => t.event_date && String(t.event_date).split('T')[0] === todayStr);
+                    eventTasksEl.innerHTML = eventTasks.length === 0
+                        ? '<p class="text-sm text-gray-500">No tasks for events happening today.</p>'
+                        : eventTasks.map(t => renderTaskCard(t, today)).join('');
+                }
 
             } catch (err) {
                 console.error('Load open tasks error:', err);
                 el.innerHTML = '<p class="text-sm text-red-500">Failed to load open tasks.</p>';
+                if (eventTasksEl) eventTasksEl.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
             }
         }
 
@@ -1539,6 +1642,22 @@
                 if (!select) return;
                 const newStatus = select.value;
 
+                // BAU backlog #30 - confirmation prompt before the 2-3
+                // genuinely high-stakes transitions only (confirm/cancel),
+                // not the whole status dropdown - a confirm on every
+                // change would just become reflexive "yes" clicking within
+                // a week and stop protecting anything. This select requires
+                // a separate "Update" button click (not auto-submit on
+                // change - see the modal markup above), so cancelling here
+                // just leaves the dropdown as picked with nothing sent;
+                // reopening the inquiry rebuilds it from the real status.
+                if (newStatus === 'confirmed' || newStatus === 'cancelled') {
+                    const verb = newStatus === 'confirmed' ? 'confirm this booking' : 'cancel this booking';
+                    if (!confirm(`Are you sure you want to ${verb}? This is a high-stakes change.`)) {
+                        return;
+                    }
+                }
+
                 const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/status`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
@@ -1624,10 +1743,40 @@
         // ------------------------------------------------------------
         // LOAD INQUIRIES
         // ------------------------------------------------------------
+        // BAU backlog #13 - builds the query string from inquiryServerFilters
+        // (only ever set by applyInquiryFilters()), shared by loadInquiries()
+        // and loadMoreInquiries() so a filtered search stays applied across
+        // pagination instead of Load More silently returning to unfiltered.
+        function inquiryFilterParams(extra) {
+            const params = new URLSearchParams(extra);
+            if (inquiryServerFilters.search) params.set('search', inquiryServerFilters.search);
+            if (inquiryServerFilters.dateFrom) params.set('date_from', inquiryServerFilters.dateFrom);
+            if (inquiryServerFilters.dateTo) params.set('date_to', inquiryServerFilters.dateTo);
+            return params.toString();
+        }
+
+        async function applyInquiryFilters() {
+            inquiryServerFilters = {
+                search: document.getElementById('inquirySearch')?.value?.trim() || '',
+                dateFrom: document.getElementById('inquiryDateFrom')?.value || '',
+                dateTo: document.getElementById('inquiryDateTo')?.value || ''
+            };
+            await loadInquiries();
+        }
+
+        function clearInquiryFilters() {
+            const dateFrom = document.getElementById('inquiryDateFrom');
+            const dateTo = document.getElementById('inquiryDateTo');
+            if (dateFrom) dateFrom.value = '';
+            if (dateTo) dateTo.value = '';
+            inquiryServerFilters = { search: '', dateFrom: '', dateTo: '' };
+            loadInquiries();
+        }
+
         async function loadInquiries() {
             const unreadList = document.getElementById('unreadInquiryList');
             const allList = document.getElementById('allInquiryList');
-            
+
             // Show loading state
             if (unreadList) {
                 unreadList.innerHTML = `
@@ -1647,7 +1796,7 @@
             }
 
             try {
-                const res = await fetch(`${CONFIG.API_URL}/api/inquiry?limit=${LIST_PAGE_SIZE}&offset=0`, {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry?${inquiryFilterParams({ limit: LIST_PAGE_SIZE, offset: 0 })}`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
 
@@ -1686,7 +1835,7 @@
         // not a reset.
         async function loadMoreInquiries() {
             try {
-                const res = await fetch(`${CONFIG.API_URL}/api/inquiry?limit=${LIST_PAGE_SIZE}&offset=${inquiriesOffset}`, {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry?${inquiryFilterParams({ limit: LIST_PAGE_SIZE, offset: inquiriesOffset })}`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
 
@@ -1708,6 +1857,24 @@
                 console.error('Load more inquiries error:', err);
                 alert('Failed to load more inquiries: ' + err.message);
             }
+        }
+
+        // BAU backlog #17 (weekly capacity alerts) - matches Postgres's
+        // date_trunc('week', ...), which truncates to the Monday of that
+        // ISO week. Uses UTC methods throughout so the result never shifts
+        // by a day depending on the browser's local timezone (event_date
+        // is a plain DATE with no timezone of its own).
+        function getWeekStartMonday(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00Z');
+            const day = d.getUTCDay();
+            const diff = (day === 0 ? -6 : 1) - day;
+            d.setUTCDate(d.getUTCDate() + diff);
+            return d.toISOString().split('T')[0];
+        }
+
+        function highDemandWeekBadge(eventDate) {
+            if (!eventDate || !highDemandWeeksCache.has(getWeekStartMonday(eventDate))) return '';
+            return '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium ml-1">High Demand Week</span>';
         }
 
         function renderInquiries(inquiries) {
@@ -1789,13 +1956,16 @@
                                     Mark Read
                                 </button>
                             </div>
-                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}</div>
+                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}${highDemandWeekBadge(inq.event_date)}</div>
                             <div class="text-xs text-gray-500 mt-1">
                                 ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
                             </div>
                             <div class="text-xs text-gray-400 mt-0.5 truncate">
                                 ${inq.services_requested ? (typeof inq.services_requested === 'string' ? JSON.parse(inq.services_requested).join(', ') : inq.services_requested.join(', ')) : 'No services selected'}
                             </div>
+                            <button onclick="event.stopPropagation(); generateQuotationFromCard(${inq.id})" class="mt-2 text-xs border border-gold text-dark px-3 py-1 rounded-full font-medium hover:bg-gold transition">
+                                Generate Quotation
+                            </button>
                         </div>
                     `).join('');
                 }
@@ -1837,13 +2007,16 @@
                                     ${inq.is_read ? 'Read' : 'Unread'}
                                 </span>
                             </div>
-                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}</div>
+                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}${highDemandWeekBadge(inq.event_date)}</div>
                             <div class="text-xs text-gray-500 mt-1">
                                 ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
                             </div>
                             <div class="text-xs text-gray-400 mt-0.5 truncate">
                                 ${inq.services_requested ? (typeof inq.services_requested === 'string' ? JSON.parse(inq.services_requested).join(', ') : inq.services_requested.join(', ')) : 'No services selected'}
                             </div>
+                            <button onclick="event.stopPropagation(); generateQuotationFromCard(${inq.id})" class="mt-2 text-xs border border-gold text-dark px-3 py-1 rounded-full font-medium hover:bg-gold transition">
+                                Generate Quotation
+                            </button>
                         </div>
                     `).join('');
                 }
@@ -2027,31 +2200,90 @@
             calculate();
         }
 
+        // BAU backlog #29 - shortcut from an inquiry card straight into
+        // the quotation builder, skipping the manual ID-search step
+        // loadInquiryForQuotation() normally requires the admin to have
+        // already navigated to the Generate Quotation tab for.
+        function generateQuotationFromCard(id) {
+            switchTab('generate');
+            loadInquiryForQuotation(id);
+        }
+
+        // BAU backlog #18 - matches the service checkbox codes used on the
+        // public inquiry form (see website/contact.html and
+        // services/whatsapp.js's formatWhatsAppMessage).
+        const SERVICE_CODE_LABELS = { deco: 'Decoration', photo: 'Photography', catering: 'Catering', magic: 'Magic Show' };
+
+        // For each service this inquiry already requested, surface any
+        // frequently-paired service it *doesn't* already have - "customers
+        // who wanted X often also wanted Y". frequentPairsCache is
+        // pre-filtered server-side to pairs seen 5+ times (see GET
+        // /api/quotation/frequent-pairs), so nothing here needs its own
+        // sample-size guard.
+        function renderPairSuggestion(inq) {
+            const el = document.getElementById('pairSuggestion');
+            if (!el) return;
+            el.innerHTML = '';
+
+            let requested = [];
+            if (inq.services_requested) {
+                try {
+                    requested = typeof inq.services_requested === 'string'
+                        ? JSON.parse(inq.services_requested)
+                        : inq.services_requested;
+                } catch (e) { requested = []; }
+            }
+            if (!Array.isArray(requested) || requested.length === 0) return;
+
+            const suggestions = [];
+            frequentPairsCache.forEach(pair => {
+                let requestedSide, otherSide;
+                if (requested.includes(pair.service_a) && !requested.includes(pair.service_b)) {
+                    requestedSide = pair.service_a; otherSide = pair.service_b;
+                } else if (requested.includes(pair.service_b) && !requested.includes(pair.service_a)) {
+                    requestedSide = pair.service_b; otherSide = pair.service_a;
+                } else {
+                    return;
+                }
+                suggestions.push({ requestedSide, otherSide, count: pair.count });
+            });
+
+            if (suggestions.length === 0) return;
+
+            el.innerHTML = suggestions.map(s => `
+                <div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+                    Often added together: customers who wanted ${SERVICE_CODE_LABELS[s.requestedSide] || s.requestedSide}
+                    also wanted ${SERVICE_CODE_LABELS[s.otherSide] || s.otherSide} (${s.count} times).
+                </div>
+            `).join('');
+        }
+
         function loadInquiryForQuotation(id) {
             const inq = allInquiries.find(i => i.id === id);
             if (!inq) return;
-            
+
             selectedInquiry = inq;
             document.getElementById('quotationForm').classList.remove('hidden');
-            
+
             let servicesStr = '';
             if (inq.services_requested) {
                 try {
-                    const services = typeof inq.services_requested === 'string' ? 
+                    const services = typeof inq.services_requested === 'string' ?
                         JSON.parse(inq.services_requested) : inq.services_requested;
                     servicesStr = services.join(', ');
                 } catch(e) {
                     servicesStr = inq.services_requested;
                 }
             }
-            
+
             document.getElementById('inquiryPreview').innerHTML = `
                 <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong><br>
                 ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)}
                 <br>Phone: ${escapeHTML(inq.phone || '-')}
                 <br>Services: ${servicesStr || 'No services selected'}
             `;
-            
+            renderPairSuggestion(inq);
+
             const container = document.getElementById('serviceRows');
             container.innerHTML = '';
             const restored = offerToRestoreQuotationDraft(inq.id);
@@ -2113,9 +2345,38 @@
         // ------------------------------------------------------------
         // LOAD QUOTATIONS
         // ------------------------------------------------------------
+        // BAU backlog #13 - see inquiryFilterParams() above, same reasoning:
+        // only ever set by applyQuotationFilters(), never read live from
+        // the search box.
+        function quotationFilterParams(extra) {
+            const params = new URLSearchParams(extra);
+            if (quotationServerFilters.search) params.set('search', quotationServerFilters.search);
+            if (quotationServerFilters.revenueMin !== '') params.set('revenue_min', quotationServerFilters.revenueMin);
+            if (quotationServerFilters.revenueMax !== '') params.set('revenue_max', quotationServerFilters.revenueMax);
+            return params.toString();
+        }
+
+        async function applyQuotationFilters() {
+            quotationServerFilters = {
+                search: document.getElementById('quotationSearch')?.value?.trim() || '',
+                revenueMin: document.getElementById('quotationRevenueMin')?.value || '',
+                revenueMax: document.getElementById('quotationRevenueMax')?.value || ''
+            };
+            await loadQuotations();
+        }
+
+        function clearQuotationFilters() {
+            const min = document.getElementById('quotationRevenueMin');
+            const max = document.getElementById('quotationRevenueMax');
+            if (min) min.value = '';
+            if (max) max.value = '';
+            quotationServerFilters = { search: '', revenueMin: '', revenueMax: '' };
+            loadQuotations();
+        }
+
         async function loadQuotations() {
             const historyEl = document.getElementById('quotationHistory');
-            
+
             // Show loading state
             if (historyEl) {
                 historyEl.innerHTML = `
@@ -2127,7 +2388,7 @@
             }
 
             try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation?limit=${LIST_PAGE_SIZE}&offset=0`, {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation?${quotationFilterParams({ limit: LIST_PAGE_SIZE, offset: 0 })}`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
 
@@ -2168,7 +2429,7 @@
         // backlog #2), same pattern as loadMoreInquiries above.
         async function loadMoreQuotations() {
             try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation?limit=${LIST_PAGE_SIZE}&offset=${quotationsOffset}`, {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation?${quotationFilterParams({ limit: LIST_PAGE_SIZE, offset: quotationsOffset })}`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
 
@@ -2397,7 +2658,9 @@
             const quotesEl = document.getElementById('statQuotations');
             const revenueEl = document.getElementById('statRevenue');
             const upcomingEl = document.getElementById('statUpcoming');
-            
+            const growthEl = document.getElementById('statGrowth');
+            const conversionEl = document.getElementById('statConversion');
+
             if (unreadEl) unreadEl.textContent = unread;
             // Use the server's real COUNT (BAU backlog #2) rather than
             // allInquiries.length/allQuotations.length, so these two
@@ -2418,6 +2681,48 @@
                 return d >= now;
             }).length;
             if (upcomingEl) upcomingEl.textContent = upcoming;
+
+            // BAU backlog #21 - revenue by event_date's calendar month, for
+            // deposit-paid/completed quotations only (same status filter as
+            // Total Revenue above). Shares the same "computed from what's
+            // been loaded so far" caveat as the rest of this stats bar and
+            // the Analytics tab - see BAU backlog #2's Load More.
+            if (growthEl) {
+                const revenueForMonth = (y, m) => allQuotations
+                    .filter(q => (q.status === 'completed' || q.status === 'deposit_paid') && q.event_date)
+                    .filter(q => {
+                        const d = new Date(q.event_date);
+                        return d.getFullYear() === y && d.getMonth() === m;
+                    })
+                    .reduce((sum, q) => sum + (parseFloat(q.total) || 0), 0);
+
+                const thisMonthRevenue = revenueForMonth(now.getFullYear(), now.getMonth());
+                const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const prevMonthRevenue = revenueForMonth(prevDate.getFullYear(), prevDate.getMonth());
+
+                if (prevMonthRevenue === 0) {
+                    growthEl.textContent = 'N/A';
+                    growthEl.className = 'text-2xl font-bold text-gray-400';
+                } else {
+                    const growthPct = ((thisMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100;
+                    growthEl.textContent = (growthPct >= 0 ? '+' : '') + growthPct.toFixed(1) + '%';
+                    growthEl.className = 'text-2xl font-bold ' + (growthPct >= 0 ? 'text-green-600' : 'text-red-600');
+                }
+            }
+
+            // BAU backlog #21 - conversion rate defined here as: of every
+            // inquiry ever received, what fraction resulted in an actual
+            // paid booking (deposit_paid or completed) - a stricter, more
+            // meaningful number than "quotation sent" or "marked confirmed",
+            // since it tracks money actually received, same standard as
+            // Total Revenue and Customer LTV (BAU backlog #28) elsewhere.
+            if (conversionEl) {
+                const totalInquiriesForConversion = inquiriesTotalCount || allInquiries.length;
+                const convertedQuotations = allQuotations.filter(q => q.status === 'completed' || q.status === 'deposit_paid').length;
+                conversionEl.textContent = totalInquiriesForConversion === 0
+                    ? 'N/A'
+                    : ((convertedQuotations / totalInquiriesForConversion) * 100).toFixed(1) + '%';
+            }
         }
 
         // ------------------------------------------------------------
@@ -2468,6 +2773,24 @@
                         </div>
                     `;
                 }).join('');
+
+            // BAU backlog #26 - simple report over inquiries.source. All-time,
+            // same scope as the funnel counts above (not month-filtered).
+            const sourceEl = document.getElementById('sourceBreakdown');
+            if (sourceEl) {
+                const sourceCounts = {};
+                allInquiries.forEach(i => {
+                    const s = i.source || 'Not specified';
+                    sourceCounts[s] = (sourceCounts[s] || 0) + 1;
+                });
+                const sortedSources = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]);
+                sourceEl.innerHTML = sortedSources.map(([source, count]) => `
+                    <div class="bg-[#F8F8F8] rounded-xl p-3 text-center">
+                        <p class="text-xs text-gray-400">${escapeHTML(source)}</p>
+                        <p class="text-lg font-bold">${count}</p>
+                    </div>
+                `).join('');
+            }
         }
 
         function updateAnalytics() {
@@ -2536,7 +2859,29 @@
             });
 
             const margin = marginRevenue - marginCost;
-            
+
+            // BAU backlog #27 - "most requested" vs "most profitable".
+            // Revenue-by-category above only counts what actually
+            // converted; this counts how often each service is *asked
+            // about* at all (from inquiries.services_requested, same
+            // event_date month scope as the revenue tiles), independent of
+            // whether it ever became a paid booking.
+            const monthInquiries = allInquiries.filter(i => {
+                if (!i.event_date) return false;
+                const d = new Date(i.event_date);
+                return d.getMonth() === (month - 1) && d.getFullYear() === year;
+            });
+            const requestCounts = { deco: 0, photo: 0, catering: 0, magic: 0 };
+            monthInquiries.forEach(i => {
+                let requested = i.services_requested;
+                if (typeof requested === 'string') {
+                    try { requested = JSON.parse(requested); } catch (e) { requested = []; }
+                }
+                (requested || []).forEach(code => {
+                    if (requestCounts[code] !== undefined) requestCounts[code]++;
+                });
+            });
+
             const totalEvents = monthQuotations.length;
             const completedEvents = monthQuotations.filter(q => q.status === 'completed').length;
             const pendingDeposits = monthQuotations
@@ -2550,6 +2895,10 @@
             const photoEl = document.getElementById('analyticsPhotoRevenue');
             const cateringEl = document.getElementById('analyticsCateringRevenue');
             const magicEl = document.getElementById('analyticsMagicRevenue');
+            const decoReqEl = document.getElementById('analyticsDecoRequested');
+            const photoReqEl = document.getElementById('analyticsPhotoRequested');
+            const cateringReqEl = document.getElementById('analyticsCateringRequested');
+            const magicReqEl = document.getElementById('analyticsMagicRequested');
             const eventsEl = document.getElementById('analyticsTotalEvents');
             const pendingEl = document.getElementById('analyticsPending');
             const completedEl = document.getElementById('analyticsCompleted');
@@ -2565,6 +2914,10 @@
             if (photoEl) photoEl.textContent = 'RM ' + photoRevenue;
             if (cateringEl) cateringEl.textContent = 'RM ' + cateringRevenue;
             if (magicEl) magicEl.textContent = 'RM ' + magicRevenue;
+            if (decoReqEl) decoReqEl.textContent = `Requested ${requestCounts.deco} times`;
+            if (photoReqEl) photoReqEl.textContent = `Requested ${requestCounts.photo} times`;
+            if (cateringReqEl) cateringReqEl.textContent = `Requested ${requestCounts.catering} times`;
+            if (magicReqEl) magicReqEl.textContent = `Requested ${requestCounts.magic} times`;
             if (eventsEl) eventsEl.textContent = totalEvents;
             if (pendingEl) pendingEl.textContent = 'RM ' + pendingDeposits;
             if (completedEl) completedEl.textContent = completedEvents;
@@ -2836,7 +3189,7 @@
         // ------------------------------------------------------------
         async function loadCatalog() {
             try {
-                const [svcRes, itemsRes, pkgRes, galRes, faqRes, tplRes, userRes, peakRes, propsRes] = await Promise.all([
+                const [svcRes, itemsRes, pkgRes, galRes, faqRes, tplRes, userRes, peakRes, propsRes, demandRes, pairsRes, feedTokenRes] = await Promise.all([
                     fetch(`${CONFIG.API_URL}/api/services/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/pricing/items`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/pricing/packages`, { headers: { Authorization: `Bearer ${adminToken}` } }),
@@ -2845,7 +3198,10 @@
                     fetch(`${CONFIG.API_URL}/api/message-templates`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/admin/usernames`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/peak-periods`, { headers: { Authorization: `Bearer ${adminToken}` } }),
-                    fetch(`${CONFIG.API_URL}/api/props`, { headers: { Authorization: `Bearer ${adminToken}` } })
+                    fetch(`${CONFIG.API_URL}/api/props`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/calendar/high-demand-weeks`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/quotation/frequent-pairs`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/calendar/feed-token`, { headers: { Authorization: `Bearer ${adminToken}` } })
                 ]);
 
                 if (svcRes.status === 401 || itemsRes.status === 401 || pkgRes.status === 401) return;
@@ -2859,6 +3215,9 @@
                 const userData = await userRes.json();
                 const peakData = await peakRes.json();
                 const propsData = await propsRes.json();
+                const demandData = await demandRes.json();
+                const pairsData = await pairsRes.json();
+                const feedTokenData = await feedTokenRes.json();
 
                 servicesCache = svcData.data || [];
                 pricingItemsCache = itemsData.data || [];
@@ -2869,6 +3228,9 @@
                 adminUsernamesCache = userData.data || [];
                 peakPeriodsCache = peakData.data || [];
                 propsCache = propsData.data || [];
+                highDemandWeeksCache = new Set((demandData.data || []).map(w => w.week_start));
+                frequentPairsCache = pairsData.data || [];
+                calendarFeedToken = feedTokenData.token || '';
 
                 renderServicesAdminList();
                 renderPricingItemsList();
@@ -2881,6 +3243,7 @@
                 renderPeakPeriodsList();
                 renderAdminCalendar();
                 renderPropsList();
+                renderCalendarFeedLink();
 
             } catch (err) {
                 console.error('Load catalog error:', err);
@@ -4169,6 +4532,13 @@
 
                 let cancellationReason = null;
                 if (newStatus === 'cancelled') {
+                    // BAU backlog #30 - explicit confirm before the reason
+                    // prompt, since typing nothing and hitting OK on the
+                    // prompt alone doesn't actually require confirming the
+                    // cancellation itself.
+                    if (!confirm('Are you sure you want to cancel this booking? This is a high-stakes change.')) {
+                        return;
+                    }
                     cancellationReason = prompt('Why is this quotation being cancelled? (shown in the activity log and refund tracking)');
                     if (cancellationReason === null) return; // admin hit Cancel on the prompt itself
                 }
@@ -4635,6 +5005,33 @@
                 .catch(() => prompt('Copy this booking link:', bookingUrl));
         }
 
+        // BAU backlog #14 - read-only iCal feed link
+        function renderCalendarFeedLink() {
+            const el = document.getElementById('calendarFeedLink');
+            if (!el) return;
+            if (!calendarFeedToken) {
+                el.innerHTML = '<p class="text-gray-400">Feed link unavailable - try reloading.</p>';
+                return;
+            }
+            const feedUrl = `${CONFIG.API_URL}/api/calendar/feed/${calendarFeedToken}`;
+            el.innerHTML = `
+                <div class="flex flex-wrap items-center gap-2">
+                    <code class="bg-gray-100 rounded-lg px-3 py-2 text-xs break-all">${escapeHTML(feedUrl)}</code>
+                    <button onclick="copyCalendarFeedLink()" class="border border-gray-300 text-gray-600 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-gray-100 transition whitespace-nowrap">
+                        Copy Link
+                    </button>
+                </div>
+            `;
+        }
+
+        function copyCalendarFeedLink() {
+            if (!calendarFeedToken) return;
+            const feedUrl = `${CONFIG.API_URL}/api/calendar/feed/${calendarFeedToken}`;
+            navigator.clipboard.writeText(feedUrl)
+                .then(() => alert('Calendar feed link copied! Paste this into "Subscribe by URL" in Google Calendar, Outlook, or your phone\'s calendar app:\n\n' + feedUrl))
+                .catch(() => prompt('Copy this calendar feed link:', feedUrl));
+        }
+
         // ------------------------------------------------------------
         // LOGOUT
         // ------------------------------------------------------------
@@ -4900,6 +5297,14 @@
 
                 document.getElementById('modalTitle').textContent = customer.name || 'Customer';
 
+                // BAU backlog #28 - Customer Lifetime Value. Only sums
+                // money actually received (deposit_paid/completed), not
+                // draft/sent quotations that were quoted but never paid -
+                // summing those would overstate this customer's real value.
+                const totalSpent = history
+                    .filter(h => h.quotation_status === 'deposit_paid' || h.quotation_status === 'completed')
+                    .reduce((sum, h) => sum + (parseFloat(h.total) || 0), 0);
+
                 const historyHtml = history.map(h => `
                     <div class="border rounded-xl p-3 text-sm mb-2">
                         <div class="flex justify-between items-center">
@@ -4919,6 +5324,7 @@
                         <div class="text-sm"><strong>Phone:</strong> ${escapeHTML(customer.phone)}</div>
                         <div class="text-sm mt-1"><strong>Email:</strong> ${escapeHTML(customer.email || '-')}</div>
                         <div class="text-sm mt-1"><strong>Customer since:</strong> ${formatDate(customer.first_seen_at)}</div>
+                        <div class="text-sm mt-1"><strong>Total Spent:</strong> RM ${totalSpent} <span class="text-xs text-gray-400">(deposit-paid/completed bookings only)</span></div>
                     </div>
                     <div class="mb-4">
                         <label class="text-sm font-medium">Notes</label>
