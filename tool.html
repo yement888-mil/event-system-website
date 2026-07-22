@@ -172,6 +172,11 @@
 </head>
 <body class="bg-[#F8F8F8] text-[#1A1A1A]">
 
+    <!-- BAU backlog #5 - global error boundary toast container. Fixed,
+         outside <main>, so it renders regardless of which tab/modal is
+         open or whether the password gate is still showing. -->
+    <div id="errorBoundaryToasts" class="fixed bottom-4 right-4 z-[2000] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
     <header class="bg-dark text-white py-4 px-5">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <span class="text-gold font-semibold text-lg">Dekor By Ana</span>
@@ -267,6 +272,12 @@
                     <div>
                         <h2 class="text-lg font-semibold mb-3">Quotations Expiring Soon</h2>
                         <div id="todayExpiringList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3 text-red-700">Failed Notifications</h2>
+                        <div id="todayNotificationFailuresList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
                             <p class="text-sm text-gray-500">Loading...</p>
                         </div>
                     </div>
@@ -733,6 +744,47 @@
     </div>
 
     <script>
+        // ------------------------------------------------------------
+        // GLOBAL ERROR BOUNDARY (BAU backlog #5)
+        // ------------------------------------------------------------
+        // Registered first, before anything else in this file, so it
+        // catches uncaught errors and unhandled promise rejections from
+        // any code below - a bug that isn't already wrapped in a local
+        // try/catch (most async calls in this file already are and show
+        // their own alert()) now surfaces as a toast instead of failing
+        // silently or as a raw console error with nothing visible in the
+        // UI. Deliberately console + toast only: it never makes a network
+        // call from inside the handler itself, since a logging request
+        // that itself fails would throw a new error and loop.
+        function showErrorToast(message) {
+            const container = document.getElementById('errorBoundaryToasts');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'pointer-events-auto bg-red-600 text-white text-sm rounded-xl shadow-lg px-4 py-3 flex items-start justify-between gap-3 transition-opacity duration-300';
+            toast.innerHTML = `
+                <span class="flex-1">${message}</span>
+                <button class="text-white/80 hover:text-white font-bold leading-none" aria-label="Dismiss">&times;</button>
+            `;
+            toast.querySelector('button').addEventListener('click', () => toast.remove());
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 8000);
+        }
+
+        window.addEventListener('error', function(event) {
+            console.error('Uncaught error:', event.error || event.message);
+            showErrorToast('Something went wrong. If this keeps happening, refresh the page.');
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            showErrorToast('Something went wrong. If this keeps happening, refresh the page.');
+        });
+
         const CONFIG = {
             API_URL: 'https://event-system-backend-production.up.railway.app'
         };
@@ -748,6 +800,38 @@
         let allQuotations = [];
         let filteredQuotations = [];
         let filteredInquiries = [];
+        // Pagination (BAU backlog #2) - page size is generous on purpose:
+        // at this business's current data volume everything still loads
+        // in the first request with zero visible change; "Load More" only
+        // appears once a table actually exceeds it. inquiriesTotalCount /
+        // quotationsTotalCount come straight from the server's COUNT, so
+        // the top stats bar stays accurate even before everything is
+        // loaded - but per-row aggregates computed client-side (unread,
+        // upcoming events, revenue, analytics) only reflect what's been
+        // loaded so far until "Load More" is used.
+        const LIST_PAGE_SIZE = 100;
+        let inquiriesOffset = 0;
+        let inquiriesHasMore = false;
+        let inquiriesTotalCount = 0;
+        let quotationsOffset = 0;
+        let quotationsHasMore = false;
+        let quotationsTotalCount = 0;
+        // BAU backlog #4 - idempotency key for the current "Generate
+        // Quotation" attempt, tied to which inquiry it was minted for
+        // (see generateQuotation()). Reused across a retry of the same
+        // attempt so a dropped response doesn't create a second
+        // quotation; regenerated whenever the target inquiry changes, so
+        // a stale key from an abandoned attempt is never reused for a
+        // genuinely different one.
+        let quotationIdempotencyKey = null;
+        let quotationIdempotencyKeyInquiryId = null;
+
+        function generateIdempotencyKey() {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+            return 'idem-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+        }
         let selectedInquiry = null;
         let servicesCache = [];
         let pricingItemsCache = [];
@@ -1150,6 +1234,48 @@
             }
         }
 
+        // BAU backlog #3 - only ever shows real, actionable send failures.
+        // WhatsApp's permanently-unconfigured state is logged as
+        // 'not_configured', not 'failed' (see services/whatsapp.js), so
+        // this never turns into a 100%-failure banner that gets ignored.
+        async function loadNotificationFailures() {
+            const el = document.getElementById('todayNotificationFailuresList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/notifications/failures`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error('Failed to load notification failures');
+
+                const result = await res.json();
+                const rows = result.data || [];
+
+                if (rows.length === 0) {
+                    el.innerHTML = '<p class="text-sm text-gray-500">No failed sends.</p>';
+                    return;
+                }
+
+                el.innerHTML = rows.map(n => `
+                    <div class="flex justify-between items-center gap-2 border border-red-300 bg-red-50 rounded-xl p-3 text-sm">
+                        <div>
+                            <strong>${escapeHTML(n.channel)}</strong>
+                            <span class="text-xs text-gray-500 ml-1">to ${escapeHTML(n.customer_name || 'unknown customer')}</span>
+                            <div class="text-xs text-red-600 mt-0.5">${escapeHTML(n.error_message || 'No error detail recorded')}</div>
+                            <div class="text-xs text-gray-400 mt-0.5">${formatDateTime(n.sent_at)}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error('Load notification failures error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
+            }
+        }
+
         function sendCustomerReminder(event) {
             const phone = (event.phone || '').replace(/[^0-9]/g, '');
             if (!phone) {
@@ -1233,6 +1359,7 @@
             await loadUpcomingReminders();
             await loadOpenTasksToday();
             await loadExpiringQuotationsToday();
+            await loadNotificationFailures();
         }
 
         // ------------------------------------------------------------
@@ -1499,10 +1626,10 @@
             }
 
             try {
-                const res = await fetch(`${CONFIG.API_URL}/api/inquiry`, {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry?limit=${LIST_PAGE_SIZE}&offset=0`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
-                
+
                 if (res.status === 401) {
                     // Token expired, redirect to login
                     localStorage.removeItem('adminToken');
@@ -1511,14 +1638,17 @@
                     document.getElementById('passwordGate').classList.remove('hidden');
                     return;
                 }
-                
+
                 if (!res.ok) {
                     const err = await res.json();
                     throw new Error(err.error || 'Failed to load inquiries');
                 }
-                
+
                 const data = await res.json();
                 allInquiries = data.data || [];
+                inquiriesOffset = allInquiries.length;
+                inquiriesHasMore = !!data.pagination?.has_more;
+                inquiriesTotalCount = data.pagination?.total ?? allInquiries.length;
                 filteredInquiries = [...allInquiries];
                 renderInquiries(allInquiries);
                 updateStats();
@@ -1526,6 +1656,36 @@
                 console.error('Load inquiries error:', err);
                 if (unreadList) unreadList.innerHTML = `<p class="text-red-500 text-sm">Error: ${err.message}</p>`;
                 if (allList) allList.innerHTML = `<p class="text-red-500 text-sm">Error: ${err.message}</p>`;
+            }
+        }
+
+        // Appends the next page to the already-loaded allInquiries (BAU
+        // backlog #2) rather than replacing it, so everything that reads
+        // allInquiries - search, stats, analytics - just sees more data,
+        // not a reset.
+        async function loadMoreInquiries() {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry?limit=${LIST_PAGE_SIZE}&offset=${inquiriesOffset}`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to load more inquiries');
+                }
+
+                const data = await res.json();
+                const nextPage = data.data || [];
+                allInquiries = allInquiries.concat(nextPage);
+                inquiriesOffset = allInquiries.length;
+                inquiriesHasMore = !!data.pagination?.has_more;
+                inquiriesTotalCount = data.pagination?.total ?? allInquiries.length;
+                filteredInquiries = [...allInquiries];
+                renderInquiries(allInquiries);
+                updateStats();
+            } catch (err) {
+                console.error('Load more inquiries error:', err);
+                alert('Failed to load more inquiries: ' + err.message);
             }
         }
 
@@ -1665,6 +1825,19 @@
                             </div>
                         </div>
                     `).join('');
+                }
+
+                // BAU backlog #2 - only the first LIST_PAGE_SIZE rows are
+                // fetched by default; this appears once there are more on
+                // the server than have been loaded into allInquiries yet.
+                if (inquiriesHasMore) {
+                    allList.innerHTML += `
+                        <div class="text-center py-3">
+                            <button onclick="loadMoreInquiries()" class="bg-gray-100 hover:bg-gray-200 text-dark px-4 py-2 rounded-lg text-sm font-medium transition">
+                                Load More (${allInquiries.length} of ${inquiriesTotalCount})
+                            </button>
+                        </div>
+                    `;
                 }
             }
         }
@@ -1933,10 +2106,10 @@
             }
 
             try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation`, {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation?limit=${LIST_PAGE_SIZE}&offset=0`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
-                
+
                 if (res.status === 401) {
                     localStorage.removeItem('adminToken');
                     adminToken = '';
@@ -1944,19 +2117,22 @@
                     document.getElementById('passwordGate').classList.remove('hidden');
                     return;
                 }
-                
+
                 if (!res.ok) {
                     const err = await res.json();
                     throw new Error(err.error || 'Failed to load quotations');
                 }
-                
+
                 const data = await res.json();
                 allQuotations = (data.data || []).map(q => {
-                    if (typeof q.items === 'string') { 
-                        try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; } 
+                    if (typeof q.items === 'string') {
+                        try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; }
                     }
                     return q;
                 });
+                quotationsOffset = allQuotations.length;
+                quotationsHasMore = !!data.pagination?.has_more;
+                quotationsTotalCount = data.pagination?.total ?? allQuotations.length;
                 filteredQuotations = [...allQuotations];
                 renderQuotations(filteredQuotations);
                 updateStats();
@@ -1964,6 +2140,40 @@
             } catch (err) {
                 console.error('Load quotations error:', err);
                 if (historyEl) historyEl.innerHTML = `<p class="text-red-500 text-sm">Error: ${err.message}</p>`;
+            }
+        }
+
+        // Appends the next page to the already-loaded allQuotations (BAU
+        // backlog #2), same pattern as loadMoreInquiries above.
+        async function loadMoreQuotations() {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation?limit=${LIST_PAGE_SIZE}&offset=${quotationsOffset}`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to load more quotations');
+                }
+
+                const data = await res.json();
+                const nextPage = (data.data || []).map(q => {
+                    if (typeof q.items === 'string') {
+                        try { q.items = JSON.parse(q.items); } catch (e) { q.items = []; }
+                    }
+                    return q;
+                });
+                allQuotations = allQuotations.concat(nextPage);
+                quotationsOffset = allQuotations.length;
+                quotationsHasMore = !!data.pagination?.has_more;
+                quotationsTotalCount = data.pagination?.total ?? allQuotations.length;
+                filteredQuotations = [...allQuotations];
+                renderQuotations(filteredQuotations);
+                updateStats();
+                updateAnalytics();
+            } catch (err) {
+                console.error('Load more quotations error:', err);
+                alert('Failed to load more quotations: ' + err.message);
             }
         }
 
@@ -2112,7 +2322,20 @@
                     </div>
                 `;
             });
-            
+
+            // BAU backlog #2 - only the first LIST_PAGE_SIZE rows are
+            // fetched by default; this appears once there are more on the
+            // server than have been loaded into allQuotations yet.
+            if (quotationsHasMore) {
+                html += `
+                    <div class="text-center py-3">
+                        <button onclick="loadMoreQuotations()" class="bg-gray-100 hover:bg-gray-200 text-dark px-4 py-2 rounded-lg text-sm font-medium transition">
+                            Load More (${allQuotations.length} of ${quotationsTotalCount})
+                        </button>
+                    </div>
+                `;
+            }
+
             box.innerHTML = html;
         }
 
@@ -2143,14 +2366,18 @@
             const upcomingEl = document.getElementById('statUpcoming');
             
             if (unreadEl) unreadEl.textContent = unread;
-            if (totalEl) totalEl.textContent = allInquiries.length;
-            if (quotesEl) quotesEl.textContent = allQuotations.length;
-            
+            // Use the server's real COUNT (BAU backlog #2) rather than
+            // allInquiries.length/allQuotations.length, so these two
+            // headline numbers stay correct even before "Load More" has
+            // pulled every row into the browser.
+            if (totalEl) totalEl.textContent = inquiriesTotalCount || allInquiries.length;
+            if (quotesEl) quotesEl.textContent = quotationsTotalCount || allQuotations.length;
+
             const totalRevenue = allQuotations
                 .filter(q => q.status === 'completed' || q.status === 'deposit_paid')
                 .reduce((sum, q) => sum + (parseFloat(q.total) || 0), 0);
             if (revenueEl) revenueEl.textContent = 'RM ' + totalRevenue;
-            
+
             const now = new Date();
             const upcoming = allInquiries.filter(i => {
                 if (!i.event_date) return false;
@@ -3550,6 +3777,15 @@
                         body: JSON.stringify(payload)
                     });
                 } else {
+                    // BAU backlog #4 - only regenerate the key if this is
+                    // a different inquiry than the last attempt; a retry
+                    // of the same failed attempt reuses it.
+                    if (quotationIdempotencyKey === null || quotationIdempotencyKeyInquiryId !== selectedInquiry.id) {
+                        quotationIdempotencyKey = generateIdempotencyKey();
+                        quotationIdempotencyKeyInquiryId = selectedInquiry.id;
+                    }
+                    payload.idempotency_key = quotationIdempotencyKey;
+
                     response = await fetch(`${CONFIG.API_URL}/api/quotation`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
@@ -3583,6 +3819,8 @@
                     clearQuotationDraft(inqForPdf.id);
                     editingQuotationId = null;
                     selectedInquiry = null;
+                    quotationIdempotencyKey = null;
+                    quotationIdempotencyKeyInquiryId = null;
                     await loadQuotations();
                     document.getElementById('whatsappOutput').classList.add('hidden');
                     document.getElementById('copyBtn').classList.add('hidden');

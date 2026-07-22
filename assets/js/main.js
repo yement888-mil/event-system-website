@@ -44,6 +44,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // BAU backlog #4 - one random key per submit action, sent with the
+    // request so the backend can dedup a retry (flaky mobile connection,
+    // or a slow response the user gives up on and resubmits) instead of
+    // creating a second inquiry. Regenerated after a successful submit;
+    // kept the same across a failed attempt so a manual retry click is
+    // recognized as the same action, not a new one. Falls back to a
+    // Math.random()-based id on very old browsers without
+    // crypto.randomUUID (public form, can't assume a modern browser).
+    function generateIdempotencyKey() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+        return 'idem-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    }
+    let inquiryIdempotencyKey = generateIdempotencyKey();
+
     // Inquiry Form Submission
     const form = document.getElementById('inquiryForm');
     if (form) {
@@ -88,23 +104,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 event_date: document.getElementById('event_date').value,
                 guest_count: parseInt(document.getElementById('guest_count').value),
                 services_requested: services,
-                message: document.getElementById('message').value.trim()
+                message: document.getElementById('message').value.trim(),
+                idempotency_key: inquiryIdempotencyKey
             };
-            
+
             try {
                 const response = await fetch(`${CONFIG.API_URL}/api/inquiry`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok && result.success) {
                     document.getElementById('inquiryForm').classList.add('hidden');
                     document.getElementById('successMessage').classList.remove('hidden');
                     window.__lastInquiryWithdrawToken = result.data?.withdraw_token || null;
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                    inquiryIdempotencyKey = generateIdempotencyKey();
                 } else {
                     alert(result.error || 'Failed to submit. Please try again.');
                     submitBtn.disabled = false;
