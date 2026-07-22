@@ -1865,7 +1865,16 @@
         // by a day depending on the browser's local timezone (event_date
         // is a plain DATE with no timezone of its own).
         function getWeekStartMonday(dateStr) {
-            const d = new Date(dateStr + 'T00:00:00Z');
+            // event_date comes back from the API as a full ISO timestamp
+            // ("2026-08-01T00:00:00.000Z"), not a plain "YYYY-MM-DD" -
+            // Postgres DATE columns get parsed into a JS Date by the pg
+            // driver, then serialized with a time+Z suffix by res.json().
+            // Strip anything from 'T' onward first (same defensive pattern
+            // as toDateStr() in routes/calendar.js) before rebuilding it as
+            // UTC midnight, or appending 'T00:00:00Z' to an already-full
+            // timestamp string produces an Invalid Date.
+            const datePart = String(dateStr).split('T')[0];
+            const d = new Date(datePart + 'T00:00:00Z');
             const day = d.getUTCDay();
             const diff = (day === 0 ? -6 : 1) - day;
             d.setUTCDate(d.getUTCDate() + diff);
