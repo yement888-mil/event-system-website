@@ -646,6 +646,19 @@
                 </section>
 
                 <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
+                    <h2 class="text-lg font-semibold mb-1">Physical Props / Inventory</h2>
+                    <p class="text-xs text-gray-400 mb-4">Finite physical decoration items (BAU backlog #38) - e.g. a signature backdrop or arch. Tracked separately from services/pricing since a physical item, unlike a service, can only be in one place at a time. Assign these to a specific booking from the Quotations tab.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                        <input type="text" id="prop_name" placeholder="Prop name" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="text" id="prop_description" placeholder="Description (optional)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <input type="number" id="prop_quantity" placeholder="Quantity available" min="1" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                        <button onclick="saveProp()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="propSaveLabel">Add Prop</span></button>
+                    </div>
+                    <button id="propCancelBtn" onclick="resetPropForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-1.5 rounded-full text-xs hover:bg-gray-100 transition mb-3">Cancel Edit</button>
+                    <div id="propsList" class="space-y-2"></div>
+                </section>
+
+                <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
                     <h2 class="text-lg font-semibold mb-1">Gallery</h2>
                     <p class="text-xs text-gray-400 mb-4">Photos shown on your website's Gallery page.</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
@@ -842,9 +855,11 @@
         let servicesCache = [];
         let pricingItemsCache = [];
         let packagesCache = [];
+        let propsCache = [];
         let editingServiceId = null;
         let editingPricingItemId = null;
         let editingPackageId = null;
+        let editingPropId = null;
         let galleryCache = [];
         let faqCache = [];
         let editingGalleryItemId = null;
@@ -2311,6 +2326,7 @@
                             <button onclick="editQuotation(${q.id})" class="bg-blue-100 text-blue-700 px-3 py-0.5 rounded text-xs hover:bg-blue-200 transition">Edit</button>
                             <button onclick="copyBookingLink('${q.booking_token || ''}')" class="bg-purple-100 text-purple-700 px-3 py-0.5 rounded text-xs hover:bg-purple-200 transition">Copy Booking Link</button>
                             <button onclick="toggleTaskChecklist(${q.id})" class="bg-emerald-100 text-emerald-700 px-3 py-0.5 rounded text-xs hover:bg-emerald-200 transition">Tasks</button>
+                            <button onclick="togglePropsPanel(${q.id})" class="bg-amber-100 text-amber-700 px-3 py-0.5 rounded text-xs hover:bg-amber-200 transition">Props</button>
                             <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-0.5 rounded text-xs hover:bg-red-700 transition">Delete</button>
                         </div>
                         <div id="taskPanel_${q.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
@@ -2323,6 +2339,17 @@
                                 <button onclick="addTask(${q.id})" class="bg-dark text-white px-3 py-1.5 rounded-xl text-xs hover:bg-gold hover:text-dark transition">Add</button>
                             </div>
                             <div id="taskList_${q.id}" class="space-y-1"></div>
+                        </div>
+                        <div id="propsPanel_${q.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
+                            <div class="flex gap-2 mb-2">
+                                <select id="newPropSelect_${q.id}" class="flex-1 border rounded-xl px-2 py-1.5 text-xs">
+                                    <option value="">Select a prop...</option>
+                                    ${propsCache.filter(p => p.active !== false).map(p => `<option value="${p.id}">${escapeHTML(p.name)} (${p.quantity_available} available)</option>`).join('')}
+                                </select>
+                                <input type="number" id="newPropQty_${q.id}" placeholder="Qty" min="1" value="1" class="w-16 border rounded-xl px-2 py-1.5 text-xs">
+                                <button onclick="addPropToQuotation(${q.id})" class="bg-dark text-white px-3 py-1.5 rounded-xl text-xs hover:bg-gold hover:text-dark transition">Add</button>
+                            </div>
+                            <div id="propsQuotationList_${q.id}" class="space-y-1"></div>
                         </div>
                         ${q.status === 'cancelled' ? renderCancellationPanel(q) : ''}
                     </div>
@@ -2809,7 +2836,7 @@
         // ------------------------------------------------------------
         async function loadCatalog() {
             try {
-                const [svcRes, itemsRes, pkgRes, galRes, faqRes, tplRes, userRes, peakRes] = await Promise.all([
+                const [svcRes, itemsRes, pkgRes, galRes, faqRes, tplRes, userRes, peakRes, propsRes] = await Promise.all([
                     fetch(`${CONFIG.API_URL}/api/services/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/pricing/items`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/pricing/packages`, { headers: { Authorization: `Bearer ${adminToken}` } }),
@@ -2817,7 +2844,8 @@
                     fetch(`${CONFIG.API_URL}/api/faq/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/message-templates`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/admin/usernames`, { headers: { Authorization: `Bearer ${adminToken}` } }),
-                    fetch(`${CONFIG.API_URL}/api/peak-periods`, { headers: { Authorization: `Bearer ${adminToken}` } })
+                    fetch(`${CONFIG.API_URL}/api/peak-periods`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/props`, { headers: { Authorization: `Bearer ${adminToken}` } })
                 ]);
 
                 if (svcRes.status === 401 || itemsRes.status === 401 || pkgRes.status === 401) return;
@@ -2830,6 +2858,7 @@
                 const tplData = await tplRes.json();
                 const userData = await userRes.json();
                 const peakData = await peakRes.json();
+                const propsData = await propsRes.json();
 
                 servicesCache = svcData.data || [];
                 pricingItemsCache = itemsData.data || [];
@@ -2839,6 +2868,7 @@
                 messageTemplatesCache = tplData.data || [];
                 adminUsernamesCache = userData.data || [];
                 peakPeriodsCache = peakData.data || [];
+                propsCache = propsData.data || [];
 
                 renderServicesAdminList();
                 renderPricingItemsList();
@@ -2850,6 +2880,7 @@
                 renderMessageTemplatesList();
                 renderPeakPeriodsList();
                 renderAdminCalendar();
+                renderPropsList();
 
             } catch (err) {
                 console.error('Load catalog error:', err);
@@ -3389,6 +3420,114 @@
             }
         }
 
+        // ---- Props assigned to a booking (BAU backlog #38) ----
+        // Same show/hide-panel pattern as the Tasks checklist above.
+        async function togglePropsPanel(quotationId) {
+            const panel = document.getElementById(`propsPanel_${quotationId}`);
+            if (!panel) return;
+            const isHidden = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden');
+            if (isHidden) {
+                await loadQuotationProps(quotationId);
+            }
+        }
+
+        async function loadQuotationProps(quotationId) {
+            const listEl = document.getElementById(`propsQuotationList_${quotationId}`);
+            if (!listEl) return;
+            listEl.innerHTML = '<p class="text-xs text-gray-400">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${quotationId}/props`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to load props');
+                const result = await res.json();
+                renderQuotationProps(quotationId, result.data || []);
+            } catch (err) {
+                listEl.innerHTML = '<p class="text-xs text-red-500">Failed to load props.</p>';
+            }
+        }
+
+        function renderQuotationProps(quotationId, props) {
+            const listEl = document.getElementById(`propsQuotationList_${quotationId}`);
+            if (!listEl) return;
+            if (props.length === 0) {
+                listEl.innerHTML = '<p class="text-xs text-gray-400">No props assigned yet.</p>';
+                return;
+            }
+            listEl.innerHTML = props.map(p => `
+                <div class="flex items-center gap-2 text-xs py-1">
+                    <span class="flex-1">${escapeHTML(p.name)} - qty ${p.quantity}</span>
+                    <button onclick="removePropFromQuotation(${quotationId}, ${p.prop_id})" class="text-red-400 hover:text-red-600 transition">&#10005;</button>
+                </div>
+            `).join('');
+        }
+
+        // Mirrors rescheduleInquiry()'s conflict-then-force pattern (see
+        // PATCH /api/inquiry/:id/reschedule): a 409 means another
+        // confirmed booking near this event date already has enough of
+        // this prop committed that there isn't enough left. This is a
+        // warning, not a hard block, same severity as the existing
+        // same-date double-booking check - the admin can confirm and
+        // proceed anyway if they know it'll work out (e.g. the other
+        // event is already done by then).
+        async function addPropToQuotation(quotationId, force = false) {
+            try {
+                const select = document.getElementById(`newPropSelect_${quotationId}`);
+                const qtyInput = document.getElementById(`newPropQty_${quotationId}`);
+                const propId = select?.value;
+                const quantity = parseInt(qtyInput?.value, 10) || 1;
+                if (!propId) {
+                    alert('Please select a prop');
+                    return;
+                }
+
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${quotationId}/props`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ prop_id: propId, quantity, force })
+                });
+
+                if (res.status === 409) {
+                    const err = await res.json();
+                    const c = err.conflict || {};
+                    const bookingsList = (c.bookings || [])
+                        .map(b => `${b.customer_name} (${b.quotation_no || '-'}, ${formatDate(b.event_date)}) - qty ${b.quantity}`)
+                        .join('\n');
+                    const confirmMsg = `${err.error}\n\nAvailable: ${c.quantity_available}, already committed nearby: ${c.committed_elsewhere}, requested: ${c.requested}.\n\n${bookingsList}\n\nAssign anyway?`;
+                    if (confirm(confirmMsg)) {
+                        await addPropToQuotation(quotationId, true);
+                    }
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to add prop');
+                }
+
+                if (select) select.value = '';
+                if (qtyInput) qtyInput.value = '1';
+                await loadQuotationProps(quotationId);
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function removePropFromQuotation(quotationId, propId) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${quotationId}/props/${propId}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to remove prop');
+                await loadQuotationProps(quotationId);
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
         // ---- Public Services ----
         function renderServicesAdminList() {
             const el = document.getElementById('servicesAdminList');
@@ -3574,6 +3713,97 @@
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
                 if (!res.ok) throw new Error('Failed to delete pricing item');
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // ---- Physical Props / Inventory (BAU backlog #38) ----
+        function renderPropsList() {
+            const el = document.getElementById('propsList');
+            if (!el) return;
+            if (propsCache.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400">No props yet.</p>';
+                return;
+            }
+            el.innerHTML = propsCache.map(p => `
+                <div class="flex flex-wrap justify-between items-center gap-2 border rounded-xl p-3 text-sm ${p.active ? '' : 'opacity-50'}">
+                    <div>
+                        <strong>${escapeHTML(p.name)}</strong>
+                        ${p.description ? `<span class="text-xs text-gray-400 ml-2">${escapeHTML(p.description)}</span>` : ''}
+                        <span class="text-xs text-gray-500 ml-2">Qty: ${p.quantity_available}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editProp(${p.id})" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">Edit</button>
+                        <button onclick="deleteProp(${p.id})" class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editProp(id) {
+            const p = propsCache.find(x => x.id === id);
+            if (!p) return;
+            editingPropId = id;
+            document.getElementById('prop_name').value = p.name || '';
+            document.getElementById('prop_description').value = p.description || '';
+            document.getElementById('prop_quantity').value = p.quantity_available;
+            document.getElementById('propSaveLabel').textContent = 'Update Prop';
+            document.getElementById('propCancelBtn').classList.remove('hidden');
+        }
+
+        function resetPropForm() {
+            editingPropId = null;
+            document.getElementById('prop_name').value = '';
+            document.getElementById('prop_description').value = '';
+            document.getElementById('prop_quantity').value = '';
+            document.getElementById('propSaveLabel').textContent = 'Add Prop';
+            document.getElementById('propCancelBtn').classList.add('hidden');
+        }
+
+        async function saveProp() {
+            const name = document.getElementById('prop_name').value.trim();
+            const quantity_available = parseInt(document.getElementById('prop_quantity').value, 10);
+            if (!name || !Number.isFinite(quantity_available) || quantity_available <= 0) {
+                alert('Prop name and a positive quantity are required');
+                return;
+            }
+
+            const payload = {
+                name,
+                description: document.getElementById('prop_description').value.trim(),
+                quantity_available,
+                active: true
+            };
+
+            try {
+                const url = editingPropId ? `${CONFIG.API_URL}/api/props/${editingPropId}` : `${CONFIG.API_URL}/api/props`;
+                const method = editingPropId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save prop');
+                }
+                resetPropForm();
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deleteProp(id) {
+            if (!confirm('Delete this prop? This also removes it from any booking it is currently assigned to.')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/props/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to delete prop');
                 await loadCatalog();
             } catch (err) {
                 alert('Error: ' + err.message);
