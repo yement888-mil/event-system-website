@@ -180,7 +180,23 @@
     <header class="bg-dark text-white py-4 px-5">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <span class="text-gold font-semibold text-lg">Dekor By Ana</span>
-            <button onclick="logout()" class="text-gray-400 text-xs hover:text-white">Logout</button>
+            <div class="flex items-center gap-4">
+                <!-- BAU backlog #12 - in-app notification center. One bell,
+                     one panel: real failed sends (BAU backlog #3's data,
+                     now with read/unread tracking) plus a "since you're
+                     here" recap built from data already loaded for the
+                     Today tab/stats bar - not a second parallel feed. -->
+                <div class="relative">
+                    <button onclick="toggleNotificationCenter()" class="relative text-gray-300 hover:text-white transition" aria-label="Notifications">
+                        <span class="text-xl">&#128276;</span>
+                        <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">0</span>
+                    </button>
+                    <div id="notificationPanel" class="hidden absolute right-0 mt-2 w-80 max-h-[70vh] overflow-y-auto bg-white text-dark rounded-2xl shadow-xl p-4 z-50">
+                        <div id="notificationPanelContent"><p class="text-sm text-gray-400">Loading...</p></div>
+                    </div>
+                </div>
+                <button onclick="logout()" class="text-gray-400 text-xs hover:text-white">Logout</button>
+            </div>
         </div>
     </header>
 
@@ -213,7 +229,7 @@
                     <p class="text-xs text-gray-400">Quotations</p>
                     <p class="text-2xl font-bold" id="statQuotations">0</p>
                 </div>
-                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <div class="owner-only bg-white rounded-2xl p-4 shadow-sm">
                     <p class="text-xs text-gray-400">Total Revenue</p>
                     <p class="text-2xl font-bold text-gold" id="statRevenue">RM 0</p>
                 </div>
@@ -221,11 +237,17 @@
                     <p class="text-xs text-gray-400">Upcoming Events</p>
                     <p class="text-2xl font-bold" id="statUpcoming">0</p>
                 </div>
-                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <!-- BAU backlog #16 - owner-only, same as Total Revenue above:
+                     the backend already redacts total/deposit/balance for
+                     non-owner roles (see routes/quotation.js's
+                     redactQuotation()), so these two would otherwise show a
+                     misleading RM 0 / N/A rather than genuinely "no data" -
+                     better to just not show them to staff at all. -->
+                <div class="owner-only bg-white rounded-2xl p-4 shadow-sm">
                     <p class="text-xs text-gray-400">Revenue Growth (MoM)</p>
                     <p class="text-2xl font-bold" id="statGrowth">-</p>
                 </div>
-                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <div class="owner-only bg-white rounded-2xl p-4 shadow-sm">
                     <p class="text-xs text-gray-400">Conversion Rate</p>
                     <p class="text-2xl font-bold" id="statConversion">-</p>
                 </div>
@@ -260,6 +282,18 @@
                         </div>
                     </div>
                     <div>
+                        <h2 class="text-lg font-semibold mb-3 text-orange-700">Change Requests</h2>
+                        <div id="todayChangeRequestsList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3 text-orange-700">Follow-Up Reminders</h2>
+                        <div id="todayRemindersList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                    <div>
                         <h2 class="text-lg font-semibold mb-3">Unread Inquiries</h2>
                         <div id="todayUnreadList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
                             <p class="text-sm text-gray-500">Loading...</p>
@@ -289,12 +323,12 @@
                             <p class="text-sm text-gray-500">Loading...</p>
                         </div>
                     </div>
-                    <div>
-                        <h2 class="text-lg font-semibold mb-3 text-red-700">Failed Notifications</h2>
-                        <div id="todayNotificationFailuresList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-500">Loading...</p>
-                        </div>
-                    </div>
+                    <!-- BAU backlog #12 - failed notifications moved into the
+                         bell icon notification center in the header, which
+                         also shows a "since you're here" recap. Consolidated
+                         rather than kept here too, so there's one place for
+                         this instead of two showing the same data. -->
+
                 </div>
             </div>
 
@@ -714,6 +748,19 @@
                     <div id="packagesList" class="space-y-2 mt-4"></div>
                 </section>
 
+                <section class="bg-white rounded-2xl p-6 shadow-sm mt-4">
+                    <h2 class="text-lg font-semibold mb-1">Task Templates</h2>
+                    <p class="text-xs text-gray-400 mb-4">Checklists you can apply to a booking's Tasks panel (e.g. "Wedding Checklist") - same shape as Package Templates above. Applying one is a manual action from the Tasks panel on a quotation, not automatic.</p>
+                    <input type="text" id="tpl_name" placeholder="Template name" class="border border-gray-200 rounded-xl px-3 py-2 text-sm w-full mb-3">
+                    <div id="tplItemRows" class="space-y-2 mb-2"></div>
+                    <button onclick="addTplItemRow()" class="text-gold text-sm font-medium hover:underline">+ Add Item</button>
+                    <div class="flex gap-2 mt-4">
+                        <button onclick="saveTaskTemplate()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="tplSaveLabel">Save Template</span></button>
+                        <button id="tplCancelBtn" onclick="resetTaskTemplateForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
+                    </div>
+                    <div id="taskTemplatesList" class="space-y-2 mt-4"></div>
+                </section>
+
                 <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
                     <h2 class="text-lg font-semibold mb-1">Physical Props / Inventory</h2>
                     <p class="text-xs text-gray-400 mb-4">Finite physical decoration items (BAU backlog #38) - e.g. a signature backdrop or arch. Tracked separately from services/pricing since a physical item, unlike a service, can only be in one place at a time. Assign these to a specific booking from the Quotations tab.</p>
@@ -935,10 +982,12 @@
         let pricingItemsCache = [];
         let packagesCache = [];
         let propsCache = [];
+        let taskTemplatesCache = [];
         let editingServiceId = null;
         let editingPricingItemId = null;
         let editingPackageId = null;
         let editingPropId = null;
+        let editingTaskTemplateId = null;
         let galleryCache = [];
         let faqCache = [];
         let editingGalleryItemId = null;
@@ -1271,6 +1320,157 @@
             `;
         }
 
+        // BAU backlog #15 - extends the existing self-service cancellation-
+        // request pattern to date-change/add-service requests. Same
+        // token-based, customer-triggered, admin-approved, never-auto-
+        // executed shape. A date_change request's conflict field (from
+        // the same same-date confirmed-booking check reschedule uses) is
+        // shown as a warning before the admin approves it.
+        async function loadChangeRequests() {
+            const el = document.getElementById('todayChangeRequestsList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/change-requests`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error('Failed to load change requests');
+
+                const result = await res.json();
+                const requests = result.data || [];
+
+                if (requests.length === 0) {
+                    el.innerHTML = '<p class="text-sm text-gray-500">No pending change requests.</p>';
+                    return;
+                }
+
+                el.innerHTML = requests.map(r => {
+                    const isDateChange = r.request_type === 'date_change';
+                    const conflictHtml = isDateChange && r.conflict
+                        ? `<div class="text-xs text-red-600 font-medium mt-1">Conflict: ${escapeHTML(r.conflict.customer_name)} (${escapeHTML(r.conflict.quotation_no || '-')}) already has a confirmed booking on this date.</div>`
+                        : '';
+                    return `
+                        <div class="border rounded-xl p-3 text-sm ${conflictHtml ? 'border-red-300 bg-red-50' : ''}">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <strong>${escapeHTML(r.customer_name)}</strong>
+                                    <span class="text-xs text-gray-400 ml-1">${escapeHTML(r.quotation_no || '-')}</span>
+                                </div>
+                                <span class="text-xs text-gray-400">${formatDateTime(r.created_at)}</span>
+                            </div>
+                            <div class="text-xs mt-1">
+                                ${isDateChange
+                                    ? `Requested new date: <strong>${formatDate(r.requested_date)}</strong> (currently ${formatDate(r.current_event_date)})`
+                                    : `Requested service: <strong>${escapeHTML(r.requested_service)}</strong>`}
+                            </div>
+                            ${r.customer_note ? `<div class="text-xs text-gray-500 mt-1">Note: ${escapeHTML(r.customer_note)}</div>` : ''}
+                            ${conflictHtml}
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="resolveChangeRequest(${r.id}, 'approve')" class="bg-gold text-dark px-3 py-1 rounded text-xs font-medium hover:bg-yellow-600 transition">Approve</button>
+                                <button onclick="resolveChangeRequest(${r.id}, 'reject')" class="border border-gray-300 text-gray-600 px-3 py-1 rounded text-xs hover:bg-gray-100 transition">Reject</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Load change requests error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
+            }
+        }
+
+        async function resolveChangeRequest(id, action, force = false) {
+            try {
+                let admin_notes = null;
+                if (action === 'reject') {
+                    admin_notes = prompt('Reason for rejecting (optional):');
+                    if (admin_notes === null) return; // admin hit Cancel on the prompt itself
+                }
+
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/change-requests/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ action, admin_notes, force })
+                });
+
+                if (res.status === 409) {
+                    const err = await res.json();
+                    const c = err.conflict || {};
+                    const confirmMsg = `${err.error}\n\n${c.customer_name} (${c.quotation_no || '-'}) already has a confirmed booking on this date.\n\nApprove the date change anyway?`;
+                    if (confirm(confirmMsg)) {
+                        await resolveChangeRequest(id, action, true);
+                    }
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to resolve request');
+                }
+
+                await loadChangeRequests();
+                await loadInquiries();
+
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // BAU backlog #23 - snooze/per-inquiry follow-up reminder
+        async function loadDueReminders() {
+            const el = document.getElementById('todayRemindersList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/reminders/due`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error('Failed to load reminders');
+
+                const result = await res.json();
+                const reminders = result.data || [];
+
+                if (reminders.length === 0) {
+                    el.innerHTML = '<p class="text-sm text-gray-500">No reminders due.</p>';
+                    return;
+                }
+
+                el.innerHTML = reminders.map(r => `
+                    <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm cursor-pointer hover:shadow transition" onclick="viewInquiry(${r.inquiry_id})">
+                        <div>
+                            <strong>${escapeHTML(r.customer_name)}</strong>
+                            <span class="text-xs text-gray-400 ml-2">Due ${formatDate(r.remind_at)}</span>
+                            ${r.note ? `<div class="text-xs text-gray-500 mt-0.5">${escapeHTML(r.note)}</div>` : ''}
+                        </div>
+                        <button onclick="event.stopPropagation(); markReminderDone(${r.id})" class="border border-gray-300 text-gray-600 px-3 py-1 rounded-full text-xs font-medium hover:bg-gray-100 transition whitespace-nowrap">
+                            Done
+                        </button>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error('Load reminders error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
+            }
+        }
+
+        async function markReminderDone(id) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/reminders/${id}/done`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to mark reminder done');
+                await loadDueReminders();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
         // BAU backlog #24 - additive grouping alongside the full open-tasks
         // list below (todayTasksList), not a replacement - filtering the
         // main list down to just today's events would hide an overdue
@@ -1358,45 +1558,152 @@
             }
         }
 
-        // BAU backlog #3 - only ever shows real, actionable send failures.
-        // WhatsApp's permanently-unconfigured state is logged as
-        // 'not_configured', not 'failed' (see services/whatsapp.js), so
-        // this never turns into a 100%-failure banner that gets ignored.
-        async function loadNotificationFailures() {
-            const el = document.getElementById('todayNotificationFailuresList');
-            if (!el) return;
-            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+        // BAU backlog #12 - in-app notification center. Reuses the exact
+        // same data BAU backlog #3 already surfaces (notification_logs
+        // failures - only ever real, actionable ones; WhatsApp's
+        // permanently-unconfigured state is logged as 'not_configured',
+        // not 'failed', see services/whatsapp.js, so this never turns into
+        // a 100%-failure banner), now with read/unread tracking so the
+        // bell's badge count only reflects genuinely new failures, plus a
+        // "since you're here" recap built from data already loaded for the
+        // Today tab/stats bar - not a second, separate notification system.
+        let notificationCenterCache = { failures: [], unreadCount: 0 };
+        let notificationPanelOpen = false;
 
+        async function loadNotificationCenter() {
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/notifications/failures`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
                 });
-
                 if (res.status === 401) return;
-                if (!res.ok) throw new Error('Failed to load notification failures');
+                if (!res.ok) throw new Error('Failed to load notifications');
 
                 const result = await res.json();
-                const rows = result.data || [];
-
-                if (rows.length === 0) {
-                    el.innerHTML = '<p class="text-sm text-gray-500">No failed sends.</p>';
-                    return;
-                }
-
-                el.innerHTML = rows.map(n => `
-                    <div class="flex justify-between items-center gap-2 border border-red-300 bg-red-50 rounded-xl p-3 text-sm">
-                        <div>
-                            <strong>${escapeHTML(n.channel)}</strong>
-                            <span class="text-xs text-gray-500 ml-1">to ${escapeHTML(n.customer_name || 'unknown customer')}</span>
-                            <div class="text-xs text-red-600 mt-0.5">${escapeHTML(n.error_message || 'No error detail recorded')}</div>
-                            <div class="text-xs text-gray-400 mt-0.5">${formatDateTime(n.sent_at)}</div>
-                        </div>
-                    </div>
-                `).join('');
-
+                notificationCenterCache.failures = result.data || [];
+                notificationCenterCache.unreadCount = result.unread_count || 0;
+                updateNotificationBadge();
+                if (notificationPanelOpen) renderNotificationPanel();
             } catch (err) {
-                console.error('Load notification failures error:', err);
-                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
+                console.error('Load notification center error:', err);
+            }
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notificationBadge');
+            if (!badge) return;
+            const count = notificationCenterCache.unreadCount;
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : String(count);
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function toggleNotificationCenter() {
+            const panel = document.getElementById('notificationPanel');
+            if (!panel) return;
+            notificationPanelOpen = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden');
+            if (notificationPanelOpen) renderNotificationPanel();
+        }
+
+        // Closes the panel on an outside click, standard dropdown UX -
+        // ignores clicks on the bell button itself since that already
+        // toggles the panel via toggleNotificationCenter().
+        document.addEventListener('click', function(e) {
+            if (!notificationPanelOpen) return;
+            const panel = document.getElementById('notificationPanel');
+            if (panel && !panel.contains(e.target) && !e.target.closest('[onclick="toggleNotificationCenter()"]')) {
+                panel.classList.add('hidden');
+                notificationPanelOpen = false;
+            }
+        });
+
+        // "Since you're here" recap - a snapshot of counts already computed
+        // elsewhere (unread inquiries, pending cancellations, stale leads),
+        // not a new delta-since-last-visit tracking system. This project's
+        // own CLAUDE.md already rejected a real-time activity feed in favor
+        // of "a polling read of data already on hand" - this is that, for
+        // the notification panel specifically.
+        function renderNotificationPanel() {
+            const el = document.getElementById('notificationPanelContent');
+            if (!el) return;
+
+            const unreadInquiries = allInquiries.filter(i => !i.is_read).length;
+            const pendingCancellations = allInquiries.filter(i => i.status === 'cancel_requested').length;
+            const nonTerminal = ['new', 'contacted', 'quotation_sent', 'waiting_deposit'];
+            const now = new Date();
+            const staleCount = allInquiries.filter(i =>
+                nonTerminal.includes(i.status || 'new') && i.updated_at && (now - new Date(i.updated_at)) / 86400000 >= 7
+            ).length;
+
+            const recapHtml = `
+                <div class="grid grid-cols-3 gap-2 mb-3 text-center">
+                    <div class="bg-gray-50 rounded-xl p-2">
+                        <p class="text-lg font-bold">${unreadInquiries}</p>
+                        <p class="text-[10px] text-gray-400">Unread</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-2">
+                        <p class="text-lg font-bold">${pendingCancellations}</p>
+                        <p class="text-[10px] text-gray-400">Cancel Requests</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-2">
+                        <p class="text-lg font-bold">${staleCount}</p>
+                        <p class="text-[10px] text-gray-400">Stale Leads</p>
+                    </div>
+                </div>
+            `;
+
+            const failures = notificationCenterCache.failures;
+            const failuresHtml = failures.length === 0
+                ? '<p class="text-sm text-gray-400">No failed sends.</p>'
+                : `
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-xs font-semibold text-gray-500">Failed Sends</h4>
+                        ${notificationCenterCache.unreadCount > 0 ? `<button onclick="markAllNotificationsRead()" class="text-xs text-gold hover:underline">Mark all read</button>` : ''}
+                    </div>
+                    ${failures.map(n => `
+                        <div class="flex justify-between items-start gap-2 border ${n.read_at ? 'border-gray-200' : 'border-red-300 bg-red-50'} rounded-xl p-2 text-xs mb-1.5">
+                            <div>
+                                <strong>${escapeHTML(n.channel)}</strong>
+                                <span class="text-gray-500 ml-1">to ${escapeHTML(n.customer_name || 'unknown customer')}</span>
+                                <div class="text-red-600 mt-0.5">${escapeHTML(n.error_message || 'No error detail recorded')}</div>
+                                <div class="text-gray-400 mt-0.5">${formatDateTime(n.sent_at)}</div>
+                            </div>
+                            ${!n.read_at ? `<button onclick="markNotificationRead(${n.id})" class="text-gray-400 hover:text-gray-600 whitespace-nowrap">Mark read</button>` : ''}
+                        </div>
+                    `).join('')}
+                `;
+
+            el.innerHTML = `
+                <h3 class="font-semibold text-sm mb-2">Since you're here</h3>
+                ${recapHtml}
+                ${failuresHtml}
+            `;
+        }
+
+        async function markNotificationRead(id) {
+            try {
+                await fetch(`${CONFIG.API_URL}/api/notifications/failures/${id}/read`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                await loadNotificationCenter();
+            } catch (err) {
+                console.error('Mark notification read error:', err);
+            }
+        }
+
+        async function markAllNotificationsRead() {
+            try {
+                await fetch(`${CONFIG.API_URL}/api/notifications/failures/mark-all-read`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                await loadNotificationCenter();
+            } catch (err) {
+                console.error('Mark all notifications read error:', err);
             }
         }
 
@@ -1483,7 +1790,9 @@
             await loadUpcomingReminders();
             await loadOpenTasksToday();
             await loadExpiringQuotationsToday();
-            await loadNotificationFailures();
+            await loadNotificationCenter();
+            await loadChangeRequests();
+            await loadDueReminders();
         }
 
         // ------------------------------------------------------------
@@ -1603,6 +1912,17 @@
                         </button>
                     </div>
                     <p class="text-xs text-gray-400 mt-1">This also updates the linked quotation, calendar, and reminders automatically.</p>
+                </div>
+                <div class="mt-4">
+                    <strong>Snooze / Follow-Up Reminder:</strong>
+                    <div class="flex items-center gap-2 mt-2">
+                        <input type="date" id="snoozeDate_${inq.id}" class="border rounded-xl text-sm px-3 py-2">
+                        <input type="text" id="snoozeNote_${inq.id}" placeholder="Note (optional)" class="flex-1 border rounded-xl text-sm px-3 py-2">
+                        <button onclick="snoozeInquiry(${inq.id})" class="border-2 border-dark text-dark px-4 py-2 rounded-xl text-sm font-medium hover:bg-dark hover:text-white transition whitespace-nowrap">
+                            Remind Me
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Reminds you here and on the Today tab once the date arrives - nothing else changes automatically.</p>
                 </div>
                 <div class="mt-4 text-xs text-gray-400">
                     Submitted: ${formatDateTime(inq.created_at)}
@@ -1733,6 +2053,33 @@
             } catch (err) {
                 console.error('Reschedule error:', err);
                 alert('Failed to reschedule: ' + err.message);
+            }
+        }
+
+        // BAU backlog #23 - snooze/per-inquiry follow-up reminder
+        async function snoozeInquiry(id) {
+            const dateInput = document.getElementById(`snoozeDate_${id}`);
+            const noteInput = document.getElementById(`snoozeNote_${id}`);
+            if (!dateInput || !dateInput.value) {
+                alert('Please pick a reminder date');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/snooze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ remind_at: dateInput.value, note: noteInput?.value?.trim() || '' })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to set reminder');
+                }
+                alert('Reminder set.');
+                closeModal();
+                await loadDueReminders();
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
 
@@ -2560,8 +2907,8 @@
                 
                 let servicesHtml = '';
                 if (q.items && q.items.length > 0) {
-                    servicesHtml = q.items.map(item => 
-                        `<span class="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs mr-1">${escapeHTML(item.name)}: RM ${item.price}</span>`
+                    servicesHtml = q.items.map(item =>
+                        `<span class="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs mr-1">${escapeHTML(item.name)}: RM ${item.price || 0}</span>`
                     ).join(' ');
                 }
                 
@@ -2576,7 +2923,7 @@
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-xs">
                             <div><span class="text-gray-400">Event:</span> ${formatDate(q.event_date)}</div>
-                            <div><span class="text-gray-400">Total:</span> <strong>RM ${q.total}</strong></div>
+                            <div><span class="text-gray-400">Total:</span> <strong>RM ${q.total || 0}</strong></div>
                             <div><span class="text-gray-400">Deposit:</span> RM ${q.deposit || 0}</div>
                             <div><span class="text-gray-400">Balance:</span> RM ${q.balance || 0}</div>
                         </div>
@@ -2600,6 +2947,21 @@
                             <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-0.5 rounded text-xs hover:bg-red-700 transition">Delete</button>
                         </div>
                         <div id="taskPanel_${q.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
+                            ${taskTemplatesCache.length > 0 ? `
+                                <!-- BAU backlog #25 - manual apply, same as
+                                     Package Templates in the quotation
+                                     builder: pick one, click Apply, it
+                                     loops client-side and creates each
+                                     item via the same POST /api/tasks used
+                                     by the Add button below. -->
+                                <div class="flex gap-2 mb-2">
+                                    <select id="applyTplSelect_${q.id}" class="flex-1 border rounded-xl px-2 py-1.5 text-xs">
+                                        <option value="">Apply a task template...</option>
+                                        ${taskTemplatesCache.filter(t => t.active !== false).map(t => `<option value="${t.id}">${escapeHTML(t.name)}</option>`).join('')}
+                                    </select>
+                                    <button onclick="applyTaskTemplate(${q.id})" class="bg-gray-100 text-dark px-3 py-1.5 rounded-xl text-xs hover:bg-gray-200 transition whitespace-nowrap">Apply</button>
+                                </div>
+                            ` : ''}
                             <div class="flex gap-2 mb-2">
                                 <input type="text" id="newTaskInput_${q.id}" placeholder="Add a task (e.g. confirm caterer)" class="flex-1 border rounded-xl px-3 py-1.5 text-xs" onkeydown="if(event.key==='Enter') addTask(${q.id})">
                                 <select id="newTaskAssignee_${q.id}" class="border rounded-xl px-2 py-1.5 text-xs">
@@ -2996,7 +3358,7 @@
             const data = monthQuotations.map(q => {
                 let servicesStr = '';
                 if (q.items && q.items.length > 0) {
-                    servicesStr = q.items.map(item => `${item.name}: RM${item.price}`).join('; ');
+                    servicesStr = q.items.map(item => `${item.name}: RM${item.price || 0}`).join('; ');
                 }
                 
                 return {
@@ -3198,7 +3560,7 @@
         // ------------------------------------------------------------
         async function loadCatalog() {
             try {
-                const [svcRes, itemsRes, pkgRes, galRes, faqRes, tplRes, userRes, peakRes, propsRes, demandRes, pairsRes, feedTokenRes] = await Promise.all([
+                const [svcRes, itemsRes, pkgRes, galRes, faqRes, tplRes, userRes, peakRes, propsRes, demandRes, pairsRes, feedTokenRes, taskTplRes] = await Promise.all([
                     fetch(`${CONFIG.API_URL}/api/services/admin`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/pricing/items`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/pricing/packages`, { headers: { Authorization: `Bearer ${adminToken}` } }),
@@ -3210,7 +3572,8 @@
                     fetch(`${CONFIG.API_URL}/api/props`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/calendar/high-demand-weeks`, { headers: { Authorization: `Bearer ${adminToken}` } }),
                     fetch(`${CONFIG.API_URL}/api/quotation/frequent-pairs`, { headers: { Authorization: `Bearer ${adminToken}` } }),
-                    fetch(`${CONFIG.API_URL}/api/calendar/feed-token`, { headers: { Authorization: `Bearer ${adminToken}` } })
+                    fetch(`${CONFIG.API_URL}/api/calendar/feed-token`, { headers: { Authorization: `Bearer ${adminToken}` } }),
+                    fetch(`${CONFIG.API_URL}/api/tasks/templates`, { headers: { Authorization: `Bearer ${adminToken}` } })
                 ]);
 
                 if (svcRes.status === 401 || itemsRes.status === 401 || pkgRes.status === 401) return;
@@ -3227,6 +3590,7 @@
                 const demandData = await demandRes.json();
                 const pairsData = await pairsRes.json();
                 const feedTokenData = await feedTokenRes.json();
+                const taskTplData = await taskTplRes.json();
 
                 servicesCache = svcData.data || [];
                 pricingItemsCache = itemsData.data || [];
@@ -3240,6 +3604,7 @@
                 highDemandWeeksCache = new Set((demandData.data || []).map(w => w.week_start));
                 frequentPairsCache = pairsData.data || [];
                 calendarFeedToken = feedTokenData.token || '';
+                taskTemplatesCache = taskTplData.data || [];
 
                 renderServicesAdminList();
                 renderPricingItemsList();
@@ -3253,6 +3618,7 @@
                 renderAdminCalendar();
                 renderPropsList();
                 renderCalendarFeedLink();
+                renderTaskTemplatesList();
 
             } catch (err) {
                 console.error('Load catalog error:', err);
@@ -3748,6 +4114,36 @@
                 await loadTasks(quotationId);
             } catch (err) {
                 alert('Error: ' + err.message);
+            }
+        }
+
+        // BAU backlog #25 - applying a task template is a pure frontend
+        // loop over the cached template's items, calling the exact same
+        // POST /api/tasks endpoint addTask() above uses, once per item -
+        // no dedicated "apply" backend route, matching exactly how
+        // applyPackage() works for quotation line items.
+        async function applyTaskTemplate(quotationId) {
+            const select = document.getElementById(`applyTplSelect_${quotationId}`);
+            const templateId = select?.value;
+            if (!templateId) return;
+
+            const template = taskTemplatesCache.find(t => String(t.id) === String(templateId));
+            if (!template || !Array.isArray(template.items) || template.items.length === 0) return;
+
+            if (!confirm(`Add ${template.items.length} task(s) from "${template.name}" to this booking?`)) return;
+
+            try {
+                for (const item of template.items) {
+                    await fetch(`${CONFIG.API_URL}/api/tasks`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                        body: JSON.stringify({ quotation_id: quotationId, title: item.title })
+                    });
+                }
+                if (select) select.value = '';
+                await loadTasks(quotationId);
+            } catch (err) {
+                alert('Error applying template: ' + err.message);
             }
         }
 
@@ -4285,6 +4681,109 @@
             }
         }
 
+        // ---- Task Templates (BAU backlog #25) - exact same shape as
+        // Package Templates above, just title-only items (no price) and
+        // POST /api/tasks/templates instead of /api/pricing/packages. ----
+        function addTplItemRow(title = '') {
+            const container = document.getElementById('tplItemRows');
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 items-center';
+            row.innerHTML = `
+                <input type="text" placeholder="Task title" value="${escapeHTML(title)}" class="tpl-item-title w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                <button onclick="this.parentElement.remove()" class="text-red-500 text-sm px-2">&#10005;</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function renderTaskTemplatesList() {
+            const el = document.getElementById('taskTemplatesList');
+            if (!el) return;
+            if (taskTemplatesCache.length === 0) {
+                el.innerHTML = '<p class="text-sm text-gray-400">No task templates yet.</p>';
+                return;
+            }
+            el.innerHTML = taskTemplatesCache.map(t => `
+                <div class="border rounded-xl p-3 text-sm">
+                    <div class="flex flex-wrap justify-between items-center gap-2">
+                        <strong>${escapeHTML(t.name)}</strong>
+                        <div class="flex gap-2">
+                            <button onclick="editTaskTemplate(${t.id})" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">Edit</button>
+                            <button onclick="deleteTaskTemplate(${t.id})" class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-200 transition">Delete</button>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1">
+                        ${(t.items || []).map(i => escapeHTML(i.title)).join(', ')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editTaskTemplate(id) {
+            const tpl = taskTemplatesCache.find(x => x.id === id);
+            if (!tpl) return;
+            editingTaskTemplateId = id;
+            document.getElementById('tpl_name').value = tpl.name || '';
+            const container = document.getElementById('tplItemRows');
+            container.innerHTML = '';
+            (tpl.items || []).forEach(i => addTplItemRow(i.title));
+            document.getElementById('tplSaveLabel').textContent = 'Update Template';
+            document.getElementById('tplCancelBtn').classList.remove('hidden');
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function resetTaskTemplateForm() {
+            editingTaskTemplateId = null;
+            document.getElementById('tpl_name').value = '';
+            document.getElementById('tplItemRows').innerHTML = '';
+            document.getElementById('tplSaveLabel').textContent = 'Save Template';
+            document.getElementById('tplCancelBtn').classList.add('hidden');
+        }
+
+        async function saveTaskTemplate() {
+            const name = document.getElementById('tpl_name').value.trim();
+            if (!name) { alert('Template name is required'); return; }
+
+            const items = [];
+            document.querySelectorAll('#tplItemRows > div').forEach(row => {
+                const title = row.querySelector('.tpl-item-title')?.value.trim();
+                if (title) items.push({ title });
+            });
+
+            if (items.length === 0) { alert('Add at least one item to the template'); return; }
+
+            try {
+                const url = editingTaskTemplateId ? `${CONFIG.API_URL}/api/tasks/templates/${editingTaskTemplateId}` : `${CONFIG.API_URL}/api/tasks/templates`;
+                const method = editingTaskTemplateId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ name, items, active: true })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to save task template');
+                }
+                resetTaskTemplateForm();
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deleteTaskTemplate(id) {
+            if (!confirm('Delete this task template?')) return;
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/tasks/templates/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+                if (!res.ok) throw new Error('Failed to delete task template');
+                await loadCatalog();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
         // ---- Dropdown population (used in Generate Quotation tab) ----
         function populatePackageSelect() {
             const select = document.getElementById('packageSelect');
@@ -4632,7 +5131,7 @@
                         let itemsHtml = '';
                         if (Array.isArray(versionItems) && versionItems.length > 0) {
                             itemsHtml = versionItems.map(item =>
-                                `<span class="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs mr-1">${escapeHTML(item.name)}: RM ${item.price}</span>`
+                                `<span class="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs mr-1">${escapeHTML(item.name)}: RM ${item.price || 0}</span>`
                             ).join(' ');
                         }
                         html += `
@@ -4642,7 +5141,7 @@
                                     <span class="text-xs text-gray-400">${formatDateTime(v.created_at)}</span>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2 mt-2 text-xs">
-                                    <div><span class="text-gray-400">Total:</span> <strong>RM ${v.total}</strong></div>
+                                    <div><span class="text-gray-400">Total:</span> <strong>RM ${v.total || 0}</strong></div>
                                     <div><span class="text-gray-400">Deposit:</span> RM ${v.deposit || 0}</div>
                                     <div><span class="text-gray-400">Balance:</span> RM ${v.balance || 0}</div>
                                 </div>
