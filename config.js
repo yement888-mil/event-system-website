@@ -7,5 +7,11 @@ const CONFIG = {
     // Empty until a real Turnstile widget is created; the inquiry form
     // skips rendering the challenge entirely while this is blank, same
     // graceful-degradation shape as the backend's isConfigured() check.
-    TURNSTILE_SITE_KEY: ''
+    TURNSTILE_SITE_KEY: '',
+    // GA4 measurement ID (e.g. 'G-XXXXXXXXXX') and Meta Pixel ID. Both
+    // public identifiers, safe to ship here. Empty until real accounts
+    // exist - assets/js/analytics.js skips loading either snippet while
+    // its ID is blank, same pattern as TURNSTILE_SITE_KEY above.
+    GA4_MEASUREMENT_ID: '',
+    META_PIXEL_ID: ''
 };
