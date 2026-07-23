@@ -245,3 +245,54 @@
                 el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
             }
         }
+
+
+        // Sprint 7, Epic K - completed events asked for a review 3+ days
+        // ago (services/testimonialRequestScheduler.js) that haven't left
+        // one yet. The automated ask only reaches customers with an email
+        // on file (most don't - see Epic J's finding), so this is the
+        // manual-nudge path for everyone else: one click opens WhatsApp
+        // with a message ready to send, same wa.me pattern as
+        // sendQuotationToCustomer in quotations-list.js.
+        async function loadTestimonialRequestsToday() {
+            const el = document.getElementById('todayTestimonialRequestsList');
+            if (!el) return;
+            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/testimonials/pending-requests`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error('Failed to load pending review requests');
+
+                const result = await res.json();
+                const rows = result.data || [];
+
+                if (rows.length === 0) {
+                    el.innerHTML = '<p class="text-sm text-gray-500">No pending review requests.</p>';
+                    return;
+                }
+
+                el.innerHTML = rows.map(r => {
+                    const phone = (r.phone || '').replace(/[^0-9]/g, '');
+                    const msg = `Hi ${r.customer_name}, thank you again for booking with us! If you have a moment, we'd love to hear how your event went - your feedback helps other customers find us.`;
+                    const waLink = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : null;
+                    return `
+                        <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm border-gray-200">
+                            <div>
+                                <strong>${escapeHTML(r.customer_name)}</strong>
+                                <span class="text-xs text-gray-400 ml-1">${escapeHTML(r.quotation_no || '-')}</span>
+                                <div class="text-xs text-gray-500 mt-0.5">Asked ${formatDate(r.testimonial_requested_at)}</div>
+                            </div>
+                            ${waLink ? `<a href="${waLink}" target="_blank" class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition whitespace-nowrap">WhatsApp Nudge</a>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Load testimonial requests error:', err);
+                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
+            }
+        }

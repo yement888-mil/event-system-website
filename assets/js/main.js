@@ -9,7 +9,17 @@ document.addEventListener('DOMContentLoaded', function() {
             mobileMenu.classList.toggle('hidden');
         });
     }
-    
+
+    // Epic L (strict CSP follow-up) - was onclick="withdrawInquiry()" in
+    // contact.html; moved to addEventListener so script-src can drop
+    // unsafe-inline on this page. withdrawInquiry() itself is unchanged,
+    // still a plain global function (defined below, outside this
+    // DOMContentLoaded block).
+    const withdrawBtn = document.getElementById('withdrawBtn');
+    if (withdrawBtn) {
+        withdrawBtn.addEventListener('click', withdrawInquiry);
+    }
+
     // FAQ Toggle
     document.querySelectorAll('.faq-item').forEach(item => {
         item.addEventListener('click', function() {

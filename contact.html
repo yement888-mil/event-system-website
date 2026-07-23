@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.googletagmanager.com https://connect.facebook.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.facebook.com; connect-src 'self' https://event-system-backend-production.up.railway.app https://www.google-analytics.com https://analytics.google.com https://www.facebook.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src https://challenges.cloudflare.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://www.googletagmanager.com https://connect.facebook.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.facebook.com; connect-src 'self' https://event-system-backend-production.up.railway.app https://www.google-analytics.com https://analytics.google.com https://www.facebook.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src https://challenges.cloudflare.com;">
     <script src="config.js"></script>
     <script src="assets/js/analytics.js"></script>
     <title>Contact Us | Event Management System</title>
@@ -22,19 +22,8 @@
     <meta name="twitter:image" content="https://yement888-mil.github.io/event-system-website/assets/images/og-banner.jpg">
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/js/tailwind-config.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        gold: '#C9A84C',
-                        dark: '#1A1A1A',
-                    }
-                }
-            }
-        }
-    </script>
 </head>
 <body class="bg-[#F8F8F8] text-[#1A1A1A]">
 
@@ -183,7 +172,7 @@
             <div class="text-gold text-5xl mb-5">✦</div>
             <h3 class="text-xl font-semibold text-dark mb-2">Thank You!</h3>
             <p class="text-[#333333] text-sm">We'll contact you via WhatsApp within 24 hours.</p>
-            <button id="withdrawBtn" onclick="withdrawInquiry()" class="inline-block mt-6 text-xs text-gray-400 hover:text-red-500 hover:underline">Submitted by mistake? Withdraw this inquiry</button>
+            <button id="withdrawBtn" class="inline-block mt-6 text-xs text-gray-400 hover:text-red-500 hover:underline">Submitted by mistake? Withdraw this inquiry</button>
             <p id="withdrawResult" class="hidden text-xs text-gray-500 mt-2"></p>
             <br>
             <a href="index.html" class="inline-block mt-4 text-gold text-sm font-medium hover:underline">← ← Back to Home</a>

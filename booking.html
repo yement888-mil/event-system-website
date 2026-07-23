@@ -3,23 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://event-system-backend-production.up.railway.app; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://event-system-backend-production.up.railway.app; object-src 'none'; base-uri 'self'; form-action 'self';">
     <title>Your Booking | Event Management System</title>
     <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/js/tailwind-config.js"></script>
     <link rel="stylesheet" href="assets/css/style.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        gold: '#C9A84C',
-                        dark: '#1A1A1A',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         .status-badge { display: inline-block; padding: 4px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; }
         .status-draft, .status-sent { background: #dbeafe; color: #1d4ed8; }
@@ -27,6 +16,8 @@
         .status-deposit_paid { background: #d1fae5; color: #065f46; }
         .status-completed { background: #a7f3d0; color: #065f46; }
         .status-cancelled { background: #fecaca; color: #991b1b; }
+        .star-btn { cursor: pointer; color: #d1d5db; transition: color 0.15s; background: none; border: none; padding: 0; line-height: 1; }
+        .star-btn.selected { color: #C9A84C; }
     </style>
 </head>
 <body class="bg-[#F8F8F8] text-[#1A1A1A]">
@@ -134,30 +125,45 @@
 
             <div id="requestChangeSection" class="hidden space-y-2 mb-4">
                 <div class="text-center">
-                    <button id="requestDateChangeBtn" onclick="toggleChangeForm('date_change')" class="text-xs text-gray-400 hover:text-gold hover:underline">Need to change your event date?</button>
+                    <button id="requestDateChangeBtn" class="text-xs text-gray-400 hover:text-gold hover:underline">Need to change your event date?</button>
                 </div>
                 <div id="dateChangeForm" class="hidden bg-white rounded-2xl p-4 shadow-sm space-y-3">
                     <label class="block text-xs font-medium">New date</label>
                     <input type="date" id="requestedDateInput" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
                     <label class="block text-xs font-medium">Note (optional)</label>
                     <textarea id="dateChangeNoteInput" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"></textarea>
-                    <button onclick="submitChangeRequest('date_change')" class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Submit Request</button>
+                    <button id="submitDateChangeBtn" class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Submit Request</button>
                 </div>
 
                 <div class="text-center">
-                    <button id="requestAddServiceBtn" onclick="toggleChangeForm('add_service')" class="text-xs text-gray-400 hover:text-gold hover:underline">Want to add a service?</button>
+                    <button id="requestAddServiceBtn" class="text-xs text-gray-400 hover:text-gold hover:underline">Want to add a service?</button>
                 </div>
                 <div id="addServiceForm" class="hidden bg-white rounded-2xl p-4 shadow-sm space-y-3">
                     <label class="block text-xs font-medium">Service you'd like to add</label>
                     <input type="text" id="requestedServiceInput" placeholder="e.g. Photography" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
                     <label class="block text-xs font-medium">Note (optional)</label>
                     <textarea id="addServiceNoteInput" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"></textarea>
-                    <button onclick="submitChangeRequest('add_service')" class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Submit Request</button>
+                    <button id="submitAddServiceBtn" class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Submit Request</button>
                 </div>
             </div>
 
             <div id="requestCancelSection" class="hidden text-center mb-4">
-                <button id="requestCancelBtn" onclick="requestCancellation()" class="text-xs text-gray-400 hover:text-red-500 hover:underline">Need to cancel this booking?</button>
+                <button id="requestCancelBtn" class="text-xs text-gray-400 hover:text-red-500 hover:underline">Need to cancel this booking?</button>
+            </div>
+
+            <!-- Sprint 7, Epic K - shown only once status is 'completed'.
+                 testimonialAlreadySubmitted (server-reported) picks
+                 between the form and a thank-you message, so a customer
+                 who already left a review doesn't see the form again. -->
+            <div id="testimonialSection" class="hidden bg-white rounded-2xl p-6 shadow-sm mb-4">
+                <h3 class="font-semibold text-dark text-sm mb-3">How was your event?</h3>
+                <div id="testimonialForm">
+                    <label class="block text-xs font-medium mb-2">Your Rating</label>
+                    <div id="starRating" class="flex gap-1 mb-3 text-2xl"></div>
+                    <textarea id="testimonialBody" rows="3" maxlength="2000" placeholder="Tell us about your experience..." class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3"></textarea>
+                    <button id="submitTestimonialBtn" class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Submit Review</button>
+                </div>
+                <div id="testimonialThanks" class="hidden text-center text-sm text-gray-500 py-2">Thank you for your review!</div>
             </div>
 
             <p class="text-center text-xs text-gray-400 mt-6">
@@ -178,188 +184,6 @@
     </footer>
 
     <script src="config.js"></script>
-    <script>
-        const STATUS_LABELS = {
-            draft: 'Quotation Draft',
-            sent: 'Quotation Sent',
-            waiting_deposit: 'Waiting for Deposit',
-            deposit_paid: 'Confirmed - Deposit Paid',
-            completed: 'Event Completed',
-            cancelled: 'Cancelled'
-        };
-
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            return new Date(dateStr).toLocaleDateString('en-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kuala_Lumpur' });
-        }
-
-        function escapeHTML(str) {
-            if (!str) return '';
-            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-
-        async function loadBooking() {
-            const params = new URLSearchParams(window.location.search);
-            const token = params.get('token');
-
-            if (!token) {
-                document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('notFoundState').classList.remove('hidden');
-                return;
-            }
-
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation/booking/${token}`);
-                if (!res.ok) throw new Error('Not found');
-
-                const result = await res.json();
-                const b = result.data;
-
-                document.getElementById('quotationNo').textContent = b.quotation_no || '';
-                document.getElementById('customerName').textContent = b.customer_name || '-';
-                document.getElementById('eventType').textContent = b.event_type || '-';
-                document.getElementById('eventDate').textContent = formatDate(b.event_date);
-                document.getElementById('guestCount').textContent = (b.guest_count || '-') + ' pax';
-
-                const badge = document.getElementById('statusBadge');
-                badge.className = 'status-badge status-' + (b.status || 'draft');
-                badge.textContent = STATUS_LABELS[b.status] || 'Processing';
-
-                let items = b.items;
-                if (typeof items === 'string') {
-                    try { items = JSON.parse(items); } catch (e) { items = []; }
-                }
-                const servicesList = document.getElementById('servicesList');
-                if (Array.isArray(items) && items.length > 0) {
-                    servicesList.innerHTML = items.map(i =>
-                        `<div class="flex justify-between"><span>${escapeHTML(i.name)}</span><span>RM ${Number(i.price).toFixed(2)}</span></div>`
-                    ).join('');
-                } else {
-                    servicesList.innerHTML = '<p class="text-gray-400">No services listed</p>';
-                }
-
-                document.getElementById('totalAmount').textContent = `RM ${Number(b.total || 0).toFixed(2)}`;
-                document.getElementById('depositAmount').textContent = `RM ${Number(b.deposit || 0).toFixed(2)}`;
-                document.getElementById('balanceAmount').textContent = `RM ${Number(b.balance || 0).toFixed(2)}`;
-
-                if (b.inquiry_status === 'cancel_requested') {
-                    document.getElementById('cancelRequestedNote').classList.remove('hidden');
-                } else if (b.status === 'cancelled') {
-                    document.getElementById('cancelledNote').classList.remove('hidden');
-                } else if (b.status === 'deposit_paid' || b.status === 'completed') {
-                    document.getElementById('confirmedNote').classList.remove('hidden');
-                } else {
-                    document.getElementById('depositNote').classList.remove('hidden');
-                }
-
-                // Only offer the cancel-request/change-request options if
-                // this booking isn't already cancelled, completed, or
-                // already pending a cancellation review.
-                const cancellableStates = ['cancelled', 'completed', 'cancel_requested'];
-                if (b.withdraw_token && !cancellableStates.includes(b.inquiry_status) && b.status !== 'completed' && b.status !== 'cancelled') {
-                    window.__withdrawToken = b.withdraw_token;
-                    document.getElementById('requestCancelSection').classList.remove('hidden');
-
-                    // BAU backlog #15
-                    document.getElementById('requestChangeSection').classList.remove('hidden');
-                    const pending = b.pending_change_requests || [];
-                    if (pending.length > 0) {
-                        const noteEl = document.getElementById('pendingChangeRequestsNote');
-                        noteEl.innerHTML = pending.map(r =>
-                            r.request_type === 'date_change'
-                                ? `We're reviewing your request to change the date to ${formatDate(r.requested_date)}.`
-                                : `We're reviewing your request to add "${escapeHTML(r.requested_service)}".`
-                        ).join('<br>');
-                        noteEl.classList.remove('hidden');
-
-                        // Don't offer a second request of the same type
-                        // while one is already pending review.
-                        const pendingTypes = pending.map(r => r.request_type);
-                        if (pendingTypes.includes('date_change')) document.getElementById('requestDateChangeBtn').classList.add('hidden');
-                        if (pendingTypes.includes('add_service')) document.getElementById('requestAddServiceBtn').classList.add('hidden');
-                    }
-                }
-
-                document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('bookingContent').classList.remove('hidden');
-
-            } catch (err) {
-                console.error('Booking load error:', err);
-                document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('notFoundState').classList.remove('hidden');
-            }
-        }
-
-        async function requestCancellation() {
-            const token = window.__withdrawToken;
-            if (!token) return;
-
-            if (!confirm('Request cancellation of this booking? Our team will review and confirm with you.')) return;
-
-            const btn = document.getElementById('requestCancelBtn');
-            try {
-                if (btn) { btn.disabled = true; btn.textContent = 'Sending request...'; }
-
-                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/withdraw/${token}`, {
-                    method: 'POST'
-                });
-                const result = await res.json();
-
-                alert(result.message || 'Request sent.');
-                document.getElementById('requestCancelSection').classList.add('hidden');
-                loadBooking();
-
-            } catch (err) {
-                alert('Something went wrong. Please contact us via WhatsApp.');
-                if (btn) { btn.disabled = false; btn.textContent = 'Need to cancel this booking?'; }
-            }
-        }
-
-        // BAU backlog #15 - extends the cancellation-request pattern above
-        // to date-change/add-service requests. Same token, same "notify
-        // only, never applied automatically" behavior.
-        function toggleChangeForm(type) {
-            const formId = type === 'date_change' ? 'dateChangeForm' : 'addServiceForm';
-            document.getElementById(formId).classList.toggle('hidden');
-        }
-
-        async function submitChangeRequest(type) {
-            const token = window.__withdrawToken;
-            if (!token) return;
-
-            const payload = { type };
-            if (type === 'date_change') {
-                const date = document.getElementById('requestedDateInput').value;
-                if (!date) { alert('Please pick a date'); return; }
-                payload.requested_date = date;
-                payload.customer_note = document.getElementById('dateChangeNoteInput').value.trim();
-            } else {
-                const service = document.getElementById('requestedServiceInput').value.trim();
-                if (!service) { alert('Please enter a service'); return; }
-                payload.requested_service = service;
-                payload.customer_note = document.getElementById('addServiceNoteInput').value.trim();
-            }
-
-            if (!confirm('Submit this request? Our team will review and confirm with you.')) return;
-
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/request-change/${token}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await res.json();
-                if (!res.ok) throw new Error(result.error || 'Failed to submit request');
-
-                alert(result.message || 'Request sent.');
-                loadBooking();
-
-            } catch (err) {
-                alert(err.message || 'Something went wrong. Please contact us via WhatsApp.');
-            }
-        }
-
-        loadBooking();
-    </script>
+    <script src="assets/js/booking.js"></script>
 </body>
 </html>

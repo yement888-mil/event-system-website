@@ -308,12 +308,16 @@
                 loadUpcomingReminders();
                 loadOpenTasksToday();
                 loadExpiringQuotationsToday();
+                loadTestimonialRequestsToday();
             }
             if (tab === 'account' && adminRole === 'owner') {
                 loadStaffAccounts();
             }
             if (tab === 'customers') {
                 loadCustomers();
+            }
+            if (tab === 'testimonials') {
+                loadTestimonials();
             }
             if (tab === 'health') {
                 loadSystemHealth();
@@ -413,6 +417,7 @@
             await loadUpcomingReminders();
             await loadOpenTasksToday();
             await loadExpiringQuotationsToday();
+            await loadTestimonialRequestsToday();
             await loadNotificationCenter();
             await loadChangeRequests();
             await loadDueReminders();

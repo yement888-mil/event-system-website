@@ -266,6 +266,7 @@
                 <button onclick="switchTab('calendar')" id="tabCalendar" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Calendar</button>
                 <button onclick="switchTab('catalog')" id="tabCatalog" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Services &amp; Pricing</button>
                 <button onclick="switchTab('customers')" id="tabCustomers" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Customers</button>
+                <button onclick="switchTab('testimonials')" id="tabTestimonials" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Testimonials</button>
                 <button onclick="switchTab('health')" id="tabHealth" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">System Health</button>
                 <button onclick="switchTab('account')" id="tabAccount" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Account</button>
             </div>
@@ -323,6 +324,12 @@
                     <div>
                         <h2 class="text-lg font-semibold mb-3">Quotations Expiring Soon</h2>
                         <div id="todayExpiringList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                            <p class="text-sm text-gray-500">Loading...</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold mb-3">Review Requests Pending Response</h2>
+                        <div id="todayTestimonialRequestsList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
                             <p class="text-sm text-gray-500">Loading...</p>
                         </div>
                     </div>
@@ -840,6 +847,25 @@
                 </section>
             </div>
 
+            <!-- Sprint 7, Epic K - testimonial moderation queue. Nothing
+                 customer-submitted goes live without approval here. -->
+            <div id="tabTestimonialsContent" class="tab-content">
+                <section class="bg-white rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">Testimonials</h2>
+                        <select id="testimonialStatusFilter" onchange="loadTestimonials()" class="border border-gray-200 rounded-xl px-4 py-2 text-sm">
+                            <option value="pending">Pending Review</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div id="testimonialsList" class="space-y-3">
+                        <p class="text-sm text-gray-400">Loading...</p>
+                    </div>
+                </section>
+            </div>
+
             <!-- SYSTEM HEALTH (BAU backlog #9) - render job over data that
                  already exists: activity_logs (backupScheduler.js's own
                  "when was the last one sent" source) and notification_logs
@@ -907,6 +933,7 @@
     <script src="assets/js/admin/catalog-content.js"></script>
     <script src="assets/js/admin/tasks.js"></script>
     <script src="assets/js/admin/customers.js"></script>
+    <script src="assets/js/admin/testimonials.js"></script>
     <script src="assets/js/admin/account.js"></script>
     <script src="assets/js/admin/health.js"></script>
     <script src="assets/js/admin/bootstrap.js"></script>
