@@ -179,7 +179,7 @@
 
     <header class="bg-dark text-white py-4 px-5">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <span class="text-gold font-semibold text-lg">Dekor By Ana</span>
+            <span class="text-gold font-semibold text-lg">Event Management System</span>
             <div class="flex items-center gap-4">
                 <!-- BAU backlog #12 - in-app notification center. One bell,
                      one panel: real failed sends (BAU backlog #3's data,
@@ -5583,7 +5583,7 @@
             const valid = new Date();
             valid.setDate(valid.getDate() + 7);
 
-            const fallback = `Hi {{customer_name}},\n\nThank you for your inquiry.\n\nQUOTATION\n--------------------\nEvent: {{event_type}}\nDate: {{event_date}}\nGuests: {{guest_count}} pax\n\nServices\n{{items}}\n\n--------------------\nTotal: RM {{total}}\nDeposit (30%): RM {{deposit}}\nBalance: RM {{balance}}\n\nValid until: {{valid_until}}\n\nPayment Details\nMaybank | 5xxxxx | Dekor By Ana\n\nThank you.`;
+            const fallback = `Hi {{customer_name}},\n\nThank you for your inquiry.\n\nQUOTATION\n--------------------\nEvent: {{event_type}}\nDate: {{event_date}}\nGuests: {{guest_count}} pax\n\nServices\n{{items}}\n\n--------------------\nTotal: RM {{total}}\nDeposit (30%): RM {{deposit}}\nBalance: RM {{balance}}\n\nValid until: {{valid_until}}\n\nPayment Details\nMaybank | 5xxxxx | Event Management System\n\nThank you.`;
             const msgText = renderTemplate(getTemplateBody('quotation', fallback), {
                 customer_name: inq.customer_name,
                 event_type: inq.event_type || '-',
@@ -5632,7 +5632,7 @@
             // Header
             doc.setFontSize(18);
             doc.setFont(undefined, 'bold');
-            doc.text('Dekor By Ana', 14, 20);
+            doc.text('Event Management System', 14, 20);
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
             doc.text('Event Decoration & Styling', 14, 26);
@@ -5693,7 +5693,7 @@
             doc.setFont(undefined, 'bold');
             doc.text('Payment Details', 14, notesY);
             doc.setFont(undefined, 'normal');
-            doc.text('Maybank | 5xxxxx | Dekor By Ana', 14, notesY + 6);
+            doc.text('Maybank | 5xxxxx | Event Management System', 14, notesY + 6);
 
             doc.setFont(undefined, 'bold');
             doc.text('Notes', 14, notesY + 18);
@@ -5754,7 +5754,7 @@
 
             doc.setFontSize(18);
             doc.setFont(undefined, 'bold');
-            doc.text('Dekor By Ana', 14, 20);
+            doc.text('Event Management System', 14, 20);
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
             doc.text('Event Decoration & Styling', 14, 26);
@@ -6297,7 +6297,7 @@
 
             doc.setFontSize(18);
             doc.setFont(undefined, 'bold');
-            doc.text('Dekor By Ana', 14, 20);
+            doc.text('Event Management System', 14, 20);
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
             doc.text('Event Decoration & Styling', 14, 26);
