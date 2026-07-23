@@ -108,6 +108,7 @@
         .status-deposit_paid { background: #d1fae5; color: #065f46; }
         .status-completed { background: #a7f3d0; color: #065f46; }
         .status-cancelled { background: #fecaca; color: #991b1b; }
+        .status-expired { background: #f3f4f6; color: #6b7280; }
         .status-new { background: #e5e7eb; color: #374151; }
         .status-contacted { background: #dbeafe; color: #1d4ed8; }
         .status-quotation_sent { background: #ede9fe; color: #6d28d9; }
@@ -424,6 +425,7 @@
                         <option value="deposit_paid">Deposit Paid</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
+                        <option value="expired">Expired</option>
                     </select>
                 </div>
                 <!-- BAU backlog #13 - widened search, same pattern as
@@ -1091,7 +1093,8 @@
                 'waiting_deposit': 'status-waiting_deposit',
                 'deposit_paid': 'status-deposit_paid',
                 'completed': 'status-completed',
-                'cancelled': 'status-cancelled'
+                'cancelled': 'status-cancelled',
+                'expired': 'status-expired'
             };
             return `<span class="status-badge ${classes[status] || 'status-draft'}">${status || 'draft'}</span>`;
         }
@@ -3032,7 +3035,7 @@
             
             let html = '';
             quotations.forEach(q => {
-                const statusOptions = ['draft', 'sent', 'waiting_deposit', 'deposit_paid', 'completed', 'cancelled'];
+                const statusOptions = ['draft', 'sent', 'waiting_deposit', 'deposit_paid', 'completed', 'cancelled', 'expired'];
                 let optionsHtml = '';
                 statusOptions.forEach(s => {
                     const selected = q.status === s ? 'selected' : '';
