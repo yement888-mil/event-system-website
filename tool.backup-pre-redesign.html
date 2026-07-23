@@ -27,12 +27,6 @@
         }
     </script>
     <style>
-        /* =====================================================================
-           ORIGINAL RULES - UNCHANGED. These fix real bugs (mobile zoom, tab
-           panes, modal, status badges, tables, loading spinner) and are relied
-           on by the JS in assets/js/admin/*.js. Do not remove.
-           ===================================================================== */
-
         /* Prevents the whole page from being forced to zoom out on mobile
            if any element inside briefly renders wider than the screen
            (e.g. right after login when the dashboard first appears).
@@ -121,7 +115,7 @@
         .status-quotation_sent { background: #ede9fe; color: #6d28d9; }
         .status-confirmed { background: #d1fae5; color: #065f46; }
         .status-cancel_requested { background: #fed7aa; color: #9a3412; font-weight: 700; }
-
+        
         .table-container {
             max-height: 500px;
             overflow-y: auto;
@@ -176,267 +170,106 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        /* =====================================================================
-           REDESIGN - Modern Enterprise SaaS (Anchanto IA / Apple cleanliness /
-           Linear spacing / Stripe type / Notion simplicity). Everything below
-           is presentation-only: no ids, no onclick handlers, no data hooks are
-           touched. It works by (a) a new sidebar/topbar shell, (b) a
-           regrouped stat-card section, and (c) global overrides on the
-           Tailwind utility classes already used throughout the 12 tab panes
-           (bg-dark, bg-gold, text-gold, rounded-2xl, shadow-sm, bg-[#F8F8F8],
-           bg-[#F5F0E6]) so every existing card/button/badge inherits the new
-           look with zero markup changes inside those panes.
-           ===================================================================== */
-        :root{
-            --bg:#F5F7FA;
-            --card:#FFFFFF;
-            --text-primary:#111827;
-            --text-secondary:#6B7280;
-            --border:#E5E7EB;
-            --accent:#1F4ED8;
-            --accent-hover:#1A3FB8;
-            --accent-soft:#EEF2FF;
-            --gold:#C9A84C; /* logo / premium badge only, never interactive */
-            --radius-card:12px;
-            --shadow-card:0 1px 2px rgba(16,24,40,0.04);
-        }
-
-        body{
-            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
-            background: var(--bg) !important;
-            color: var(--text-primary) !important;
-        }
-
-        /* ---- App shell: sidebar + topbar + content column ---- */
-        #toolContent.app-shell{ display:flex; min-height:100vh; align-items:stretch; }
-        #toolContent.app-shell.hidden{ display:none !important; }
-
-        .app-sidebar{
-            width:240px; flex-shrink:0;
-            background:var(--card);
-            border-right:1px solid var(--border);
-            padding:24px 16px;
-            display:flex; flex-direction:column; gap:24px;
-            position:sticky; top:0; height:100vh; overflow-y:auto;
-        }
-        .app-brand{ display:flex; align-items:center; gap:10px; padding:0 8px; }
-        .app-brand-mark{
-            width:28px; height:28px; border-radius:8px;
-            background:var(--gold);
-            display:flex; align-items:center; justify-content:center;
-            color:#fff; font-weight:700; font-size:14px; flex-shrink:0;
-        }
-        .app-brand-name{ font-size:15px; font-weight:600; color:var(--text-primary); line-height:1.25; }
-
-        .nav-group{ display:flex; flex-direction:column; gap:2px; }
-        .nav-group-label{
-            padding:8px 8px 4px; font-size:11px; font-weight:600; letter-spacing:.06em;
-            color:var(--text-secondary); text-transform:uppercase;
-        }
-        .nav-item{
-            display:flex; align-items:center; gap:10px;
-            padding:9px 8px; border-radius:8px;
-            color:var(--text-secondary); font-size:14px; font-weight:500;
-            cursor:pointer; border:none; background:none; width:100%; text-align:left;
-            transition:background .12s ease, color .12s ease;
-        }
-        .nav-item:hover{ background:var(--bg); color:var(--text-primary); }
-        .nav-item.nav-active{ background:var(--accent-soft); color:var(--accent); font-weight:600; }
-
-        .app-main{ flex:1; min-width:0; display:flex; flex-direction:column; }
-        .app-topbar{
-            height:64px; flex-shrink:0;
-            display:flex; align-items:center; justify-content:flex-end;
-            padding:0 32px; border-bottom:1px solid var(--border); background:var(--card);
-            gap:16px;
-        }
-        .app-icon-btn{
-            width:36px; height:36px; border-radius:8px;
-            display:flex; align-items:center; justify-content:center;
-            border:1px solid var(--border); background:var(--card);
-            cursor:pointer; color:var(--text-secondary); position:relative;
-        }
-        .app-icon-btn:hover{ background:var(--bg); }
-        .app-content{ padding:32px; flex:1; min-width:0; }
-
-        /* ---- Login screen ----
-           NOTE: core.js toggles visibility by adding/removing the Tailwind
-           "hidden" class on #passwordGate and #toolContent. Both rules below
-           are written so that state - #passwordGate.hidden and
-           #toolContent.app-shell.hidden - wins on specificity no matter when
-           Tailwind's own stylesheet loads relative to this one. */
-        #passwordGate{
-            min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
-            background:var(--bg);
-        }
-        #passwordGate.hidden{
-            display:none !important;
-        }
-        #passwordGate .login-card{
-            background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card);
-            box-shadow:var(--shadow-card); padding:40px 36px; width:340px; text-align:center;
-        }
-
-        /* ---- Global retheme of the existing Tailwind utility classes used
-               throughout the (untouched) tab panes ---- */
-        .rounded-2xl{ border-radius:var(--radius-card) !important; }
-        .shadow-sm{ box-shadow:var(--shadow-card) !important; border:1px solid var(--border); }
-        .bg-dark{ background-color:var(--accent) !important; }
-        .hover\:bg-dark:hover{ background-color:var(--accent-hover) !important; }
-        .text-dark{ color:var(--text-primary) !important; }
-        .hover\:text-dark:hover{ color:var(--text-primary) !important; }
-        .border-dark{ border-color:var(--accent) !important; }
-        .bg-gold{ background-color:var(--accent) !important; color:#fff !important; }
-        .hover\:bg-gold:hover{ background-color:var(--accent-hover) !important; color:#fff !important; }
-        .text-gold{ color:var(--accent) !important; }
-        .border-gold{ border-color:var(--accent) !important; }
-        .bg-\[\#F8F8F8\]{ background-color:var(--bg) !important; }
-        .bg-\[\#F5F0E6\]{ background-color:var(--bg) !important; border:1px solid var(--border); }
-        .text-lg.font-semibold{ font-size:20px; }
-
-        /* ---- Form fields: consistent height/radius/border/focus everywhere ---- */
-        input[type="text"], input[type="number"], input[type="password"],
-        input[type="date"], input[type="month"], input[type="email"], select{
-            height:48px !important;
-            border-radius:12px !important;
-            border-color:var(--border) !important;
-        }
-        textarea{ border-radius:12px !important; padding-top:12px !important; }
-        input::placeholder, textarea::placeholder{ color:#9CA3AF !important; }
-        input:focus, select:focus, textarea:focus{
-            border-color:var(--accent) !important;
-            box-shadow:0 0 0 3px var(--accent-soft);
-            outline:none;
-        }
-
-        /* ---- Stat cards ---- */
-        .stat-grid-primary{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-        .stat-card-primary{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card); box-shadow:var(--shadow-card); padding:16px; }
-        .quick-insights-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-
-        @media (max-width: 900px){
-            .app-sidebar{ display:none; }
-            .stat-grid-primary, .quick-insights-row{ grid-template-columns:repeat(2,1fr); }
-        }
     </style>
 </head>
-<body class="bg-[#F5F7FA] text-[#111827]">
+<body class="bg-[#F8F8F8] text-[#1A1A1A]">
 
     <!-- BAU backlog #5 - global error boundary toast container. Fixed,
          outside <main>, so it renders regardless of which tab/modal is
          open or whether the password gate is still showing. -->
     <div id="errorBoundaryToasts" class="fixed bottom-4 right-4 z-[2000] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
-    <!-- Password Gate -->
-    <div id="passwordGate">
-        <div class="login-card">
-            <div class="text-gold text-4xl mb-4">&#128274;</div>
-            <h2 class="text-xl font-semibold mb-2">Login Required</h2>
-            <input type="text" id="toolUsername" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-center mt-4 w-full block mx-auto" placeholder="Username" autocomplete="username" />
-            <input type="password" id="toolPassword" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-center mt-2 w-full block mx-auto" placeholder="Password" autocomplete="current-password" />
-            <button onclick="checkPassword()" class="block mx-auto mt-4 bg-dark text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition w-full">Unlock</button>
-            <p id="passwordError" class="text-red-500 text-xs mt-2 hidden">Incorrect password</p>
-        </div>
-    </div>
-
-    <!-- Main Tool -->
-    <div id="toolContent" class="hidden app-shell">
-
-        <aside class="app-sidebar">
-            <div class="app-brand">
-                <div class="app-brand-mark">D</div>
-                <div class="app-brand-name">Event Management<br>System</div>
-            </div>
-
-            <nav class="nav-group">
-                <button class="nav-item nav-active" onclick="switchTab('today'); setActiveNav(this)">Dashboard</button>
-            </nav>
-
-            <div class="nav-group">
-                <div class="nav-group-label">Sales</div>
-                <button class="nav-item" onclick="switchTab('unread'); setActiveNav(this)">New inquiries</button>
-                <button class="nav-item" onclick="switchTab('allinquiries'); setActiveNav(this)">All inquiries</button>
-                <button class="nav-item" onclick="switchTab('quotations'); setActiveNav(this)">Quotations</button>
-                <button class="nav-item" onclick="switchTab('generate'); setActiveNav(this)">Create quotation</button>
-                <button class="nav-item" onclick="switchTab('customers'); setActiveNav(this)">Customers</button>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-label">Operations</div>
-                <button class="nav-item" onclick="switchTab('calendar'); setActiveNav(this)">Calendar</button>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-label">Content</div>
-                <button class="nav-item" onclick="switchTab('catalog'); setActiveNav(this)">Price book</button>
-                <button class="nav-item" onclick="switchTab('testimonials'); setActiveNav(this)">Testimonials</button>
-            </div>
-
-            <div class="nav-group">
-                <div class="nav-group-label">Reports</div>
-                <button class="nav-item" onclick="switchTab('analytics'); setActiveNav(this)">Reports</button>
-            </div>
-
-            <div class="nav-group" style="margin-top:auto;">
-                <div class="nav-group-label">Settings</div>
-                <button class="nav-item" onclick="switchTab('account'); setActiveNav(this)">Account</button>
-                <button class="nav-item" onclick="switchTab('health'); setActiveNav(this)">System health</button>
-            </div>
-        </aside>
-
-        <div class="app-main">
-            <div class="app-topbar">
+    <header class="bg-dark text-white py-4 px-5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <span class="text-gold font-semibold text-lg">Event Management System</span>
+            <div class="flex items-center gap-4">
+                <!-- BAU backlog #12 - in-app notification center. One bell,
+                     one panel: real failed sends (BAU backlog #3's data,
+                     now with read/unread tracking) plus a "since you're
+                     here" recap built from data already loaded for the
+                     Today tab/stats bar - not a second parallel feed. -->
                 <div class="relative">
-                    <button onclick="toggleNotificationCenter()" class="app-icon-btn" aria-label="Notifications">
-                        <span class="text-lg">&#128276;</span>
+                    <button onclick="toggleNotificationCenter()" class="relative text-gray-300 hover:text-white transition" aria-label="Notifications">
+                        <span class="text-xl">&#128276;</span>
                         <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">0</span>
                     </button>
                     <div id="notificationPanel" class="hidden absolute right-0 mt-2 w-80 max-h-[70vh] overflow-y-auto bg-white text-dark rounded-2xl shadow-xl p-4 z-50">
                         <div id="notificationPanelContent"><p class="text-sm text-gray-400">Loading...</p></div>
                     </div>
                 </div>
-                <button onclick="logout()" class="app-icon-btn" aria-label="Logout" title="Logout">
-                    <span class="text-sm">&#8677;</span>
-                </button>
+                <button onclick="logout()" class="text-gray-400 text-xs hover:text-white">Logout</button>
             </div>
+        </div>
+    </header>
 
-            <main class="app-content">
+    <main class="max-w-7xl mx-auto px-5 py-6">
+
+        <!-- Password Gate -->
+        <div id="passwordGate" class="text-center py-16">
+            <div class="text-gold text-4xl mb-4">&#128274;</div>
+            <h2 class="text-xl font-semibold mb-2">Login Required</h2>
+            <input type="text" id="toolUsername" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-center mt-4 w-64 block mx-auto" placeholder="Username" autocomplete="username" />
+            <input type="password" id="toolPassword" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-center mt-2 w-64 block mx-auto" placeholder="Password" autocomplete="current-password" />
+            <button onclick="checkPassword()" class="block mx-auto mt-3 bg-dark text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Unlock</button>
+            <p id="passwordError" class="text-red-500 text-xs mt-2 hidden">Incorrect password</p>
+        </div>
+
+        <!-- Main Tool -->
+        <div id="toolContent" class="hidden">
 
             <!-- DASHBOARD STATS -->
-            <section class="stat-grid-primary mb-4">
-                <div class="stat-card-primary">
-                    <p class="text-xs text-gray-400">Total Revenue</p>
-                    <p class="text-2xl font-bold text-gold" id="statRevenue">RM 0</p>
-                </div>
-                <div class="stat-card-primary">
-                    <p class="text-xs text-gray-400">Quotations</p>
-                    <p class="text-2xl font-bold" id="statQuotations">0</p>
-                </div>
-                <div class="stat-card-primary">
-                    <p class="text-xs text-gray-400">Upcoming Events</p>
-                    <p class="text-2xl font-bold" id="statUpcoming">0</p>
-                </div>
-                <div class="stat-card-primary">
+            <section class="grid grid-cols-2 md:grid-cols-7 gap-4 mb-6">
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
                     <p class="text-xs text-gray-400">Unread</p>
                     <p class="text-2xl font-bold" id="statUnread">0</p>
                 </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Total Inquiries</p>
+                    <p class="text-2xl font-bold" id="statTotalInquiries">0</p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Quotations</p>
+                    <p class="text-2xl font-bold" id="statQuotations">0</p>
+                </div>
+                <div class="owner-only bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Total Revenue</p>
+                    <p class="text-2xl font-bold text-gold" id="statRevenue">RM 0</p>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Upcoming Events</p>
+                    <p class="text-2xl font-bold" id="statUpcoming">0</p>
+                </div>
+                <!-- BAU backlog #16 - owner-only, same as Total Revenue above:
+                     the backend already redacts total/deposit/balance for
+                     non-owner roles (see routes/quotation.js's
+                     redactQuotation()), so these two would otherwise show a
+                     misleading RM 0 / N/A rather than genuinely "no data" -
+                     better to just not show them to staff at all. -->
+                <div class="owner-only bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Revenue Growth (MoM)</p>
+                    <p class="text-2xl font-bold" id="statGrowth">-</p>
+                </div>
+                <div class="owner-only bg-white rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs text-gray-400">Conversion Rate</p>
+                    <p class="text-2xl font-bold" id="statConversion">-</p>
+                </div>
             </section>
 
-            <section class="quick-insights-row mb-6">
-                <div class="stat-card-primary">
-                    <p class="text-xs text-gray-400">Total Inquiries</p>
-                    <p class="text-lg font-bold" id="statTotalInquiries">0</p>
-                </div>
-                <div class="owner-only stat-card-primary">
-                    <p class="text-xs text-gray-400">Revenue Growth (MoM)</p>
-                    <p class="text-lg font-bold" id="statGrowth">-</p>
-                </div>
-                <div class="owner-only stat-card-primary">
-                    <p class="text-xs text-gray-400">Conversion Rate</p>
-                    <p class="text-lg font-bold" id="statConversion">-</p>
-                </div>
-            </section>
+            <!-- TABS -->
+            <div class="flex gap-6 border-b border-gray-200 mb-6 overflow-x-auto">
+                <button onclick="switchTab('today')" id="tabToday" class="tab-active pb-3 px-2 text-sm whitespace-nowrap">Today</button>
+                <button onclick="switchTab('unread')" id="tabUnread" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Unread Inquiries</button>
+                <button onclick="switchTab('allinquiries')" id="tabAllinquiries" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">All Inquiries</button>
+                <button onclick="switchTab('quotations')" id="tabQuotations" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Quotations</button>
+                <button onclick="switchTab('analytics')" id="tabAnalytics" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Analytics</button>
+                <button onclick="switchTab('generate')" id="tabGenerate" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Generate Quotation</button>
+                <button onclick="switchTab('calendar')" id="tabCalendar" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Calendar</button>
+                <button onclick="switchTab('catalog')" id="tabCatalog" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Services &amp; Pricing</button>
+                <button onclick="switchTab('customers')" id="tabCustomers" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Customers</button>
+                <button onclick="switchTab('testimonials')" id="tabTestimonials" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Testimonials</button>
+                <button onclick="switchTab('health')" id="tabHealth" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">System Health</button>
+                <button onclick="switchTab('account')" id="tabAccount" class="tab-inactive pb-3 px-2 text-sm whitespace-nowrap">Account</button>
+            </div>
 
             <!-- TAB 0: TODAY DASHBOARD -->
             <!-- Aggregates the things that need admin attention right now,
@@ -1075,11 +908,10 @@
                     <div id="staffAccountsList" class="space-y-2 mt-4"></div>
                 </section>
             </div>
-            </main>
         </div>
-    </div>
+    </main>
 
-<!-- INQUIRY DETAIL MODAL -->
+    <!-- INQUIRY DETAIL MODAL -->
     <div id="inquiryModal" class="modal">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
@@ -1107,16 +939,5 @@
     <script src="assets/js/admin/health.js"></script>
     <script src="assets/js/admin/bootstrap.js"></script>
 
-    <script>
-        // Redesign-only helper: highlights the active sidebar item.
-        // Purely presentational - does not touch switchTab() or any other
-        // existing function/behavior in core.js or elsewhere.
-        function setActiveNav(btn) {
-            document.querySelectorAll('.nav-item').forEach(function (b) {
-                b.classList.remove('nav-active');
-            });
-            btn.classList.add('nav-active');
-        }
-    </script>
 </body>
 </html>
