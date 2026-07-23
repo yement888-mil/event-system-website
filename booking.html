@@ -126,6 +126,35 @@
                 We've received your cancellation request and will confirm with you shortly.
             </div>
 
+            <!-- BAU backlog #15 - extends the cancellation-request pattern
+                 above: token-based, customer-triggered, admin-approved,
+                 never applied automatically. -->
+            <div id="pendingChangeRequestsNote" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 mb-4"></div>
+
+            <div id="requestChangeSection" class="hidden space-y-2 mb-4">
+                <div class="text-center">
+                    <button id="requestDateChangeBtn" onclick="toggleChangeForm('date_change')" class="text-xs text-gray-400 hover:text-gold hover:underline">Need to change your event date?</button>
+                </div>
+                <div id="dateChangeForm" class="hidden bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                    <label class="block text-xs font-medium">New date</label>
+                    <input type="date" id="requestedDateInput" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                    <label class="block text-xs font-medium">Note (optional)</label>
+                    <textarea id="dateChangeNoteInput" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"></textarea>
+                    <button onclick="submitChangeRequest('date_change')" class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Submit Request</button>
+                </div>
+
+                <div class="text-center">
+                    <button id="requestAddServiceBtn" onclick="toggleChangeForm('add_service')" class="text-xs text-gray-400 hover:text-gold hover:underline">Want to add a service?</button>
+                </div>
+                <div id="addServiceForm" class="hidden bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                    <label class="block text-xs font-medium">Service you'd like to add</label>
+                    <input type="text" id="requestedServiceInput" placeholder="e.g. Photography" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                    <label class="block text-xs font-medium">Note (optional)</label>
+                    <textarea id="addServiceNoteInput" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"></textarea>
+                    <button onclick="submitChangeRequest('add_service')" class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Submit Request</button>
+                </div>
+            </div>
+
             <div id="requestCancelSection" class="hidden text-center mb-4">
                 <button id="requestCancelBtn" onclick="requestCancellation()" class="text-xs text-gray-400 hover:text-red-500 hover:underline">Need to cancel this booking?</button>
             </div>
@@ -222,13 +251,32 @@
                     document.getElementById('depositNote').classList.remove('hidden');
                 }
 
-                // Only offer the cancel-request option if this booking
-                // isn't already cancelled, completed, or already pending
-                // a cancellation review.
+                // Only offer the cancel-request/change-request options if
+                // this booking isn't already cancelled, completed, or
+                // already pending a cancellation review.
                 const cancellableStates = ['cancelled', 'completed', 'cancel_requested'];
                 if (b.withdraw_token && !cancellableStates.includes(b.inquiry_status) && b.status !== 'completed' && b.status !== 'cancelled') {
                     window.__withdrawToken = b.withdraw_token;
                     document.getElementById('requestCancelSection').classList.remove('hidden');
+
+                    // BAU backlog #15
+                    document.getElementById('requestChangeSection').classList.remove('hidden');
+                    const pending = b.pending_change_requests || [];
+                    if (pending.length > 0) {
+                        const noteEl = document.getElementById('pendingChangeRequestsNote');
+                        noteEl.innerHTML = pending.map(r =>
+                            r.request_type === 'date_change'
+                                ? `We're reviewing your request to change the date to ${formatDate(r.requested_date)}.`
+                                : `We're reviewing your request to add "${escapeHTML(r.requested_service)}".`
+                        ).join('<br>');
+                        noteEl.classList.remove('hidden');
+
+                        // Don't offer a second request of the same type
+                        // while one is already pending review.
+                        const pendingTypes = pending.map(r => r.request_type);
+                        if (pendingTypes.includes('date_change')) document.getElementById('requestDateChangeBtn').classList.add('hidden');
+                        if (pendingTypes.includes('add_service')) document.getElementById('requestAddServiceBtn').classList.add('hidden');
+                    }
                 }
 
                 document.getElementById('loadingState').classList.add('hidden');
@@ -263,6 +311,50 @@
             } catch (err) {
                 alert('Something went wrong. Please contact us via WhatsApp.');
                 if (btn) { btn.disabled = false; btn.textContent = 'Need to cancel this booking?'; }
+            }
+        }
+
+        // BAU backlog #15 - extends the cancellation-request pattern above
+        // to date-change/add-service requests. Same token, same "notify
+        // only, never applied automatically" behavior.
+        function toggleChangeForm(type) {
+            const formId = type === 'date_change' ? 'dateChangeForm' : 'addServiceForm';
+            document.getElementById(formId).classList.toggle('hidden');
+        }
+
+        async function submitChangeRequest(type) {
+            const token = window.__withdrawToken;
+            if (!token) return;
+
+            const payload = { type };
+            if (type === 'date_change') {
+                const date = document.getElementById('requestedDateInput').value;
+                if (!date) { alert('Please pick a date'); return; }
+                payload.requested_date = date;
+                payload.customer_note = document.getElementById('dateChangeNoteInput').value.trim();
+            } else {
+                const service = document.getElementById('requestedServiceInput').value.trim();
+                if (!service) { alert('Please enter a service'); return; }
+                payload.requested_service = service;
+                payload.customer_note = document.getElementById('addServiceNoteInput').value.trim();
+            }
+
+            if (!confirm('Submit this request? Our team will review and confirm with you.')) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/request-change/${token}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || 'Failed to submit request');
+
+                alert(result.message || 'Request sent.');
+                loadBooking();
+
+            } catch (err) {
+                alert(err.message || 'Something went wrong. Please contact us via WhatsApp.');
             }
         }
 
