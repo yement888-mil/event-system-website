@@ -92,7 +92,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (match) sourceSelect.value = match.value;
             }
         }
-        
+
+        // BAU backlog E5 - Cloudflare Turnstile bot protection. Only
+        // injected when a real site key is configured (CONFIG.js -
+        // TURNSTILE_SITE_KEY is blank until Cloudflare keys exist), same
+        // graceful-degradation shape as the backend's isConfigured()
+        // check: the widget div goes into the DOM first, then the
+        // Turnstile script is appended after it, so its implicit-render
+        // scan always finds the div already there instead of racing it.
+        const turnstileContainer = document.getElementById('turnstileContainer');
+        if (turnstileContainer && typeof CONFIG !== 'undefined' && CONFIG.TURNSTILE_SITE_KEY) {
+            const widget = document.createElement('div');
+            widget.className = 'cf-turnstile';
+            widget.setAttribute('data-sitekey', CONFIG.TURNSTILE_SITE_KEY);
+            turnstileContainer.appendChild(widget);
+
+            const script = document.createElement('script');
+            script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -124,7 +145,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 services_requested: services,
                 message: document.getElementById('message').value.trim(),
                 idempotency_key: inquiryIdempotencyKey,
-                source: document.getElementById('source')?.value || ''
+                source: document.getElementById('source')?.value || '',
+                // Present only when the Turnstile widget actually rendered
+                // (site key configured) - typeof-guarded since window.turnstile
+                // doesn't exist at all when the script was never loaded.
+                turnstile_token: (typeof turnstile !== 'undefined') ? turnstile.getResponse() : ''
             };
 
             try {
@@ -144,12 +169,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     inquiryIdempotencyKey = generateIdempotencyKey();
                 } else {
                     alert(result.error || 'Failed to submit. Please try again.');
+                    if (typeof turnstile !== 'undefined') turnstile.reset();
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalText;
                     submitBtn.style.opacity = '1';
                 }
             } catch (error) {
                 alert('Connection error. Please try again or contact us via WhatsApp.');
+                if (typeof turnstile !== 'undefined') turnstile.reset();
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
                 submitBtn.style.opacity = '1';
