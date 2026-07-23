@@ -973,6 +973,7 @@
         let adminToken = localStorage.getItem('adminToken') || '';
         let adminRole = localStorage.getItem('adminRole') || '';
         let editingQuotationId = null;
+        let editingQuotationVersion = null;
         let savingQuotation = false;
         let allInquiries = [];
         let allQuotations = [];
@@ -2587,6 +2588,7 @@
                 guest_count: q.guest_count
             };
             editingQuotationId = q.id;
+            editingQuotationVersion = q.current_version;
 
             switchTab('generate');
             document.getElementById('quotationForm').classList.remove('hidden');
@@ -2627,6 +2629,7 @@
 
         function cancelEditQuotation() {
             editingQuotationId = null;
+            editingQuotationVersion = null;
             selectedInquiry = null;
             document.getElementById('quotationForm').classList.add('hidden');
             const cancelBtn = document.getElementById('cancelEditBtn');
@@ -5065,10 +5068,15 @@
 
                 let response;
                 if (editingQuotationId) {
+                    // BAU backlog E4 - expected_version tells the server
+                    // which version this edit started from, so a stale
+                    // save (someone else changed it in the meantime)
+                    // gets rejected with a 409 instead of silently
+                    // overwriting their changes.
                     response = await fetch(`${CONFIG.API_URL}/api/quotation/${editingQuotationId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({ ...payload, expected_version: editingQuotationVersion })
                     });
                 } else {
                     // BAU backlog #4 - only regenerate the key if this is
@@ -5112,6 +5120,7 @@
 
                     clearQuotationDraft(inqForPdf.id);
                     editingQuotationId = null;
+                    editingQuotationVersion = null;
                     selectedInquiry = null;
                     quotationIdempotencyKey = null;
                     quotationIdempotencyKeyInquiryId = null;
