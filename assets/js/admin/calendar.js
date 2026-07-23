@@ -299,6 +299,9 @@
                     <button onclick="copyCalendarFeedLink()" class="border border-gray-300 text-gray-600 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-gray-100 transition whitespace-nowrap">
                         Copy Link
                     </button>
+                    <button onclick="regenerateCalendarFeedToken()" class="border border-gray-300 text-gray-600 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-gray-100 transition whitespace-nowrap">
+                        Regenerate
+                    </button>
                 </div>
             `;
         }
@@ -310,4 +313,43 @@
             navigator.clipboard.writeText(feedUrl)
                 .then(() => alert('Calendar feed link copied! Paste this into "Subscribe by URL" in Google Calendar, Outlook, or your phone\'s calendar app:\n\n' + feedUrl))
                 .catch(() => prompt('Copy this calendar feed link:', feedUrl));
+        }
+
+
+        // Sprint 8, Epic N - this is a single shared feed link (unlike a
+        // per-inquiry/per-quotation token), so regenerating it breaks the
+        // link for EVERY calendar app currently subscribed to it, not
+        // just an admin's own device - worth the explicit confirm text
+        // saying so, not just a generic "are you sure?".
+        async function regenerateCalendarFeedToken() {
+            if (!confirm('Regenerate the calendar feed link? Any calendar app currently subscribed to the old link (yours or anyone else\'s) will stop receiving updates until re-subscribed with the new one.')) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/calendar/feed-token/regenerate`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to regenerate calendar feed link');
+                }
+
+                const result = await res.json();
+                calendarFeedToken = result.token;
+                renderCalendarFeedLink();
+                alert('New calendar feed link generated. Re-subscribe any calendar apps using the old link.');
+
+            } catch (err) {
+                console.error('Regenerate calendar feed token error:', err);
+                alert('Failed to regenerate calendar feed link: ' + err.message);
+            }
         }
