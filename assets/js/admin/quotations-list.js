@@ -303,6 +303,9 @@
                             </button>
                             <button onclick="viewQuotationHistory(${q.id})" class="bg-gray-200 text-dark px-3 py-0.5 rounded text-xs hover:bg-gray-300 transition">History</button>
                             <button onclick="editQuotation(${q.id})" class="bg-blue-100 text-blue-700 px-3 py-0.5 rounded text-xs hover:bg-blue-200 transition">Edit</button>
+                            ${adminRole === 'owner' ? `
+                            <button onclick="sendQuotationToCustomer(${q.id})" class="bg-green-100 text-green-700 px-3 py-0.5 rounded text-xs hover:bg-green-200 transition" title="Generates the PDF, emails it if the customer has an email on file, opens WhatsApp with a link ready to send, and marks this quotation as sent.">Send Quotation</button>
+                            ` : ''}
                             <button onclick="copyBookingLink('${q.booking_token || ''}')" class="bg-purple-100 text-purple-700 px-3 py-0.5 rounded text-xs hover:bg-purple-200 transition">Copy Booking Link</button>
                             <button onclick="regenerateBookingToken(${q.id})" title="${q.booking_token_expires_at ? 'Expires ' + formatDateTime(q.booking_token_expires_at) : ''}" class="bg-purple-50 text-purple-700 px-3 py-0.5 rounded text-xs border border-purple-200 hover:bg-purple-100 transition">Regenerate Link</button>
                             <button onclick="toggleTaskChecklist(${q.id})" class="bg-emerald-100 text-emerald-700 px-3 py-0.5 rounded text-xs hover:bg-emerald-200 transition">Tasks</button>
@@ -899,5 +902,103 @@
             } catch (err) {
                 console.error('Regenerate booking token error:', err);
                 alert('Failed to regenerate link: ' + err.message);
+            }
+        }
+
+        // Sprint 7, Epic J - one-click "send this quotation to the
+        // customer": builds the PDF client-side (buildQuotationPDFDoc,
+        // quotations-generate.js - same code the manual "Download PDF"
+        // button already uses, not a reimplementation), uploads it,
+        // emails it automatically if the customer has an email on file
+        // (most don't yet - phone is the primary channel here), then
+        // opens a WhatsApp deep link with the same message template used
+        // elsewhere plus the PDF link, and marks the quotation sent.
+        // Owner-only in the UI (see renderQuotations above) because the
+        // PDF needs real total/deposit/balance/item prices, which are
+        // already stripped from a staff session's data by
+        // redactQuotation server-side - there's nothing to protect
+        // further here, a staff session simply never has the numbers to
+        // build a correct PDF from.
+        async function sendQuotationToCustomer(id) {
+            const q = allQuotations.find(x => x.id === id);
+            if (!q) return;
+
+            if (!confirm(`Send quotation ${q.quotation_no} to ${q.customer_name}? This will mark it as sent.`)) return;
+
+            try {
+                let items = q.items;
+                if (typeof items === 'string') {
+                    try { items = JSON.parse(items); } catch (e) { items = []; }
+                }
+                const total = parseFloat(q.total) || 0;
+                const deposit = parseFloat(q.deposit) || 0;
+                const balance = parseFloat(q.balance) || 0;
+
+                const doc = buildQuotationPDFDoc(q, q.quotation_no, items, total, deposit, balance);
+                if (!doc) return; // buildQuotationPDFDoc already alerted (jsPDF not loaded)
+                const pdfBlob = doc.output('blob');
+
+                const formData = new FormData();
+                formData.append('pdf', pdfBlob, `Quotation_${q.quotation_no}.pdf`);
+
+                const sendRes = await fetch(`${CONFIG.API_URL}/api/quotation/${id}/send`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${adminToken}` },
+                    body: formData
+                });
+
+                if (sendRes.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                if (!sendRes.ok) {
+                    const err = await sendRes.json();
+                    throw new Error(err.error || 'Failed to send quotation');
+                }
+
+                const sendResult = await sendRes.json();
+
+                // Mark as sent - existing endpoint, unchanged, deliberately
+                // not folded into POST /:id/send (see that route's comment).
+                await fetch(`${CONFIG.API_URL}/api/quotation/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ status: 'sent' })
+                });
+
+                // Same rendering pattern as generateWhatsApp() in
+                // quotations-generate.js, reusing the same admin-editable
+                // 'quotation' template - just sourced from the persisted
+                // quotation row instead of the in-progress generate form,
+                // plus the PDF link appended.
+                const valid = new Date();
+                valid.setDate(valid.getDate() + 7);
+                const fallback = `Hi {{customer_name}},\n\nThank you for your inquiry.\n\nQUOTATION\n--------------------\nEvent: {{event_type}}\nDate: {{event_date}}\nGuests: {{guest_count}} pax\n\nServices\n{{items}}\n\n--------------------\nTotal: RM {{total}}\nDeposit (30%): RM {{deposit}}\nBalance: RM {{balance}}\n\nValid until: {{valid_until}}\n\nPayment Details\nMaybank | 5xxxxx | Event Management System\n\nThank you.`;
+                const msgText = renderTemplate(getTemplateBody('quotation', fallback), {
+                    customer_name: q.customer_name,
+                    event_type: q.event_type || '-',
+                    event_date: formatDate(q.event_date),
+                    guest_count: q.guest_count || '-',
+                    items: items.map(i => `${i.name}: RM ${i.price}`).join('\n'),
+                    total, deposit, balance,
+                    valid_until: valid.toLocaleDateString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })
+                }) + `\n\nView/download your quotation PDF: ${sendResult.pdf_url}`;
+
+                const phone = (q.phone || '').replace(/[^0-9]/g, '');
+                if (phone) {
+                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msgText)}`, '_blank');
+                }
+
+                alert(`Quotation sent.${sendResult.emailed ? ' Also emailed to the customer.' : ' No email on file - WhatsApp only.'}`);
+                await loadQuotations();
+
+            } catch (err) {
+                console.error('Send quotation error:', err);
+                alert('Failed to send quotation: ' + err.message);
             }
         }

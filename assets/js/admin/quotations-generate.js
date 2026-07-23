@@ -592,11 +592,18 @@
         // ------------------------------------------------------------
         // PDF
         // ------------------------------------------------------------
-        function buildAndDownloadPDF(inq, quotationNo, items, total, deposit, balance) {
+        // Builds the jsPDF document without saving/downloading it -
+        // shared by buildAndDownloadPDF (below, unchanged behavior -
+        // triggers a browser download) and sendQuotationToCustomer (BAU
+        // Sprint 7, Epic J, in quotations-list.js - needs the PDF as a
+        // Blob to upload, not a download). Returns null (after alerting,
+        // same message as before) if jsPDF failed to load, so callers
+        // only need to check truthiness.
+        function buildQuotationPDFDoc(inq, quotationNo, items, total, deposit, balance) {
             const { jsPDF } = window.jspdf || {};
             if (!jsPDF) {
                 alert('PDF library failed to load. Please check your internet connection and try again.');
-                return;
+                return null;
             }
 
             const valid = new Date();
@@ -685,6 +692,12 @@
             doc.setTextColor(150);
             doc.text(`Generated: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`, 14, doc.internal.pageSize.getHeight() - 10);
 
+            return doc;
+        }
+
+        function buildAndDownloadPDF(inq, quotationNo, items, total, deposit, balance) {
+            const doc = buildQuotationPDFDoc(inq, quotationNo, items, total, deposit, balance);
+            if (!doc) return;
             const fileName = `Quotation_${quotationNo}_${(inq.customer_name || 'Customer').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
             doc.save(fileName);
         }

@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = {
                 customer_name: document.getElementById('customer_name').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
+                email: document.getElementById('email')?.value.trim() || '',
                 event_type: document.getElementById('event_type').value,
                 event_date: document.getElementById('event_date').value,
                 guest_count: parseInt(document.getElementById('guest_count').value),
