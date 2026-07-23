@@ -3083,6 +3083,7 @@
                             <button onclick="viewQuotationHistory(${q.id})" class="bg-gray-200 text-dark px-3 py-0.5 rounded text-xs hover:bg-gray-300 transition">History</button>
                             <button onclick="editQuotation(${q.id})" class="bg-blue-100 text-blue-700 px-3 py-0.5 rounded text-xs hover:bg-blue-200 transition">Edit</button>
                             <button onclick="copyBookingLink('${q.booking_token || ''}')" class="bg-purple-100 text-purple-700 px-3 py-0.5 rounded text-xs hover:bg-purple-200 transition">Copy Booking Link</button>
+                            <button onclick="regenerateBookingToken(${q.id})" title="${q.booking_token_expires_at ? 'Expires ' + formatDateTime(q.booking_token_expires_at) : ''}" class="bg-purple-50 text-purple-700 px-3 py-0.5 rounded text-xs border border-purple-200 hover:bg-purple-100 transition">Regenerate Link</button>
                             <button onclick="toggleTaskChecklist(${q.id})" class="bg-emerald-100 text-emerald-700 px-3 py-0.5 rounded text-xs hover:bg-emerald-200 transition">Tasks</button>
                             <button onclick="togglePropsPanel(${q.id})" class="bg-amber-100 text-amber-700 px-3 py-0.5 rounded text-xs hover:bg-amber-200 transition">Props</button>
                             ${(q.status === 'deposit_paid' || q.status === 'completed') ? `
@@ -5939,6 +5940,42 @@
             navigator.clipboard.writeText(bookingUrl)
                 .then(() => alert('Booking link copied! Share this with the customer:\n\n' + bookingUrl))
                 .catch(() => prompt('Copy this booking link:', bookingUrl));
+        }
+
+        // Sprint 4, Epic A - mints a fresh booking_token/expiry, same
+        // safety-valve reasoning as regenerateWithdrawToken above: covers
+        // an expired link the customer still needs, or an early kill of
+        // a link that may have leaked.
+        async function regenerateBookingToken(id) {
+            if (!confirm('Generate a new booking link for this quotation? The old link will stop working immediately.')) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}/regenerate-booking-token`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to regenerate link');
+                }
+
+                await loadQuotations();
+                alert('New booking link generated. The old link no longer works.');
+
+            } catch (err) {
+                console.error('Regenerate booking token error:', err);
+                alert('Failed to regenerate link: ' + err.message);
+            }
         }
 
         // BAU backlog #14 - read-only iCal feed link
