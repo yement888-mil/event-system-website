@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard Mockup — Admin Redesign</title>
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="mockup-admin.css">
+</head>
+<body>
+
+<div class="shell">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">D</div>
+      <div class="brand-name">Decor Admin</div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Customers</span>
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Events</span>
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg>
+        <span>Analytics</span>
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <div class="user-chip">
+      <div class="user-avatar">DC</div>
+      <div class="user-meta">
+        <div class="user-name">Decor Co.</div>
+        <div class="user-role">Owner</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <!-- ---- Top header ---- -->
+    <header class="topbar">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" placeholder="Search inquiries, events, customers..." />
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-dot"></span>
+        </button>
+        <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">
+          <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ---- Content ---- -->
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Dashboard Overview</h1>
+          <p class="page-subtitle">Here's what's happening with your events today.</p>
+        </div>
+        <button class="btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Add Event
+        </button>
+      </div>
+
+      <!-- ---- Stats grid ---- -->
+      <section class="stats-grid">
+        <div class="stat-card" style="--stat-accent:var(--accent); --stat-soft:var(--accent-soft);">
+          <div class="stat-top">
+            <span class="stat-label">Total Bookings</span>
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+          </div>
+          <div class="stat-value">248</div>
+          <div class="stat-change up">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+            12.4% <span class="muted">vs last month</span>
+          </div>
+        </div>
+
+        <div class="stat-card" style="--stat-accent:var(--purple); --stat-soft:var(--purple-soft);">
+          <div class="stat-top">
+            <span class="stat-label">Revenue</span>
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          </div>
+          <div class="stat-value">RM 86,420</div>
+          <div class="stat-change up">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+            8.1% <span class="muted">vs last month</span>
+          </div>
+        </div>
+
+        <div class="stat-card" style="--stat-accent:var(--green); --stat-soft:var(--green-soft);">
+          <div class="stat-top">
+            <span class="stat-label">Upcoming Events</span>
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          </div>
+          <div class="stat-value">17</div>
+          <div class="stat-change up">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+            3 <span class="muted">this week</span>
+          </div>
+        </div>
+
+        <div class="stat-card" style="--stat-accent:var(--orange); --stat-soft:var(--orange-soft);">
+          <div class="stat-top">
+            <span class="stat-label">Pending Tasks</span>
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          </div>
+          <div class="stat-value">9</div>
+          <div class="stat-change down">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            2 <span class="muted">overdue</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- Chart + recent events ---- -->
+      <section class="mid-grid">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Bookings Trend</span>
+            <button class="card-link">Last 6 months</button>
+          </div>
+          <div class="chart-wrap"><canvas id="registrationChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Recent Events</span>
+            <button class="card-link">View all</button>
+          </div>
+          <div class="event-list">
+            <div class="event-row">
+              <div class="event-info">
+                <span class="event-dot" style="background:var(--green)"></span>
+                <div class="event-text">
+                  <div class="event-name">Tan Family Wedding</div>
+                  <div class="event-date">Today, 4:00 PM</div>
+                </div>
+              </div>
+              <span class="badge badge-live">Live</span>
+            </div>
+            <div class="event-row">
+              <div class="event-info">
+                <span class="event-dot" style="background:var(--accent)"></span>
+                <div class="event-text">
+                  <div class="event-name">Lim Corp Annual Dinner</div>
+                  <div class="event-date">Jul 28, 7:00 PM</div>
+                </div>
+              </div>
+              <span class="badge badge-upcoming">Upcoming</span>
+            </div>
+            <div class="event-row">
+              <div class="event-info">
+                <span class="event-dot" style="background:var(--accent)"></span>
+                <div class="event-text">
+                  <div class="event-name">Nur's Birthday Party</div>
+                  <div class="event-date">Aug 2, 2:00 PM</div>
+                </div>
+              </div>
+              <span class="badge badge-upcoming">Upcoming</span>
+            </div>
+            <div class="event-row">
+              <div class="event-info">
+                <span class="event-dot" style="background:var(--text-muted)"></span>
+                <div class="event-text">
+                  <div class="event-name">Chong Baby Shower</div>
+                  <div class="event-date">Jul 12, 11:00 AM</div>
+                </div>
+              </div>
+              <span class="badge badge-past">Past</span>
+            </div>
+            <div class="event-row">
+              <div class="event-info">
+                <span class="event-dot" style="background:var(--text-muted)"></span>
+                <div class="event-text">
+                  <div class="event-name">Rahman Engagement</div>
+                  <div class="event-date">Jul 6, 6:30 PM</div>
+                </div>
+              </div>
+              <span class="badge badge-past">Past</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- Events table ---- -->
+      <section class="card table-card">
+        <div class="card-head">
+          <span class="card-title">All Events</span>
+          <button class="btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Add Event
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Event Name</th>
+                <th>Date</th>
+                <th>Attendees</th>
+                <th>Status</th>
+                <th style="text-align:right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="cell-name">Tan Family Wedding</div><div class="cell-sub">#EVT-2481</div></td>
+                <td>Jul 24, 2026</td>
+                <td>180</td>
+                <td><span class="badge badge-live">Live</span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-icon-btn" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                    <button class="row-icon-btn" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><div class="cell-name">Lim Corp Annual Dinner</div><div class="cell-sub">#EVT-2479</div></td>
+                <td>Jul 28, 2026</td>
+                <td>320</td>
+                <td><span class="badge badge-upcoming">Upcoming</span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-icon-btn" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                    <button class="row-icon-btn" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><div class="cell-name">Nur's Birthday Party</div><div class="cell-sub">#EVT-2477</div></td>
+                <td>Aug 2, 2026</td>
+                <td>45</td>
+                <td><span class="badge badge-upcoming">Upcoming</span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-icon-btn" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                    <button class="row-icon-btn" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><div class="cell-name">Chong Baby Shower</div><div class="cell-sub">#EVT-2465</div></td>
+                <td>Jul 12, 2026</td>
+                <td>60</td>
+                <td><span class="badge badge-past">Past</span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-icon-btn" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                    <button class="row-icon-btn" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><div class="cell-name">Rahman Engagement</div><div class="cell-sub">#EVT-2458</div></td>
+                <td>Jul 6, 2026</td>
+                <td>90</td>
+                <td><span class="badge badge-past">Past</span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-icon-btn" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                    <button class="row-icon-btn" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-foot">
+          <span>Showing 1–5 of 248 events</span>
+          <div class="pagination">
+            <button class="page-btn">‹</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">›</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+// ---- Theme toggle: persists to localStorage, drives [data-theme] on <body> ----
+(function(){
+  const root = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  const sun = document.getElementById('themeIconSun');
+  const moon = document.getElementById('themeIconMoon');
+  const saved = localStorage.getItem('theme');
+  if(saved === 'dark'){ root.setAttribute('data-theme','dark'); sun.style.display='none'; moon.style.display='block'; }
+  btn.addEventListener('click', function(){
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    sun.style.display = isDark ? 'block' : 'none';
+    moon.style.display = isDark ? 'none' : 'block';
+    if(window._mockChart){ window._mockChart.update(); }
+  });
+})();
+
+// ---- Sample line chart (mock data only) ----
+const ctx = document.getElementById('registrationChart');
+window._mockChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: ['Feb','Mar','Apr','May','Jun','Jul'],
+    datasets: [{
+      data: [32, 41, 38, 55, 49, 68],
+      borderColor: '#4f6ef7',
+      backgroundColor: 'rgba(79,110,247,0.08)',
+      borderWidth: 2.5,
+      tension: 0.4,
+      fill: true,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: '#4f6ef7',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display:false }, ticks: { color:'#94a3b8', font:{ size:12 } } },
+      y: { grid: { color:'rgba(148,163,184,0.15)' }, ticks: { color:'#94a3b8', font:{ size:12 } } }
+    }
+  }
+});
+</script>
+</body>
+</html>
