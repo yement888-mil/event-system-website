@@ -13,7 +13,7 @@
             }
             el.innerHTML = galleryCache.map(g => `
                 <div class="border rounded-xl overflow-hidden text-xs ${g.active ? '' : 'opacity-50'}">
-                    <img src="${escapeHTML(g.image_url)}" class="w-full aspect-square object-cover" onerror="this.style.display='none'">
+                    <img src="${escapeHTML(g.image_url)}" alt="${escapeHTML(g.alt_text || g.title || 'Gallery photo')}" class="w-full aspect-square object-cover" onerror="this.style.display='none'">
                     <div class="p-2">
                         <div class="truncate">${escapeHTML(g.title || g.category || 'Untitled')}</div>
                         <div class="flex gap-1 mt-1">
@@ -32,6 +32,7 @@
             editingGalleryItemId = id;
             document.getElementById('gal_title').value = g.title || '';
             document.getElementById('gal_category').value = g.category || '';
+            document.getElementById('gal_alt_text').value = g.alt_text || '';
             document.getElementById('gal_image_url').value = g.image_url || '';
             document.getElementById('gal_active').checked = g.active !== false;
             document.getElementById('galSaveLabel').textContent = 'Update Photo';
@@ -48,6 +49,7 @@
             editingGalleryItemId = null;
             document.getElementById('gal_title').value = '';
             document.getElementById('gal_category').value = '';
+            document.getElementById('gal_alt_text').value = '';
             document.getElementById('gal_image_url').value = '';
             document.getElementById('gal_active').checked = true;
             document.getElementById('galSaveLabel').textContent = 'Add Photo';
@@ -138,13 +140,14 @@
 
                 const title = document.getElementById('gal_title').value.trim();
                 const category = document.getElementById('gal_category').value.trim();
+                const alt_text = document.getElementById('gal_alt_text').value.trim();
                 const active = document.getElementById('gal_active').checked;
 
                 for (const url of result.urls) {
                     await fetch(`${CONFIG.API_URL}/api/gallery`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                        body: JSON.stringify({ title, category, image_url: url, active })
+                        body: JSON.stringify({ title, category, alt_text, image_url: url, active })
                     });
                 }
 
@@ -170,6 +173,7 @@
             const payload = {
                 title: document.getElementById('gal_title').value.trim(),
                 category: document.getElementById('gal_category').value.trim(),
+                alt_text: document.getElementById('gal_alt_text').value.trim(),
                 image_url,
                 active: document.getElementById('gal_active').checked
             };

@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
         grid.innerHTML = filtered.map(item => `
             <div class="gallery-item rounded-xl overflow-hidden aspect-square">
-                <img src="${escapeHTML(item.image_url)}" alt="${escapeHTML(item.title || 'Gallery photo')}" class="w-full h-full object-cover" loading="lazy">
+                <img src="${escapeHTML(item.image_url)}" alt="${escapeHTML(item.alt_text || item.title || 'Gallery photo')}" class="w-full h-full object-cover" loading="lazy">
             </div>
         `).join('');
     }
