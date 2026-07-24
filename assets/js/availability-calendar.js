@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let viewYear = today.getFullYear();
     let viewMonth = today.getMonth() + 1; // 1-12
     let unavailableDates = [];
+    let tentativeDates = []; // Feature 3 - held, not yet deposit-paid
     let selectedDate = null;
 
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const res = await fetch(`${CONFIG.API_URL}/api/calendar/availability?month=${viewYear}-${pad(viewMonth)}`);
             const result = await res.json();
             unavailableDates = (result.unavailable_dates || []);
+            tentativeDates = (result.tentative_dates || []);
             loadingEl.classList.add('hidden');
         } catch (err) {
             console.error('Failed to load availability:', err);
@@ -64,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const isBeforeMin = dateObj < new Date(minSelectable.getFullYear(), minSelectable.getMonth(), minSelectable.getDate());
             const isAfterMax = dateObj > maxSelectable;
             const isUnavailable = unavailableDates.includes(str);
+            const isTentative = tentativeDates.includes(str);
             const isSelected = selectedDate === str;
 
             let classes = 'rounded-full py-1.5 cursor-pointer transition select-none';
@@ -73,6 +76,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 classes += ' bg-red-200 text-red-700 cursor-not-allowed';
             } else if (isSelected) {
                 classes += ' bg-gold text-dark font-semibold';
+            } else if (isTentative) {
+                // Feature 3 - held by another inquiry, not yet confirmed.
+                // Still clickable - a tentative hold isn't a guarantee, so
+                // this date should stay open to other inquiries too.
+                classes += ' bg-amber-200 text-amber-700';
             } else {
                 classes += ' bg-white border border-gray-200 text-dark hover:border-gold';
             }

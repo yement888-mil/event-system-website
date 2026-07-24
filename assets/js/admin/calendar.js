@@ -58,9 +58,19 @@
         }
 
 
+        // Feature 3 - true when this event's tentative hold is still active
+        // (set, not past its expiry, and not yet auto-released). Broader
+        // than checking status alone - a brand new inquiry with no
+        // quotation yet can hold a date just as much as a sent/
+        // waiting_deposit quotation can.
+        function hasActiveHold(e) {
+            return !!e.hold_expires_at && !e.hold_released_at && new Date(e.hold_expires_at) > new Date();
+        }
+
         function adminCalDayColor(dayEvents) {
             if (dayEvents.some(e => e.status === 'deposit_paid' || e.status === 'completed')) return 'bg-emerald-200';
             if (dayEvents.some(e => e.status === 'cancelled') && dayEvents.every(e => e.status === 'cancelled')) return 'bg-red-200';
+            if (dayEvents.some(hasActiveHold)) return 'bg-amber-200';
             if (dayEvents.some(e => e.status === 'sent' || e.status === 'waiting_deposit')) return 'bg-amber-200';
             if (dayEvents.length > 0) return 'bg-gray-200';
             return '';
