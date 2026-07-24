@@ -84,6 +84,7 @@
                     <div><strong>Event Type:</strong> ${escapeHTML(inq.event_type || '-')}</div>
                     <div><strong>Event Date:</strong> ${formatDate(inq.event_date)}</div>
                     <div><strong>Guests:</strong> ${inq.guest_count || '-'}</div>
+                    <div><strong>Location:</strong> ${escapeHTML(inq.event_location || '-')}</div>
                     <div><strong>Read Status:</strong> ${inq.is_read ? 'Read' : 'Unread'}</div>
                 </div>
                 ${inq.customer_id ? `<button onclick="viewCustomerDetail(${inq.customer_id})" class="mt-3 text-xs text-gold hover:underline">View this customer's full booking history &rarr;</button>` : ''}
@@ -672,6 +673,9 @@
                             <div class="mt-1">${getInquiryStatusBadge(inq.status)}${highDemandWeekBadge(inq.event_date)}</div>
                             <div class="text-xs text-gray-500 mt-1">
                                 ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
+                            </div>
+                            <div class="text-xs text-gray-500 mt-0.5">
+                                &#128205; ${escapeHTML(inq.event_location || '-')}
                             </div>
                             <div class="text-xs text-gray-400 mt-0.5 truncate">
                                 ${inq.services_requested ? (typeof inq.services_requested === 'string' ? JSON.parse(inq.services_requested).join(', ') : inq.services_requested.join(', ')) : 'No services selected'}

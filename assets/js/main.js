@@ -165,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 event_type: document.getElementById('event_type').value,
                 event_date: document.getElementById('event_date').value,
                 guest_count: parseInt(document.getElementById('guest_count').value),
+                event_location: document.getElementById('event_location').value.trim(),
                 services_requested: services,
                 message: document.getElementById('message').value.trim(),
                 idempotency_key: inquiryIdempotencyKey,
