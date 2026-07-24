@@ -92,6 +92,7 @@
                     <strong>Services Requested:</strong>
                     <div class="mt-2">${servicesHtml || '-'}</div>
                 </div>
+                ${inq.catering_package ? `<div class="mt-2"><strong>Preferred Catering Package:</strong> ${escapeHTML(inq.catering_package)}</div>` : ''}
                 <div class="mt-4">
                     <strong>Message:</strong>
                     <p class="mt-1 text-sm bg-gray-50 p-3 rounded">${escapeHTML(inq.message || 'No message')}</p>

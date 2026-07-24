@@ -20,6 +20,18 @@ document.addEventListener('DOMContentLoaded', function() {
         withdrawBtn.addEventListener('click', withdrawInquiry);
     }
 
+    // Feature 7 - reveal the catering menu link + preferred-package picker
+    // only when Catering is actually checked, so it's not shown/required
+    // for customers who don't need it. Guarded like the blocks above
+    // since main.js is shared across every public page, not just contact.html.
+    const cateringCheckbox = document.querySelector('input[name="services"][value="catering"]');
+    const cateringExtraFields = document.getElementById('cateringExtraFields');
+    if (cateringCheckbox && cateringExtraFields) {
+        cateringCheckbox.addEventListener('change', function() {
+            cateringExtraFields.classList.toggle('hidden', !this.checked);
+        });
+    }
+
     // FAQ Toggle
     document.querySelectorAll('.faq-item').forEach(item => {
         item.addEventListener('click', function() {
@@ -157,6 +169,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 message: document.getElementById('message').value.trim(),
                 idempotency_key: inquiryIdempotencyKey,
                 source: document.getElementById('source')?.value || '',
+                // Only meaningful when Catering was selected - the picker is
+                // hidden (and irrelevant) otherwise, even though the select
+                // element still technically exists in the DOM.
+                catering_package: services.includes('catering')
+                    ? (document.getElementById('catering_package')?.value || '')
+                    : '',
                 // Present only when the Turnstile widget actually rendered
                 // (site key configured) - typeof-guarded since window.turnstile
                 // doesn't exist at all when the script was never loaded.
