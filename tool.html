@@ -6,16 +6,6 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com; connect-src 'self' https://event-system-backend-production.up.railway.app; object-src 'none'; base-uri 'self'; form-action 'self';">
     <title>Decor | Owner Dashboard</title>
     <meta name="robots" content="noindex, nofollow">
-    <script>
-        // Theme init - runs before the stylesheet paints so the page never
-        // flashes the wrong theme. Toggle logic itself lives in the
-        // "Redesign-only helper" script at the bottom of the body.
-        (function () {
-            if (localStorage.getItem('theme') === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
     <script src="https://cdn.tailwindcss.com">
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
@@ -103,10 +93,6 @@
             max-height: 80vh;
             overflow-y: auto;
         }
-        [data-theme="dark"] .modal-content {
-            background: var(--card);
-            color: var(--text-primary);
-        }
         .inquiry-detail-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -135,21 +121,6 @@
         .status-quotation_sent { background: #ede9fe; color: #6d28d9; }
         .status-confirmed { background: #d1fae5; color: #065f46; }
         .status-cancel_requested { background: #fed7aa; color: #9a3412; font-weight: 700; }
-
-        /* Dark-safe versions of the same badges - desaturated bg, lighter
-           text, same pairing logic as mockup-admin.css's badge-* classes. */
-        [data-theme="dark"] .status-draft,
-        [data-theme="dark"] .status-new { background: #334155; color: #cbd5e1; }
-        [data-theme="dark"] .status-sent,
-        [data-theme="dark"] .status-contacted { background: #1e2a5e; color: #93a9ff; }
-        [data-theme="dark"] .status-waiting_deposit { background: #3a2311; color: #fdba74; }
-        [data-theme="dark"] .status-deposit_paid,
-        [data-theme="dark"] .status-completed,
-        [data-theme="dark"] .status-confirmed { background: #0f2b1d; color: #6ee7a0; }
-        [data-theme="dark"] .status-cancelled { background: #3f1d1d; color: #fca5a5; }
-        [data-theme="dark"] .status-expired { background: #334155; color: #94a3b8; }
-        [data-theme="dark"] .status-quotation_sent { background: #241a45; color: #c4b5fd; }
-        [data-theme="dark"] .status-cancel_requested { background: #3a2311; color: #fdba74; }
 
         .table-container {
             max-height: 500px;
@@ -201,10 +172,6 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        [data-theme="dark"] .loading-spinner {
-            border-color: var(--border);
-            border-top-color: #C9A84C;
-        }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -221,56 +188,24 @@
            bg-[#F5F0E6]) so every existing card/button/badge inherits the new
            look with zero markup changes inside those panes.
            ===================================================================== */
-        html{ color-scheme: light; }
-        html[data-theme="dark"]{ color-scheme: dark; }
-
         :root{
-            --bg:#F8FAFC;
+            --bg:#F5F7FA;
             --card:#FFFFFF;
-            --text-primary:#0F172A;
-            --text-secondary:#475569;
-            --text-muted:#94A3B8;
-            --border:#E2E8F0;
-            --accent:#4F6EF7;
-            --accent-hover:#3D5CE0;
-            --accent-soft:#EEF1FF;
-            --green:#22C55E;
-            --green-soft:#ECFDF3;
-            --purple:#8B5CF6;
-            --purple-soft:#F5F3FF;
-            --orange:#F97316;
-            --orange-soft:#FFF7ED;
+            --text-primary:#111827;
+            --text-secondary:#6B7280;
+            --border:#E5E7EB;
+            --accent:#1F4ED8;
+            --accent-hover:#1A3FB8;
+            --accent-soft:#EEF2FF;
             --gold:#C9A84C; /* logo / premium badge only, never interactive */
             --radius-card:12px;
-            --shadow-card:0 1px 2px rgba(15,23,42,.04), 0 1px 6px rgba(15,23,42,.03);
-
-            /* Sidebar stays fixed dark-navy in both themes - matches the
-               approved mockup, where only the content area (bg/card/text)
-               flips with the toggle. */
-            --sidebar-bg:#0F172A;
-            --sidebar-text:#CBD5E1;
-            --sidebar-active:#4F6EF7;
-        }
-
-        [data-theme="dark"]{
-            --bg:#0F172A;
-            --card:#1E293B;
-            --border:#334155;
-            --text-primary:#F1F5F9;
-            --text-secondary:#94A3B8;
-            --text-muted:#64748B;
-            --accent-soft:#1E2A5E;
-            --green-soft:#0F2B1D;
-            --purple-soft:#241A45;
-            --orange-soft:#3A2311;
-            --shadow-card:0 1px 2px rgba(0,0,0,.3), 0 1px 8px rgba(0,0,0,.2);
+            --shadow-card:0 1px 2px rgba(16,24,40,0.04);
         }
 
         body{
             font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
             background: var(--bg) !important;
             color: var(--text-primary) !important;
-            transition: background .15s ease, color .15s ease;
         }
 
         /* ---- App shell: sidebar + topbar + content column ---- */
@@ -279,8 +214,8 @@
 
         .app-sidebar{
             width:240px; flex-shrink:0;
-            background:var(--sidebar-bg);
-            border-right:1px solid rgba(255,255,255,.06);
+            background:var(--card);
+            border-right:1px solid var(--border);
             padding:24px 16px;
             display:flex; flex-direction:column; gap:24px;
             position:sticky; top:0; height:100vh; overflow-y:auto;
@@ -292,25 +227,22 @@
             display:flex; align-items:center; justify-content:center;
             color:#fff; font-weight:700; font-size:14px; flex-shrink:0;
         }
-        .app-brand-name{ font-size:15px; font-weight:600; color:#F1F5F9; line-height:1.25; }
+        .app-brand-name{ font-size:15px; font-weight:600; color:var(--text-primary); line-height:1.25; }
 
         .nav-group{ display:flex; flex-direction:column; gap:2px; }
         .nav-group-label{
             padding:8px 8px 4px; font-size:11px; font-weight:600; letter-spacing:.06em;
-            color:#64748B; text-transform:uppercase;
+            color:var(--text-secondary); text-transform:uppercase;
         }
         .nav-item{
             display:flex; align-items:center; gap:10px;
             padding:9px 8px; border-radius:8px;
-            color:var(--sidebar-text); font-size:14px; font-weight:500;
+            color:var(--text-secondary); font-size:14px; font-weight:500;
             cursor:pointer; border:none; background:none; width:100%; text-align:left;
-            transition:background .12s ease, color .12s ease, box-shadow .12s ease;
+            transition:background .12s ease, color .12s ease;
         }
-        .nav-item:hover{ background:rgba(255,255,255,.06); color:#F1F5F9; }
-        .nav-item.nav-active{
-            background:var(--sidebar-active); color:#fff; font-weight:600;
-            box-shadow:0 0 0 1px rgba(79,110,247,.4), 0 4px 14px rgba(79,110,247,.35);
-        }
+        .nav-item:hover{ background:var(--bg); color:var(--text-primary); }
+        .nav-item.nav-active{ background:var(--accent-soft); color:var(--accent); font-weight:600; }
 
         .app-main{ flex:1; min-width:0; display:flex; flex-direction:column; }
         .app-topbar{
@@ -361,34 +293,7 @@
         .border-gold{ border-color:var(--accent) !important; }
         .bg-\[\#F8F8F8\]{ background-color:var(--bg) !important; }
         .bg-\[\#F5F0E6\]{ background-color:var(--bg) !important; border:1px solid var(--border); }
-        .bg-\[\#FFF8E7\]{ background-color:var(--accent-soft) !important; }
         .text-lg.font-semibold{ font-size:20px; }
-
-        /* ---- Dark-mode retheme of the same Tailwind utility classes, for
-               the grays/reds that assets/js/admin/*.js renders directly
-               into the tab panes (table rows, list items, danger states).
-               Same "override the utility class globally" technique as
-               above - the JS keeps emitting the same classes unmodified. ---- */
-        [data-theme="dark"] .text-gray-400,
-        [data-theme="dark"] .text-gray-500{ color:var(--text-muted) !important; }
-        [data-theme="dark"] .text-gray-600,
-        [data-theme="dark"] .text-gray-700{ color:var(--text-secondary) !important; }
-        [data-theme="dark"] .text-gray-800,
-        [data-theme="dark"] .text-gray-900{ color:var(--text-primary) !important; }
-        [data-theme="dark"] .bg-white,
-        [data-theme="dark"] .bg-gray-50{ background-color:var(--card) !important; }
-        [data-theme="dark"] .bg-gray-100{ background-color:var(--bg) !important; }
-        [data-theme="dark"] .bg-gray-200{ background-color:var(--border) !important; }
-        [data-theme="dark"] .border-gray-100,
-        [data-theme="dark"] .border-gray-200,
-        [data-theme="dark"] .border-gray-300{ border-color:var(--border) !important; }
-        [data-theme="dark"] .hover\:bg-gray-100:hover,
-        [data-theme="dark"] .hover\:bg-gray-50:hover{ background-color:var(--bg) !important; }
-        [data-theme="dark"] .bg-red-50,
-        [data-theme="dark"] .bg-red-100,
-        [data-theme="dark"] .bg-red-200{ background-color:#3f1d1d !important; }
-        [data-theme="dark"] .text-red-500,
-        [data-theme="dark"] .text-red-600{ color:#fca5a5 !important; }
 
         /* ---- Form fields: consistent height/radius/border/focus everywhere ---- */
         input[type="text"], input[type="number"], input[type="password"],
@@ -404,25 +309,10 @@
             box-shadow:0 0 0 3px var(--accent-soft);
             outline:none;
         }
-        /* Native inputs default to a white background regardless of Tailwind
-           classes - without this every field would stay a white box on a
-           dark page. */
-        [data-theme="dark"] input,
-        [data-theme="dark"] select,
-        [data-theme="dark"] textarea{
-            background-color:var(--card) !important;
-            color:var(--text-primary) !important;
-        }
-        [data-theme="dark"] input::placeholder,
-        [data-theme="dark"] textarea::placeholder{ color:var(--text-muted) !important; }
 
         /* ---- Stat cards ---- */
         .stat-grid-primary{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-        .stat-card-primary{
-            background:var(--card); border:1px solid var(--border);
-            border-left:4px solid var(--stat-accent, var(--accent));
-            border-radius:var(--radius-card); box-shadow:var(--shadow-card); padding:16px;
-        }
+        .stat-card-primary{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card); box-shadow:var(--shadow-card); padding:16px; }
         .quick-insights-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
 
         @media (max-width: 900px){
@@ -506,10 +396,6 @@
                         <div id="notificationPanelContent"><p class="text-sm text-gray-400">Loading...</p></div>
                     </div>
                 </div>
-                <button id="themeToggle" class="app-icon-btn" aria-label="Toggle dark mode" title="Toggle dark mode">
-                    <svg id="themeIconSun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-                    <svg id="themeIconMoon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                </button>
                 <button onclick="logout()" class="app-icon-btn" aria-label="Logout" title="Logout">
                     <span class="text-sm">&#8677;</span>
                 </button>
@@ -519,19 +405,19 @@
 
             <!-- DASHBOARD STATS -->
             <section class="stat-grid-primary mb-4">
-                <div class="stat-card-primary" style="--stat-accent:var(--gold);">
+                <div class="stat-card-primary">
                     <p class="text-xs text-gray-400">Total Revenue</p>
                     <p class="text-2xl font-bold text-gold" id="statRevenue">RM 0</p>
                 </div>
-                <div class="stat-card-primary" style="--stat-accent:var(--purple);">
+                <div class="stat-card-primary">
                     <p class="text-xs text-gray-400">Quotations</p>
                     <p class="text-2xl font-bold" id="statQuotations">0</p>
                 </div>
-                <div class="stat-card-primary" style="--stat-accent:var(--green);">
+                <div class="stat-card-primary">
                     <p class="text-xs text-gray-400">Upcoming Events</p>
                     <p class="text-2xl font-bold" id="statUpcoming">0</p>
                 </div>
-                <div class="stat-card-primary" style="--stat-accent:var(--orange);">
+                <div class="stat-card-primary">
                     <p class="text-xs text-gray-400">Unread</p>
                     <p class="text-2xl font-bold" id="statUnread">0</p>
                 </div>
@@ -1231,29 +1117,6 @@
             });
             btn.classList.add('nav-active');
         }
-
-        // Redesign-only helper: light/dark theme toggle. Persists to
-        // localStorage and drives [data-theme] on <html> (the early inline
-        // script in <head> reads the same key to avoid a flash on load).
-        // Purely presentational - no interaction with core.js or any admin
-        // JS module.
-        (function () {
-            var root = document.documentElement;
-            var btn = document.getElementById('themeToggle');
-            var sun = document.getElementById('themeIconSun');
-            var moon = document.getElementById('themeIconMoon');
-            if (root.getAttribute('data-theme') === 'dark') {
-                sun.style.display = 'none';
-                moon.style.display = 'block';
-            }
-            btn.addEventListener('click', function () {
-                var isDark = root.getAttribute('data-theme') === 'dark';
-                root.setAttribute('data-theme', isDark ? 'light' : 'dark');
-                localStorage.setItem('theme', isDark ? 'light' : 'dark');
-                sun.style.display = isDark ? 'block' : 'none';
-                moon.style.display = isDark ? 'none' : 'block';
-            });
-        })();
     </script>
 </body>
 </html>
