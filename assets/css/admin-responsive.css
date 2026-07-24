@@ -1,0 +1,45 @@
+/* Keep the admin dashboard inside the viewport and give its content pane
+   a real scroll boundary. Without an explicit shell height, the grid expands
+   with its content while the page itself has scrolling disabled, clipping the
+   lower content on short or narrow viewports. */
+body.admin-page {
+  overflow: auto;
+}
+
+.app-shell {
+  block-size: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.app-main {
+  block-size: 100%;
+  min-height: 0;
+}
+
+.app-content {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* Ensure flex controls can shrink before pushing content off-screen. */
+.app-content .flex > *,
+.app-topbar > * {
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .app-shell {
+    overflow: visible;
+  }
+
+  .app-main {
+    block-size: auto;
+    min-height: 100dvh;
+  }
+
+  .app-content {
+    overflow: visible;
+  }
+}
