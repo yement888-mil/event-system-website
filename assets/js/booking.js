@@ -65,6 +65,7 @@ async function loadBooking() {
 
         const result = await res.json();
         const b = result.data;
+        window.__bookingToken = token;
 
         document.getElementById('quotationNo').textContent = b.quotation_no || '';
         document.getElementById('customerName').textContent = b.customer_name || '-';
@@ -101,6 +102,17 @@ async function loadBooking() {
             document.getElementById('confirmedNote').classList.remove('hidden');
         } else {
             document.getElementById('depositNote').classList.remove('hidden');
+
+            // Feature 4 - show the "already acknowledged" note if this
+            // customer already checked the box on a previous visit,
+            // otherwise show the checkbox + button form.
+            if (b.deposit_ack_at) {
+                const noteEl = document.getElementById('depositAckedNote');
+                noteEl.textContent = `You acknowledged our deposit policy on ${formatDate(b.deposit_ack_at)}.`;
+                noteEl.classList.remove('hidden');
+            } else {
+                document.getElementById('depositAckSection').classList.remove('hidden');
+            }
         }
 
         // Only offer the cancel-request/change-request options if
@@ -136,7 +148,6 @@ async function loadBooking() {
         // real EXISTS check against the testimonials table) picks
         // between the form and the thank-you message.
         if (b.status === 'completed') {
-            window.__bookingToken = token;
             document.getElementById('testimonialSection').classList.remove('hidden');
             if (b.has_testimonial) {
                 document.getElementById('testimonialForm').classList.add('hidden');
@@ -254,8 +265,46 @@ async function submitTestimonial() {
     }
 }
 
+// Feature 4 - submits the deposit non-refundable acknowledgment via the
+// booking_token (same token as the testimonial submission above).
+async function submitDepositAck() {
+    const token = window.__bookingToken;
+    if (!token) return;
+
+    const btn = document.getElementById('submitDepositAckBtn');
+    try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
+
+        const res = await fetch(`${CONFIG.API_URL}/api/quotation/booking/${token}/acknowledge-deposit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ acknowledged: true })
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Failed to record acknowledgment');
+
+        document.getElementById('depositAckSection').classList.add('hidden');
+        const noteEl = document.getElementById('depositAckedNote');
+        noteEl.textContent = `You acknowledged our deposit policy on ${formatDate(result.deposit_ack_at)}.`;
+        noteEl.classList.remove('hidden');
+
+    } catch (err) {
+        alert(err.message || 'Something went wrong. Please contact us via WhatsApp.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Acknowledge'; }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     renderStarRating();
+
+    const depositAckCheckbox = document.getElementById('depositAckCheckbox');
+    const submitDepositAckBtn = document.getElementById('submitDepositAckBtn');
+    if (depositAckCheckbox && submitDepositAckBtn) {
+        depositAckCheckbox.addEventListener('change', function() {
+            submitDepositAckBtn.disabled = !this.checked;
+        });
+        submitDepositAckBtn.addEventListener('click', submitDepositAck);
+    }
 
     const requestCancelBtn = document.getElementById('requestCancelBtn');
     if (requestCancelBtn) requestCancelBtn.addEventListener('click', requestCancellation);

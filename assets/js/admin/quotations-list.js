@@ -282,6 +282,7 @@
                             <div><span class="text-gray-400">Deposit:</span> RM ${q.deposit || 0}</div>
                             <div><span class="text-gray-400">Balance:</span> RM ${q.balance || 0}</div>
                         </div>
+                        ${q.deposit_ack_at ? `<div class="mt-2 text-xs text-emerald-700">&#10003; Customer acknowledged non-refundable deposit on ${formatDate(q.deposit_ack_at)}</div>` : ''}
                         <div class="mt-2 text-xs">
                             <span class="text-gray-400">Services:</span>
                             <div class="mt-1">${servicesHtml || '-'}</div>

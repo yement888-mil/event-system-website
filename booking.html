@@ -106,6 +106,19 @@
                 Your date is not yet confirmed. It will be secured once your deposit is received - please contact us via WhatsApp if you haven't arranged payment yet.
             </div>
 
+            <!-- Feature 4 - shown alongside depositNote above, before a
+                 deposit has been marked paid. Evidentiary only - does not
+                 itself change the booking's status. -->
+            <div id="depositAckSection" class="hidden bg-white rounded-2xl p-6 shadow-sm mb-4">
+                <h3 class="font-semibold text-dark text-sm mb-2">Deposit Policy</h3>
+                <label class="flex items-start gap-3 text-xs text-[#333333] mb-3">
+                    <input type="checkbox" id="depositAckCheckbox" class="w-4 h-4 mt-0.5">
+                    <span>I understand the deposit is non-refundable.</span>
+                </label>
+                <button id="submitDepositAckBtn" disabled class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition disabled:opacity-40 disabled:cursor-not-allowed">Acknowledge</button>
+            </div>
+            <div id="depositAckedNote" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-800 mb-4"></div>
+
             <div id="confirmedNote" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-800 mb-4">
                 Your date is confirmed! We look forward to your event.
             </div>
