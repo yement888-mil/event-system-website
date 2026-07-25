@@ -209,25 +209,6 @@
                             </div>
                         </div>
 
-                        <div class="panel collapsible" id="tasksRailPanel">
-                            <div class="panel-head" onclick="document.getElementById('tasksRailPanel').classList.toggle('collapsed')">
-                                <h2>Tasks</h2>
-                                <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-                            </div>
-                            <div class="panel-body">
-                                <div class="tabs-row">
-                                    <button type="button" class="tab-btn tab-btn-active" id="tasksTabToday" onclick="event.stopPropagation(); showTasksRailTab('today')">Today's Events</button>
-                                    <button type="button" class="tab-btn" id="tasksTabAll" onclick="event.stopPropagation(); showTasksRailTab('all')">All Open</button>
-                                </div>
-                                <div id="todayEventTasksList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                                    <p class="text-sm text-gray-500">Loading...</p>
-                                </div>
-                                <div id="todayTasksList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2 hidden">
-                                    <p class="text-sm text-gray-500">Loading...</p>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="panel collapsible collapsed" id="reviewRailPanel">
                             <div class="panel-head" onclick="document.getElementById('reviewRailPanel').classList.toggle('collapsed')">
                                 <h2>Review Nudges</h2>
@@ -668,32 +649,6 @@
                     <div id="packagesList" class="space-y-2 mt-4"></div>
                 </section>
 
-                <section class="bg-white rounded-2xl p-6 shadow-sm mt-4">
-                    <h2 class="text-lg font-semibold mb-1">Task Templates</h2>
-                    <p class="text-xs text-gray-400 mb-4">Checklists you can apply to a booking's Tasks panel (e.g. "Wedding Checklist") - same shape as Package Templates above. Applying one is a manual action from the Tasks panel on a quotation, not automatic.</p>
-                    <input type="text" id="tpl_name" placeholder="Template name" class="border border-gray-200 rounded-xl px-3 py-2 text-sm w-full mb-3">
-                    <div id="tplItemRows" class="space-y-2 mb-2"></div>
-                    <button onclick="addTplItemRow()" class="text-gold text-sm font-medium hover:underline">+ Add Item</button>
-                    <div class="flex gap-2 mt-4">
-                        <button onclick="saveTaskTemplate()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="tplSaveLabel">Save Template</span></button>
-                        <button id="tplCancelBtn" onclick="resetTaskTemplateForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
-                    </div>
-                    <div id="taskTemplatesList" class="space-y-2 mt-4"></div>
-                </section>
-
-                <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
-                    <h2 class="text-lg font-semibold mb-1">Physical Props / Inventory</h2>
-                    <p class="text-xs text-gray-400 mb-4">Finite physical decoration items (BAU backlog #38) - e.g. a signature backdrop or arch. Tracked separately from services/pricing since a physical item, unlike a service, can only be in one place at a time. Assign these to a specific booking from the Quotations tab.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-                        <input type="text" id="prop_name" placeholder="Prop name" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
-                        <input type="text" id="prop_description" placeholder="Description (optional)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
-                        <input type="number" id="prop_quantity" placeholder="Quantity available" min="1" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
-                        <button onclick="saveProp()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="propSaveLabel">Add Prop</span></button>
-                    </div>
-                    <button id="propCancelBtn" onclick="resetPropForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-1.5 rounded-full text-xs hover:bg-gray-100 transition mb-3">Cancel Edit</button>
-                    <div id="propsList" class="space-y-2"></div>
-                </section>
-
                 <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
                     <h2 class="text-lg font-semibold mb-1">Gallery</h2>
                     <p class="text-xs text-gray-400 mb-4">Photos shown on your website's Gallery page.</p>
@@ -842,7 +797,6 @@
     <script src="assets/js/admin/analytics.js"></script>
     <script src="assets/js/admin/catalog-pricing.js"></script>
     <script src="assets/js/admin/catalog-content.js"></script>
-    <script src="assets/js/admin/tasks.js"></script>
     <script src="assets/js/admin/customers.js"></script>
     <script src="assets/js/admin/testimonials.js"></script>
     <script src="assets/js/admin/account.js"></script>

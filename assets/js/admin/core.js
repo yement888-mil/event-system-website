@@ -164,19 +164,11 @@
 
         let packagesCache = [];
 
-        let propsCache = [];
-
-        let taskTemplatesCache = [];
-
         let editingServiceId = null;
 
         let editingPricingItemId = null;
 
         let editingPackageId = null;
-
-        let editingPropId = null;
-
-        let editingTaskTemplateId = null;
 
         let galleryCache = [];
 
@@ -187,8 +179,6 @@
         let editingFaqItemId = null;
 
         let messageTemplatesCache = [];
-
-        let adminUsernamesCache = [];
 
         let peakPeriodsCache = [];
 
@@ -306,7 +296,6 @@
             }
             if (tab === 'today') {
                 loadUpcomingReminders();
-                loadOpenTasksToday();
                 loadExpiringQuotationsToday();
                 loadTestimonialRequestsToday();
             }
@@ -415,7 +404,6 @@
             await loadCatalog();
             updateAnalytics();
             await loadUpcomingReminders();
-            await loadOpenTasksToday();
             await loadExpiringQuotationsToday();
             await loadTestimonialRequestsToday();
             await loadNotificationCenter();

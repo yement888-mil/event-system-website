@@ -220,52 +220,6 @@ function setAttentionFilter(type, btnEl) {
         }
 
 
-        // BAU backlog #24 - additive grouping alongside the full open-tasks
-        // list below (todayTasksList), not a replacement - filtering the
-        // main list down to just today's events would hide an overdue
-        // task from last week from the one place it's currently impossible
-        // to miss.
-        async function loadOpenTasksToday() {
-            const el = document.getElementById('todayTasksList');
-            const eventTasksEl = document.getElementById('todayEventTasksList');
-            if (!el) return;
-            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
-            if (eventTasksEl) eventTasksEl.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
-
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/tasks/open`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
-
-                if (res.status === 401) return;
-                if (!res.ok) throw new Error('Failed to load open tasks');
-
-                const result = await res.json();
-                const tasks = result.data || [];
-                const today = new Date(new Date().toDateString());
-                const todayStr = today.toISOString().split('T')[0];
-
-                if (tasks.length === 0) {
-                    el.innerHTML = '<p class="text-sm text-gray-500">No open tasks.</p>';
-                } else {
-                    el.innerHTML = tasks.map(t => renderTaskCard(t, today)).join('');
-                }
-
-                if (eventTasksEl) {
-                    const eventTasks = tasks.filter(t => t.event_date && String(t.event_date).split('T')[0] === todayStr);
-                    eventTasksEl.innerHTML = eventTasks.length === 0
-                        ? '<p class="text-sm text-gray-500">No tasks for events happening today.</p>'
-                        : eventTasks.map(t => renderTaskCard(t, today)).join('');
-                }
-
-            } catch (err) {
-                console.error('Load open tasks error:', err);
-                el.innerHTML = '<p class="text-sm text-red-500">Failed to load open tasks.</p>';
-                if (eventTasksEl) eventTasksEl.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
-            }
-        }
-
-
         // Quotations that have sat at "sent" for 5+ days with no customer
         // response, closing in on (or past) the 7-day validity window shown
         // on the generated PDF - a nudge to follow up before it lapses.

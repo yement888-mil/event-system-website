@@ -383,9 +383,13 @@
                                         <select id="eventTimeTo_${q.id}" class="logistics-input">${renderTimeSlotOptions(timeRange.to)}</select>
                                     </div>
                                 </div>
-                                <button onclick="saveQuotationLogistics(${q.id})" class="bg-dark text-white px-4 py-1.5 rounded-full text-xs font-medium hover:bg-gold hover:text-dark transition">Save</button>
                             </div>
                             ${timeRange.legacy ? `<p class="text-[11px] text-gray-400 mt-1.5">Current time on file: "${escapeHTML(q.event_time)}" - pick From/To above and save to replace it.</p>` : ''}
+                            <div class="mt-3">
+                                <label class="logistics-label">Remark</label>
+                                <textarea id="remark_${q.id}" rows="2" placeholder="Day-of notes for this booking (optional)" class="logistics-input w-full">${escapeHTML(q.remark || '')}</textarea>
+                            </div>
+                            <button onclick="saveQuotationLogistics(${q.id})" class="btn btn-primary mt-2">Save</button>
                         </div>`;
                         })()}
                         <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
@@ -405,48 +409,9 @@
                             <button onclick="editQuotation(${q.id})" class="btn btn-ghost">Edit</button>
                             <button onclick="copyBookingLink('${q.booking_token || ''}')" class="btn btn-ghost">Copy Booking Link</button>
                             <button onclick="regenerateBookingToken(${q.id})" title="${q.booking_token_expires_at ? 'Expires ' + formatDateTime(q.booking_token_expires_at) : ''}" class="btn btn-ghost">Regenerate Link</button>
-                            <button onclick="toggleTaskChecklist(${q.id})" class="btn btn-ghost">Tasks</button>
-                            <button onclick="togglePropsPanel(${q.id})" class="btn btn-ghost">Props</button>
                             ${(q.status === 'deposit_paid' || q.status === 'completed') ? `
                             <button onclick="buildAndDownloadRunSheetPDF(${q.id})" class="btn btn-ghost">Run Sheet PDF</button>
                             ` : ''}
-                        </div>
-                        <div id="taskPanel_${q.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
-                            ${taskTemplatesCache.length > 0 ? `
-                                <!-- BAU backlog #25 - manual apply, same as
-                                     Package Templates in the quotation
-                                     builder: pick one, click Apply, it
-                                     loops client-side and creates each
-                                     item via the same POST /api/tasks used
-                                     by the Add button below. -->
-                                <div class="flex gap-2 mb-2">
-                                    <select id="applyTplSelect_${q.id}" class="flex-1 border rounded-xl px-2 py-1.5 text-xs">
-                                        <option value="">Apply a task template...</option>
-                                        ${taskTemplatesCache.filter(t => t.active !== false).map(t => `<option value="${t.id}">${escapeHTML(t.name)}</option>`).join('')}
-                                    </select>
-                                    <button onclick="applyTaskTemplate(${q.id})" class="bg-gray-100 text-dark px-3 py-1.5 rounded-xl text-xs hover:bg-gray-200 transition whitespace-nowrap">Apply</button>
-                                </div>
-                            ` : ''}
-                            <div class="flex gap-2 mb-2">
-                                <input type="text" id="newTaskInput_${q.id}" placeholder="Add a task (e.g. confirm caterer)" class="flex-1 border rounded-xl px-3 py-1.5 text-xs" onkeydown="if(event.key==='Enter') addTask(${q.id})">
-                                <select id="newTaskAssignee_${q.id}" class="border rounded-xl px-2 py-1.5 text-xs">
-                                    <option value="">Unassigned</option>
-                                    ${adminUsernamesCache.map(u => `<option value="${u.id}">${escapeHTML(u.username)}</option>`).join('')}
-                                </select>
-                                <button onclick="addTask(${q.id})" class="bg-dark text-white px-3 py-1.5 rounded-xl text-xs hover:bg-gold hover:text-dark transition">Add</button>
-                            </div>
-                            <div id="taskList_${q.id}" class="space-y-1"></div>
-                        </div>
-                        <div id="propsPanel_${q.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
-                            <div class="flex gap-2 mb-2">
-                                <select id="newPropSelect_${q.id}" class="flex-1 border rounded-xl px-2 py-1.5 text-xs">
-                                    <option value="">Select a prop...</option>
-                                    ${propsCache.filter(p => p.active !== false).map(p => `<option value="${p.id}">${escapeHTML(p.name)} (${p.quantity_available} available)</option>`).join('')}
-                                </select>
-                                <input type="number" id="newPropQty_${q.id}" placeholder="Qty" min="1" value="1" class="w-16 border rounded-xl px-2 py-1.5 text-xs">
-                                <button onclick="addPropToQuotation(${q.id})" class="bg-dark text-white px-3 py-1.5 rounded-xl text-xs hover:bg-gold hover:text-dark transition">Add</button>
-                            </div>
-                            <div id="propsQuotationList_${q.id}" class="space-y-1"></div>
                         </div>
                         ${q.status === 'cancelled' ? renderCancellationPanel(q) : ''}
                     </div>
@@ -483,119 +448,6 @@
             });
             
             renderQuotations(filteredQuotations);
-        }
-
-
-        // ---- Props assigned to a booking (BAU backlog #38) ----
-        // Same show/hide-panel pattern as the Tasks checklist above.
-        async function togglePropsPanel(quotationId) {
-            const panel = document.getElementById(`propsPanel_${quotationId}`);
-            if (!panel) return;
-            const isHidden = panel.classList.contains('hidden');
-            panel.classList.toggle('hidden');
-            if (isHidden) {
-                await loadQuotationProps(quotationId);
-            }
-        }
-
-
-        async function loadQuotationProps(quotationId) {
-            const listEl = document.getElementById(`propsQuotationList_${quotationId}`);
-            if (!listEl) return;
-            listEl.innerHTML = '<p class="text-xs text-gray-400">Loading...</p>';
-
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${quotationId}/props`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
-                if (!res.ok) throw new Error('Failed to load props');
-                const result = await res.json();
-                renderQuotationProps(quotationId, result.data || []);
-            } catch (err) {
-                listEl.innerHTML = '<p class="text-xs text-red-500">Failed to load props.</p>';
-            }
-        }
-
-
-        function renderQuotationProps(quotationId, props) {
-            const listEl = document.getElementById(`propsQuotationList_${quotationId}`);
-            if (!listEl) return;
-            if (props.length === 0) {
-                listEl.innerHTML = '<p class="text-xs text-gray-400">No props assigned yet.</p>';
-                return;
-            }
-            listEl.innerHTML = props.map(p => `
-                <div class="flex items-center gap-2 text-xs py-1">
-                    <span class="flex-1">${escapeHTML(p.name)} - qty ${p.quantity}</span>
-                    <button onclick="removePropFromQuotation(${quotationId}, ${p.prop_id})" class="text-red-400 hover:text-red-600 transition">&#10005;</button>
-                </div>
-            `).join('');
-        }
-
-
-        // Mirrors rescheduleInquiry()'s conflict-then-force pattern (see
-        // PATCH /api/inquiry/:id/reschedule): a 409 means another
-        // confirmed booking near this event date already has enough of
-        // this prop committed that there isn't enough left. This is a
-        // warning, not a hard block, same severity as the existing
-        // same-date double-booking check - the admin can confirm and
-        // proceed anyway if they know it'll work out (e.g. the other
-        // event is already done by then).
-        async function addPropToQuotation(quotationId, force = false) {
-            try {
-                const select = document.getElementById(`newPropSelect_${quotationId}`);
-                const qtyInput = document.getElementById(`newPropQty_${quotationId}`);
-                const propId = select?.value;
-                const quantity = parseInt(qtyInput?.value, 10) || 1;
-                if (!propId) {
-                    alert('Please select a prop');
-                    return;
-                }
-
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${quotationId}/props`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                    body: JSON.stringify({ prop_id: propId, quantity, force })
-                });
-
-                if (res.status === 409) {
-                    const err = await res.json();
-                    const c = err.conflict || {};
-                    const bookingsList = (c.bookings || [])
-                        .map(b => `${b.customer_name} (${b.quotation_no || '-'}, ${formatDate(b.event_date)}) - qty ${b.quantity}`)
-                        .join('\n');
-                    const confirmMsg = `${err.error}\n\nAvailable: ${c.quantity_available}, already committed nearby: ${c.committed_elsewhere}, requested: ${c.requested}.\n\n${bookingsList}\n\nAssign anyway?`;
-                    if (confirm(confirmMsg)) {
-                        await addPropToQuotation(quotationId, true);
-                    }
-                    return;
-                }
-
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.error || 'Failed to add prop');
-                }
-
-                if (select) select.value = '';
-                if (qtyInput) qtyInput.value = '1';
-                await loadQuotationProps(quotationId);
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
-        }
-
-
-        async function removePropFromQuotation(quotationId, propId) {
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/quotation/${quotationId}/props/${propId}`, {
-                    method: 'DELETE',
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
-                if (!res.ok) throw new Error('Failed to remove prop');
-                await loadQuotationProps(quotationId);
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
         }
 
 
@@ -708,11 +560,12 @@
                 const timeFrom = document.getElementById(`eventTimeFrom_${id}`)?.value || '';
                 const timeTo = document.getElementById(`eventTimeTo_${id}`)?.value || '';
                 const eventTime = (timeFrom && timeTo) ? `${timeFrom} - ${timeTo}` : '';
+                const remark = document.getElementById(`remark_${id}`)?.value || '';
 
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}/logistics`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                    body: JSON.stringify({ venue, event_time: eventTime })
+                    body: JSON.stringify({ venue, event_time: eventTime, remark })
                 });
 
                 if (res.status === 401) {
@@ -730,7 +583,7 @@
 
                 await loadQuotations();
             } catch (err) {
-                alert('Failed to save venue/time: ' + err.message);
+                alert('Failed to save: ' + err.message);
             }
         }
 

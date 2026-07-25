@@ -708,10 +708,10 @@
         // autoTable setup as buildAndDownloadPDF above for a consistent
         // look, but this is a day-of document handed to someone physically
         // at a venue - it deliberately excludes pricing, deposit/balance,
-        // and admin_notes (per the task), showing only what a crew member
-        // setting up needs: who, where, when, headcount, what services,
-        // and what's still outstanding on the checklist.
-        async function buildAndDownloadRunSheetPDF(quotationId) {
+        // and admin_notes, showing only what a crew member setting up
+        // needs: who, where, when, headcount, what services, and any
+        // remark left on the booking.
+        function buildAndDownloadRunSheetPDF(quotationId) {
             const { jsPDF } = window.jspdf || {};
             if (!jsPDF) {
                 alert('PDF library failed to load. Please check your internet connection and try again.');
@@ -722,21 +722,6 @@
             if (!q) {
                 alert('Quotation not found. Try reloading the Quotations tab.');
                 return;
-            }
-
-            let tasks = [];
-            try {
-                const res = await fetch(`${CONFIG.API_URL}/api/tasks/quotation/${quotationId}`, {
-                    headers: { Authorization: `Bearer ${adminToken}` }
-                });
-                if (res.ok) {
-                    const result = await res.json();
-                    tasks = (result.data || []).filter(t => !t.done);
-                }
-            } catch (err) {
-                console.error('Load tasks for run sheet error:', err);
-                // Non-fatal - the run sheet is still useful without the
-                // task section, so continue rather than blocking the PDF.
             }
 
             const doc = new jsPDF();
@@ -798,20 +783,14 @@
                 styles: { fontSize: 10 }
             });
 
-            const tasksStartY = doc.lastAutoTable.finalY + 10;
+            const remarkStartY = doc.lastAutoTable.finalY + 10;
             doc.setFontSize(11);
             doc.setFont(undefined, 'bold');
-            doc.text('Open Tasks', 14, tasksStartY);
-
-            const taskRows = tasks.map(t => [t.title || '-', t.due_date ? formatDate(t.due_date) : '-']);
-            doc.autoTable({
-                startY: tasksStartY + 4,
-                head: [['Task', 'Due']],
-                body: taskRows.length > 0 ? taskRows : [['No open tasks', '-']],
-                theme: 'grid',
-                headStyles: { fillColor: [201, 168, 76], textColor: [26, 26, 26] },
-                styles: { fontSize: 10 }
-            });
+            doc.text('Remark', 14, remarkStartY);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(10);
+            const remarkLines = doc.splitTextToSize(q.remark || 'None.', pageWidth - 28);
+            doc.text(remarkLines, 14, remarkStartY + 6);
 
             doc.setFontSize(8);
             doc.setTextColor(150);
