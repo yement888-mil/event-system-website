@@ -724,64 +724,42 @@
             const unreadList = document.getElementById('unreadInquiryList');
             const allList = document.getElementById('allInquiryList');
             const todayUnreadList = document.getElementById('todayUnreadList');
-            const todayCancelList = document.getElementById('todayCancelList');
 
             if (!inquiries || inquiries.length === 0) {
                 if (unreadList) unreadList.innerHTML = '<p class="text-sm text-gray-500">No unread inquiries</p>';
                 if (allList) allList.innerHTML = '<p class="text-sm text-gray-500">No inquiries yet</p>';
                 if (todayUnreadList) todayUnreadList.innerHTML = '<p class="text-sm text-gray-500">No unread inquiries</p>';
-                if (todayCancelList) todayCancelList.innerHTML = '<p class="text-sm text-gray-500">No cancellation requests</p>';
+                attentionCache.cancel = [];
+                renderAttentionFeed();
                 return;
             }
 
             const unread = inquiries.filter(i => !i.is_read);
             const cancelRequests = inquiries.filter(i => i.status === 'cancel_requested');
 
-            // Today dashboard - same unread card markup, reused as-is
+            // Today dashboard - compact mini-item, restyled for the merged
+            // dashboard rail (see today.js's renderAttentionFeed for cancel
+            // requests, which used to have their own card here too).
             if (todayUnreadList) {
                 todayUnreadList.innerHTML = unread.length === 0
                     ? '<p class="text-sm text-gray-500">All caught up! No unread inquiries.</p>'
                     : unread.map(inq => `
-                        <div class="bg-[#FFF8E7] border-l-4 border-gold rounded-xl p-3 text-sm cursor-pointer hover:shadow transition inquiry-card" onclick="viewInquiry(${inq.id})">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong>
-                                    <span class="text-xs text-gray-400 ml-2">${formatDate(inq.created_at)}</span>
-                                </div>
-                                <button onclick="event.stopPropagation(); markAsRead(${inq.id})" class="bg-gold text-dark px-2 py-0.5 rounded text-xs font-medium hover:bg-yellow-600 transition">
-                                    Mark Read
-                                </button>
+                        <div class="mini-item" style="cursor:pointer" onclick="viewInquiry(${inq.id})">
+                            <div class="mini-main">
+                                <div class="t">#${inq.id} ${escapeHTML(inq.customer_name)}</div>
+                                <div class="s">${escapeHTML(inq.event_type || '-')} &middot; ${formatDate(inq.event_date)}</div>
                             </div>
-                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}</div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
-                            </div>
+                            <button onclick="event.stopPropagation(); markAsRead(${inq.id})" class="btn btn-primary">Mark read</button>
                         </div>
                     `).join('');
             }
 
-            // Today dashboard - cancellation requests need admin review before
-            // anything money-related happens, so they get their own panel
-            // rather than being buried in the general inquiries list.
-            if (todayCancelList) {
-                todayCancelList.innerHTML = cancelRequests.length === 0
-                    ? '<p class="text-sm text-gray-500">No cancellation requests.</p>'
-                    : cancelRequests.map(inq => `
-                        <div class="bg-orange-50 border-l-4 border-orange-400 rounded-xl p-3 text-sm cursor-pointer hover:shadow transition inquiry-card" onclick="viewInquiry(${inq.id})">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong>
-                                    <span class="text-xs text-gray-400 ml-2">${formatDate(inq.created_at)}</span>
-                                </div>
-                            </div>
-                            <div class="mt-1">${getInquiryStatusBadge(inq.status)}</div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
-                            </div>
-                            <div class="text-xs text-orange-700 mt-1">Review in Quotations/Inquiries tab to confirm cancellation and any refund.</div>
-                        </div>
-                    `).join('');
-            }
+            // Cancellation requests need admin review before anything
+            // money-related happens - fed into the same severity-sorted
+            // "Needs Attention" feed as change requests/reminders/expiring
+            // quotes (today.js) rather than their own card.
+            attentionCache.cancel = cancelRequests;
+            renderAttentionFeed();
 
             // Render UNREAD inquiries
             if (unreadList) {

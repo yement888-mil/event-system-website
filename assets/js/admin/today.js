@@ -2,6 +2,128 @@
 // (tool.html modularization, Sprint 5). Function bodies preserved byte-for-
 // byte; only file location changed - see the extraction record for how.
 
+// Dashboard redesign - cancellations, change requests, expiring quotations
+// and due reminders (the 4 boxes that need a decision, not just a read) are
+// merged into one severity-sorted feed instead of 4 same-weight cards.
+// Each loader below still does its own fetch (unchanged), but writes into
+// this cache and calls renderAttentionFeed() instead of its own container -
+// renderInquiries() (inquiries.js) does the same for cancellations.
+let attentionCache = { cancel: [], change: [], expiring: [], reminder: [] };
+let attentionFilter = 'all';
+
+function renderCancelAttentionItem(inq) {
+    return `
+        <div class="item sev-critical" data-type="cancel">
+            <div class="item-main">
+                <div class="item-top"><span class="who">#${inq.id} ${escapeHTML(inq.customer_name)}</span><span class="when">${formatDate(inq.created_at)}</span></div>
+                <span class="item-tag tag-critical">Cancellation requested</span>
+                <div class="item-detail">${escapeHTML(inq.event_type || '-')} &middot; ${formatDate(inq.event_date)} &middot; ${escapeHTML(inq.phone || '-')}</div>
+                <div class="item-actions">
+                    <button class="btn btn-primary" onclick="viewInquiry(${inq.id})">Review</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderChangeAttentionItem(r) {
+    const isDateChange = r.request_type === 'date_change';
+    const conflict = isDateChange && r.conflict;
+    const sev = conflict ? 'critical' : 'warning';
+    const tagLabel = isDateChange ? (conflict ? 'Date change &middot; conflict' : 'Date change requested') : 'Add service requested';
+    const detail = isDateChange
+        ? `Requested new date: <strong>${formatDate(r.requested_date)}</strong> (currently ${formatDate(r.current_event_date)})`
+        : `Requested service: <strong>${escapeHTML(r.requested_service)}</strong>`;
+    const conflictHtml = conflict
+        ? `<div class="item-detail" style="color:var(--danger)">Conflict: ${escapeHTML(r.conflict.customer_name)} (${escapeHTML(r.conflict.quotation_no || '-')}) already has a confirmed booking on this date.</div>`
+        : '';
+    return `
+        <div class="item sev-${sev}" data-type="change">
+            <div class="item-main">
+                <div class="item-top"><span class="who">${escapeHTML(r.customer_name)}</span><span class="when">${formatDateTime(r.created_at)}</span></div>
+                <span class="item-tag tag-${sev}">${tagLabel}</span>
+                <div class="item-detail">${detail}${r.quotation_no ? ' &middot; ' + escapeHTML(r.quotation_no) : ''}</div>
+                ${r.customer_note ? `<div class="item-detail">Note: ${escapeHTML(r.customer_note)}</div>` : ''}
+                ${conflictHtml}
+                <div class="item-actions">
+                    <button class="btn btn-primary" onclick="resolveChangeRequest(${r.id}, 'approve')">Approve</button>
+                    <button class="btn btn-ghost" onclick="resolveChangeRequest(${r.id}, 'reject')">Reject</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderReminderAttentionItem(r) {
+    return `
+        <div class="item sev-info" data-type="reminder" onclick="viewInquiry(${r.inquiry_id})" style="cursor:pointer">
+            <div class="item-main">
+                <div class="item-top"><span class="who">${escapeHTML(r.customer_name)}</span><span class="when">Due ${formatDate(r.remind_at)}</span></div>
+                <span class="item-tag tag-info">Follow-up reminder</span>
+                ${r.note ? `<div class="item-detail">&ldquo;${escapeHTML(r.note)}&rdquo;</div>` : ''}
+                <div class="item-actions">
+                    <button class="btn btn-ghost" onclick="event.stopPropagation(); markReminderDone(${r.id})">Mark done</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderExpiringAttentionItem(q) {
+    const sev = q.expired ? 'critical' : 'warning';
+    return `
+        <div class="item sev-${sev}" data-type="expiring">
+            <div class="item-main">
+                <div class="item-top"><span class="who">${escapeHTML(q.quotation_no)}</span><span class="when">${q.days_since_sent} day${q.days_since_sent === 1 ? '' : 's'} sent</span></div>
+                <span class="item-tag tag-${sev}">${q.expired ? 'Past 7-day validity' : 'Expiring soon'}</span>
+                <div class="item-detail">${escapeHTML(q.customer_name)} &middot; RM ${q.total || 0}</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderAttentionFeed() {
+    const el = document.getElementById('todayAttentionFeed');
+    if (!el) return;
+
+    const sevRank = { critical: 0, warning: 1, info: 2 };
+    const items = [];
+    attentionCache.cancel.forEach(x => items.push({ type: 'cancel', sev: 'critical', html: renderCancelAttentionItem(x) }));
+    attentionCache.change.forEach(x => {
+        const sev = (x.request_type === 'date_change' && x.conflict) ? 'critical' : 'warning';
+        items.push({ type: 'change', sev, html: renderChangeAttentionItem(x) });
+    });
+    attentionCache.expiring.forEach(x => items.push({ type: 'expiring', sev: x.expired ? 'critical' : 'warning', html: renderExpiringAttentionItem(x) }));
+    attentionCache.reminder.forEach(x => items.push({ type: 'reminder', sev: 'info', html: renderReminderAttentionItem(x) }));
+
+    items.sort((a, b) => sevRank[a.sev] - sevRank[b.sev]);
+
+    const counts = { all: items.length, cancel: attentionCache.cancel.length, change: attentionCache.change.length, expiring: attentionCache.expiring.length, reminder: attentionCache.reminder.length };
+    Object.keys(counts).forEach(key => {
+        const badge = document.getElementById(`attnCount-${key}`);
+        if (badge) badge.textContent = counts[key];
+    });
+    const pill = document.getElementById('attentionCountPill');
+    if (pill) pill.textContent = counts.all;
+
+    const visible = attentionFilter === 'all' ? items : items.filter(i => i.type === attentionFilter);
+
+    el.innerHTML = visible.length === 0
+        ? `<div class="empty">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <b>All caught up</b>
+                <span>${attentionFilter === 'all' ? 'Nothing needs your attention right now.' : 'Nothing in this category right now.'}</span>
+            </div>`
+        : visible.map(i => i.html).join('');
+}
+
+function setAttentionFilter(type, btnEl) {
+    attentionFilter = type;
+    document.querySelectorAll('#attentionChips .chip').forEach(c => c.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    renderAttentionFeed();
+}
+
 
         // BAU backlog #15 - extends the existing self-service cancellation-
         // request pattern to date-change/add-service requests. Same
@@ -10,10 +132,6 @@
         // the same same-date confirmed-booking check reschedule uses) is
         // shown as a warning before the admin approves it.
         async function loadChangeRequests() {
-            const el = document.getElementById('todayChangeRequestsList');
-            if (!el) return;
-            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
-
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/inquiry/change-requests`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
@@ -22,45 +140,11 @@
                 if (!res.ok) throw new Error('Failed to load change requests');
 
                 const result = await res.json();
-                const requests = result.data || [];
-
-                if (requests.length === 0) {
-                    el.innerHTML = '<p class="text-sm text-gray-500">No pending change requests.</p>';
-                    return;
-                }
-
-                el.innerHTML = requests.map(r => {
-                    const isDateChange = r.request_type === 'date_change';
-                    const conflictHtml = isDateChange && r.conflict
-                        ? `<div class="text-xs text-red-600 font-medium mt-1">Conflict: ${escapeHTML(r.conflict.customer_name)} (${escapeHTML(r.conflict.quotation_no || '-')}) already has a confirmed booking on this date.</div>`
-                        : '';
-                    return `
-                        <div class="border rounded-xl p-3 text-sm ${conflictHtml ? 'border-red-300 bg-red-50' : ''}">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <strong>${escapeHTML(r.customer_name)}</strong>
-                                    <span class="text-xs text-gray-400 ml-1">${escapeHTML(r.quotation_no || '-')}</span>
-                                </div>
-                                <span class="text-xs text-gray-400">${formatDateTime(r.created_at)}</span>
-                            </div>
-                            <div class="text-xs mt-1">
-                                ${isDateChange
-                                    ? `Requested new date: <strong>${formatDate(r.requested_date)}</strong> (currently ${formatDate(r.current_event_date)})`
-                                    : `Requested service: <strong>${escapeHTML(r.requested_service)}</strong>`}
-                            </div>
-                            ${r.customer_note ? `<div class="text-xs text-gray-500 mt-1">Note: ${escapeHTML(r.customer_note)}</div>` : ''}
-                            ${conflictHtml}
-                            <div class="flex gap-2 mt-2">
-                                <button onclick="resolveChangeRequest(${r.id}, 'approve')" class="bg-gold text-dark px-3 py-1 rounded text-xs font-medium hover:bg-yellow-600 transition">Approve</button>
-                                <button onclick="resolveChangeRequest(${r.id}, 'reject')" class="border border-gray-300 text-gray-600 px-3 py-1 rounded text-xs hover:bg-gray-100 transition">Reject</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                attentionCache.change = result.data || [];
+                renderAttentionFeed();
 
             } catch (err) {
                 console.error('Load change requests error:', err);
-                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
             }
         }
 
@@ -105,10 +189,6 @@
 
         // BAU backlog #23 - snooze/per-inquiry follow-up reminder
         async function loadDueReminders() {
-            const el = document.getElementById('todayRemindersList');
-            if (!el) return;
-            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
-
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/inquiry/reminders/due`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
@@ -117,29 +197,11 @@
                 if (!res.ok) throw new Error('Failed to load reminders');
 
                 const result = await res.json();
-                const reminders = result.data || [];
-
-                if (reminders.length === 0) {
-                    el.innerHTML = '<p class="text-sm text-gray-500">No reminders due.</p>';
-                    return;
-                }
-
-                el.innerHTML = reminders.map(r => `
-                    <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm cursor-pointer hover:shadow transition" onclick="viewInquiry(${r.inquiry_id})">
-                        <div>
-                            <strong>${escapeHTML(r.customer_name)}</strong>
-                            <span class="text-xs text-gray-400 ml-2">Due ${formatDate(r.remind_at)}</span>
-                            ${r.note ? `<div class="text-xs text-gray-500 mt-0.5">${escapeHTML(r.note)}</div>` : ''}
-                        </div>
-                        <button onclick="event.stopPropagation(); markReminderDone(${r.id})" class="border border-gray-300 text-gray-600 px-3 py-1 rounded-full text-xs font-medium hover:bg-gray-100 transition whitespace-nowrap">
-                            Done
-                        </button>
-                    </div>
-                `).join('');
+                attentionCache.reminder = result.data || [];
+                renderAttentionFeed();
 
             } catch (err) {
                 console.error('Load reminders error:', err);
-                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
             }
         }
 
@@ -208,10 +270,6 @@
         // response, closing in on (or past) the 7-day validity window shown
         // on the generated PDF - a nudge to follow up before it lapses.
         async function loadExpiringQuotationsToday() {
-            const el = document.getElementById('todayExpiringList');
-            if (!el) return;
-            el.innerHTML = '<p class="text-sm text-gray-500">Loading...</p>';
-
             try {
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation/expiring`, {
                     headers: { Authorization: `Bearer ${adminToken}` }
@@ -221,28 +279,11 @@
                 if (!res.ok) throw new Error('Failed to load expiring quotations');
 
                 const result = await res.json();
-                const rows = result.data || [];
-
-                if (rows.length === 0) {
-                    el.innerHTML = '<p class="text-sm text-gray-500">Nothing expiring soon.</p>';
-                    return;
-                }
-
-                el.innerHTML = rows.map(q => `
-                    <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm ${q.expired ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'}">
-                        <div>
-                            <strong>${escapeHTML(q.quotation_no)}</strong>
-                            <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(q.customer_name)} | RM ${q.total || 0}</div>
-                            <div class="text-xs mt-0.5 ${q.expired ? 'text-red-600 font-medium' : 'text-amber-700'}">
-                                Sent ${q.days_since_sent} day${q.days_since_sent === 1 ? '' : 's'} ago${q.expired ? ' - past the 7-day validity window' : ''}
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+                attentionCache.expiring = result.data || [];
+                renderAttentionFeed();
 
             } catch (err) {
                 console.error('Load expiring quotations error:', err);
-                el.innerHTML = '<p class="text-sm text-red-500">Failed to load.</p>';
             }
         }
 
@@ -280,13 +321,12 @@
                     const msg = `Hi ${r.customer_name}, thank you again for booking with us! If you have a moment, we'd love to hear how your event went - your feedback helps other customers find us.`;
                     const waLink = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : null;
                     return `
-                        <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm border-gray-200">
-                            <div>
-                                <strong>${escapeHTML(r.customer_name)}</strong>
-                                <span class="text-xs text-gray-400 ml-1">${escapeHTML(r.quotation_no || '-')}</span>
-                                <div class="text-xs text-gray-500 mt-0.5">Asked ${formatDate(r.testimonial_requested_at)}</div>
+                        <div class="mini-item">
+                            <div class="mini-main">
+                                <div class="t">${escapeHTML(r.customer_name)}</div>
+                                <div class="s">${escapeHTML(r.quotation_no || '-')} &middot; asked ${formatDate(r.testimonial_requested_at)}</div>
                             </div>
-                            ${waLink ? `<a href="${waLink}" target="_blank" class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200 transition whitespace-nowrap">WhatsApp Nudge</a>` : ''}
+                            ${waLink ? `<a href="${waLink}" target="_blank" class="btn btn-wa">WhatsApp</a>` : ''}
                         </div>
                     `;
                 }).join('');

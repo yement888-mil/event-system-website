@@ -9,19 +9,33 @@
         function renderTaskCard(t, today) {
             const overdue = t.due_date && new Date(t.due_date) < today;
             return `
-                <div class="flex justify-between items-center gap-2 border rounded-xl p-3 text-sm ${overdue ? 'border-red-300 bg-red-50' : ''}">
-                    <div>
-                        <strong>${escapeHTML(t.title)}</strong>
-                        <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(t.customer_name)} | ${escapeHTML(t.quotation_no || '')}${t.assigned_to_username ? ` | Assigned: ${escapeHTML(t.assigned_to_username)}` : ''}</div>
-                        <div class="text-xs mt-0.5 ${overdue ? 'text-red-600 font-medium' : 'text-gray-400'}">
-                            ${t.due_date ? `Due ${formatDate(t.due_date)}${overdue ? ' (overdue)' : ''}` : 'No due date'}
+                <div class="item ${overdue ? 'sev-critical' : 'sev-info'}">
+                    <div class="item-main">
+                        <div class="item-top"><span class="who">${escapeHTML(t.title)}</span><span class="when">${t.due_date ? `Due ${formatDate(t.due_date)}${overdue ? ' (overdue)' : ''}` : 'No due date'}</span></div>
+                        <div class="item-detail">${escapeHTML(t.customer_name)}${t.quotation_no ? ' &middot; ' + escapeHTML(t.quotation_no) : ''}${t.assigned_to_username ? ' &middot; ' + escapeHTML(t.assigned_to_username) : ''}</div>
+                        <div class="item-actions">
+                            <button onclick="toggleTaskDone(${t.id}, ${t.quotation_id}, true, false); loadOpenTasksToday();" class="btn btn-ghost">Done</button>
                         </div>
                     </div>
-                    <button onclick="toggleTaskDone(${t.id}, ${t.quotation_id}, true, false); loadOpenTasksToday();" class="border border-gray-300 text-gray-600 px-3 py-1 rounded-full text-xs font-medium hover:bg-gray-100 transition whitespace-nowrap">
-                        Done
-                    </button>
                 </div>
             `;
+        }
+
+
+        // Dashboard redesign - Tasks rail panel shares two lists
+        // (todayEventTasksList / todayTasksList, both still populated by
+        // loadOpenTasksToday in today.js) behind a tab switch instead of
+        // two separate stacked cards.
+        function showTasksRailTab(tab) {
+            const todayEl = document.getElementById('todayEventTasksList');
+            const allEl = document.getElementById('todayTasksList');
+            const todayBtn = document.getElementById('tasksTabToday');
+            const allBtn = document.getElementById('tasksTabAll');
+            if (!todayEl || !allEl) return;
+            todayEl.classList.toggle('hidden', tab !== 'today');
+            allEl.classList.toggle('hidden', tab !== 'all');
+            if (todayBtn) todayBtn.classList.toggle('tab-btn-active', tab === 'today');
+            if (allBtn) allBtn.classList.toggle('tab-btn-active', tab === 'all');
         }
 
 

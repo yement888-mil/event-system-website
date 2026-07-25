@@ -99,7 +99,7 @@
         <div class="app-main">
             <div class="app-topbar">
                 <div class="app-topbar-left">
-                    <button class="app-icon-btn sidebar-toggle" type="button" data-sidebar-toggle aria-label="Open navigation">
+                    <button class="app-icon-btn sidebar-toggle" type="button" data-sidebar-toggle aria-label="Toggle navigation">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
                     </button>
                     <h1 id="pageTitle" class="app-page-title">Dashboard</h1>
@@ -134,7 +134,7 @@
                  by having to click through 3+ separate tabs. -->
             <div id="tabTodayContent" class="tab-content active">
                 <section class="stat-grid-primary mb-6">
-                    <div class="stat-card-primary">
+                    <div class="stat-card-primary kpi-hero">
                         <p class="text-xs text-gray-400">Total Revenue</p>
                         <p class="text-2xl font-bold text-gold" id="statRevenue">RM 0</p>
                     </div>
@@ -164,67 +164,87 @@
                     </div>
                 </section>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-2xl shadow-sm p-6">
-                        <h2 class="text-lg font-semibold mb-3 text-orange-700">Cancellation Requests</h2>
-                        <div id="todayCancelList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-500">Loading...</p>
+                <!-- Needs-attention feed merges cancellations, change requests,
+                     expiring quotations and due reminders - the 4 boxes that
+                     actually require a decision - into one severity-sorted list
+                     instead of 4 same-weight cards. Right rail keeps the lower-
+                     urgency, informational panels, collapsible so they don't
+                     compete for attention. Every container ID below is unchanged
+                     from before, so today.js/inquiries.js/tasks.js keep working. -->
+                <div class="dash-board">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <h2>Needs Attention <span class="count-pill warn" id="attentionCountPill">0</span></h2>
+                        </div>
+                        <div class="chips" id="attentionChips">
+                            <button type="button" class="chip active" onclick="setAttentionFilter('all', this)">All <span class="n" id="attnCount-all">0</span></button>
+                            <button type="button" class="chip" onclick="setAttentionFilter('cancel', this)">Cancellations <span class="n" id="attnCount-cancel">0</span></button>
+                            <button type="button" class="chip" onclick="setAttentionFilter('change', this)">Change requests <span class="n" id="attnCount-change">0</span></button>
+                            <button type="button" class="chip" onclick="setAttentionFilter('expiring', this)">Expiring quotes <span class="n" id="attnCount-expiring">0</span></button>
+                            <button type="button" class="chip" onclick="setAttentionFilter('reminder', this)">Reminders <span class="n" id="attnCount-reminder">0</span></button>
+                        </div>
+                        <div class="panel-body">
+                            <div class="feed" id="todayAttentionFeed">
+                                <p class="text-sm text-gray-500">Loading...</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="bg-white rounded-2xl shadow-sm p-6">
-                        <h2 class="text-lg font-semibold mb-3 text-orange-700">Change Requests</h2>
-                        <div id="todayChangeRequestsList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-sm p-6">
-                        <h2 class="text-lg font-semibold mb-3 text-orange-700">Follow-Up Reminders</h2>
-                        <div id="todayRemindersList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-sm p-6">
-                        <h2 class="text-lg font-semibold mb-3">Unread Inquiries</h2>
-                        <div id="todayUnreadList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-sm p-6">
-                        <h2 class="text-lg font-semibold mb-3">Upcoming Events (Next 7 Days)</h2>
-                        <div id="todayUpcomingList" class="upcoming-reminders-target space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-400">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-sm p-6">
-                        <h2 class="text-lg font-semibold mb-3 text-red-700">Today's Event Tasks</h2>
-                        <div id="todayEventTasksList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-sm p-6">
-                        <h2 class="text-lg font-semibold mb-3">Open Tasks</h2>
-                        <div id="todayTasksList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-sm p-6">
-                        <h2 class="text-lg font-semibold mb-3">Quotations Expiring Soon</h2>
-                        <div id="todayExpiringList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-sm p-6">
-                        <h2 class="text-lg font-semibold mb-3">Review Requests Pending Response</h2>
-                        <div id="todayTestimonialRequestsList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                            <p class="text-sm text-gray-500">Loading...</p>
-                        </div>
-                    </div>
-                    <!-- BAU backlog #12 - failed notifications moved into the
-                         bell icon notification center in the header, which
-                         also shows a "since you're here" recap. Consolidated
-                         rather than kept here too, so there's one place for
-                         this instead of two showing the same data. -->
 
+                    <div class="rail">
+                        <div class="panel">
+                            <div class="panel-head"><h2>Unread Inquiries</h2></div>
+                            <div class="panel-body">
+                                <div id="todayUnreadList" class="mini-list">
+                                    <p class="text-sm text-gray-500">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel">
+                            <div class="panel-head"><h2>Coming Up</h2></div>
+                            <div class="panel-body">
+                                <div id="todayUpcomingList" class="upcoming-reminders-target mini-list">
+                                    <p class="text-sm text-gray-400">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel collapsible" id="tasksRailPanel">
+                            <div class="panel-head" onclick="document.getElementById('tasksRailPanel').classList.toggle('collapsed')">
+                                <h2>Tasks</h2>
+                                <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="panel-body">
+                                <div class="tabs-row">
+                                    <button type="button" class="tab-btn tab-btn-active" id="tasksTabToday" onclick="event.stopPropagation(); showTasksRailTab('today')">Today's Events</button>
+                                    <button type="button" class="tab-btn" id="tasksTabAll" onclick="event.stopPropagation(); showTasksRailTab('all')">All Open</button>
+                                </div>
+                                <div id="todayEventTasksList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                                    <p class="text-sm text-gray-500">Loading...</p>
+                                </div>
+                                <div id="todayTasksList" class="space-y-2 max-h-[350px] overflow-y-auto pr-2 hidden">
+                                    <p class="text-sm text-gray-500">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel collapsible collapsed" id="reviewRailPanel">
+                            <div class="panel-head" onclick="document.getElementById('reviewRailPanel').classList.toggle('collapsed')">
+                                <h2>Review Nudges</h2>
+                                <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="panel-body">
+                                <div id="todayTestimonialRequestsList" class="mini-list">
+                                    <p class="text-sm text-gray-500">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- BAU backlog #12 - failed notifications moved into the
+                             bell icon notification center in the header, which
+                             also shows a "since you're here" recap. Consolidated
+                             rather than kept here too, so there's one place for
+                             this instead of two showing the same data. -->
+                    </div>
                 </div>
             </div>
 
