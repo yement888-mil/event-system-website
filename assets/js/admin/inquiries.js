@@ -150,6 +150,9 @@
                     Submitted: ${formatDateTime(inq.created_at)}
                 </div>
                 ${!inq.is_read ? `<button onclick="markAsRead(${inq.id}); closeModal();" class="mt-4 bg-gold text-dark px-4 py-2 rounded text-sm font-medium hover:bg-yellow-600 transition">Mark as Read</button>` : ''}
+                <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                    <button onclick="deleteInquiry(${inq.id})" class="text-xs text-gray-400 hover:text-red-500 transition">Delete this inquiry</button>
+                </div>
             `;
             
             document.getElementById('inquiryModal').classList.add('active');
@@ -267,6 +270,113 @@
                 await loadInquiries();
             } catch (err) {
                 alert('Undo failed: ' + err.message);
+            }
+        }
+
+
+        // Soft delete (backend sets deleted_at, doesn't hard-remove the
+        // row) - the server itself refuses to delete an inquiry that
+        // already has a quotation attached, so this can't orphan a real
+        // booking record. Recoverable from "Recently Deleted" below.
+        async function deleteInquiry(id) {
+            const inq = allInquiries.find(i => i.id === id);
+            const name = inq ? inq.customer_name : `#${id}`;
+            if (!confirm(`Delete the inquiry from "${name}"? You can restore it from Recently Deleted afterwards.`)) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || err.message || 'Failed to delete inquiry');
+                }
+
+                closeModal();
+                await loadInquiries();
+            } catch (err) {
+                console.error('Delete inquiry error:', err);
+                alert('Error: ' + err.message);
+            }
+        }
+
+
+        // ------------------------------------------------------------
+        // RECENTLY DELETED (delete safety net)
+        // ------------------------------------------------------------
+        async function showRecentlyDeleted() {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/deleted`, {
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    adminToken = '';
+                    document.getElementById('toolContent').classList.add('hidden');
+                    document.getElementById('passwordGate').classList.remove('hidden');
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to load deleted inquiries');
+                }
+
+                const result = await res.json();
+                const deleted = result.data || [];
+
+                document.getElementById('modalTitle').textContent = 'Recently Deleted Inquiries';
+                document.getElementById('modalBody').innerHTML = deleted.length === 0
+                    ? '<p class="text-sm text-gray-500">Nothing here.</p>'
+                    : `<div class="space-y-2">${deleted.map(inq => `
+                        <div class="border rounded-xl p-3 text-sm flex justify-between items-center gap-3">
+                            <div>
+                                <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong>
+                                <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}</div>
+                                <div class="text-xs text-gray-400 mt-0.5">Deleted ${formatDateTime(inq.deleted_at)}</div>
+                            </div>
+                            <button onclick="restoreInquiry(${inq.id})" class="flex-none border-2 border-dark text-dark px-3 py-1.5 rounded-full text-xs font-medium hover:bg-dark hover:text-white transition">Restore</button>
+                        </div>
+                    `).join('')}</div>`;
+
+                document.getElementById('inquiryModal').classList.add('active');
+            } catch (err) {
+                console.error('Load deleted inquiries error:', err);
+                alert('Error: ' + err.message);
+            }
+        }
+
+
+        async function restoreInquiry(id) {
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/restore`, {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to restore inquiry');
+                }
+
+                await loadInquiries();
+                await showRecentlyDeleted();
+            } catch (err) {
+                console.error('Restore inquiry error:', err);
+                alert('Error: ' + err.message);
             }
         }
 
@@ -680,9 +790,12 @@
                             <div class="text-xs text-gray-400 mt-0.5 truncate">
                                 ${inq.services_requested ? (typeof inq.services_requested === 'string' ? JSON.parse(inq.services_requested).join(', ') : inq.services_requested.join(', ')) : 'No services selected'}
                             </div>
-                            <button onclick="event.stopPropagation(); generateQuotationFromCard(${inq.id})" class="mt-2 text-xs border border-gold text-dark px-3 py-1 rounded-full font-medium hover:bg-gold transition">
-                                Generate Quotation
-                            </button>
+                            <div class="mt-2 flex items-center gap-2">
+                                <button onclick="event.stopPropagation(); generateQuotationFromCard(${inq.id})" class="text-xs border border-gold text-dark px-3 py-1 rounded-full font-medium hover:bg-gold transition">
+                                    Generate Quotation
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteInquiry(${inq.id})" class="text-xs text-gray-300 hover:text-red-500 transition ml-auto" title="Delete inquiry">Delete</button>
+                            </div>
                         </div>
                     `).join('');
                 }
