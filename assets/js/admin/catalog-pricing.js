@@ -94,8 +94,6 @@
             editingServiceId = id;
             document.getElementById('svc_name').value = s.name || '';
             document.getElementById('svc_category').value = s.category || '';
-            document.getElementById('svc_managed_by').value = s.managed_by || '';
-            document.getElementById('svc_image_url').value = s.image_url || '';
             document.getElementById('svc_description').value = s.description || '';
             document.getElementById('svc_active').checked = s.active !== false;
             document.getElementById('svcSaveLabel').textContent = 'Update Service';
@@ -108,8 +106,6 @@
             editingServiceId = null;
             document.getElementById('svc_name').value = '';
             document.getElementById('svc_category').value = '';
-            document.getElementById('svc_managed_by').value = '';
-            document.getElementById('svc_image_url').value = '';
             document.getElementById('svc_description').value = '';
             document.getElementById('svc_active').checked = true;
             document.getElementById('svcSaveLabel').textContent = 'Add Service';
@@ -121,11 +117,19 @@
             const name = document.getElementById('svc_name').value.trim();
             if (!name) { alert('Service name is required'); return; }
 
+            // managed_by/image_url no longer have form fields (BAU: admin
+            // form declutter) - preserve whatever the record already had
+            // instead of sending undefined, which the backend's PUT would
+            // otherwise silently null out on the next edit-save of an
+            // existing service (2 of 4 services still use managed_by to
+            // mark outsourced work, e.g. Catering/Magic Show).
+            const existing = editingServiceId ? servicesCache.find(x => x.id === editingServiceId) : null;
+
             const payload = {
                 name,
                 category: document.getElementById('svc_category').value.trim(),
-                managed_by: document.getElementById('svc_managed_by').value.trim(),
-                image_url: document.getElementById('svc_image_url').value.trim(),
+                managed_by: existing?.managed_by || '',
+                image_url: existing?.image_url || '',
                 description: document.getElementById('svc_description').value.trim(),
                 active: document.getElementById('svc_active').checked
             };
