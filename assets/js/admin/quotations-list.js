@@ -242,6 +242,80 @@
         }
 
 
+        // Venue/time logistics (BAU backlog #40) - venue is a plain
+        // VARCHAR(255), event_time a plain VARCHAR(50) on the backend (see
+        // quotationCore.js's /logistics route), so constraining to a
+        // dropdown here is a UI-only choice: the 3 real venues the business
+        // operates out of, not a schema change. Old free-text values (from
+        // before this redesign, or a venue outside the 3) are kept as a
+        // selected "legacy" option instead of being silently dropped.
+        const QUOTATION_VENUES = ['Puchong', 'Klang', 'Sendayan'];
+
+        function renderVenueOptions(currentVenue) {
+            const known = QUOTATION_VENUES.includes(currentVenue);
+            let html = '<option value="">-- Select venue --</option>';
+            if (currentVenue && !known) {
+                html += `<option value="${escapeHTML(currentVenue)}" selected>${escapeHTML(currentVenue)} (existing)</option>`;
+            }
+            QUOTATION_VENUES.forEach(v => {
+                html += `<option value="${v}" ${currentVenue === v ? 'selected' : ''}>${v}</option>`;
+            });
+            return html;
+        }
+
+        // Half-hour slots, 12:00 AM - 11:30 PM - same "From / To" shape as a
+        // calendar meeting invite's time picker.
+        const QUOTATION_TIME_SLOTS = (() => {
+            const slots = [];
+            for (let h = 0; h < 24; h++) {
+                for (const m of [0, 30]) {
+                    const period = h < 12 ? 'AM' : 'PM';
+                    const hour12 = h % 12 === 0 ? 12 : h % 12;
+                    slots.push(`${hour12}:${m === 0 ? '00' : '30'} ${period}`);
+                }
+            }
+            return slots;
+        })();
+
+        function renderTimeSlotOptions(selectedLabel) {
+            let html = '<option value="">--:--</option>';
+            QUOTATION_TIME_SLOTS.forEach(slot => {
+                html += `<option value="${slot}" ${slot === selectedLabel ? 'selected' : ''}>${slot}</option>`;
+            });
+            return html;
+        }
+
+        // Splits "2:00 PM - 6:00 PM" back into its two slots for the two
+        // dropdowns. Only recognizes slots that exactly match the half-hour
+        // grid above - anything else (legacy free text, e.g. "afternoon")
+        // is left unmatched and shown as a note instead of forced into a
+        // dropdown value that would silently change it.
+        function parseEventTimeRange(eventTime) {
+            if (!eventTime) return { from: '', to: '', legacy: false };
+            const parts = eventTime.split(/\s*-\s*/);
+            if (parts.length !== 2) return { from: '', to: '', legacy: true };
+            const [from, to] = parts.map(p => p.trim());
+            if (QUOTATION_TIME_SLOTS.includes(from) && QUOTATION_TIME_SLOTS.includes(to)) {
+                return { from, to, legacy: false };
+            }
+            return { from: '', to: '', legacy: true };
+        }
+
+
+        const QUOTATION_STATUS_LABELS = {
+            draft: 'Draft', sent: 'Sent', waiting_deposit: 'Waiting Deposit',
+            deposit_paid: 'Deposit Paid', completed: 'Completed', cancelled: 'Cancelled', expired: 'Expired'
+        };
+
+        // Same severity language as the Dashboard's attention feed (Dashboard
+        // redesign) - a colored left edge so status reads at a glance instead
+        // of needing to find the status dropdown at the bottom of the card.
+        const QUOTATION_STATUS_SEVERITY = {
+            draft: 'var(--border)', sent: 'var(--warning)', waiting_deposit: 'var(--warning)',
+            deposit_paid: 'var(--success)', completed: 'var(--success)',
+            cancelled: 'var(--danger)', expired: 'var(--danger)'
+        };
+
         function renderQuotations(quotations) {
             const box = document.getElementById('quotationHistory');
             if (!box) return;
@@ -268,53 +342,74 @@
                 }
                 
                 html += `
-                    <div class="border rounded-xl p-4 text-sm" id="quotation_${q.id}">
+                    <div class="quote-card" id="quotation_${q.id}" style="border-left:4px solid ${QUOTATION_STATUS_SEVERITY[q.status] || 'var(--border)'}">
                         <div class="flex flex-wrap justify-between items-start gap-2">
                             <div>
                                 <strong class="text-base">#${q.id} - ${escapeHTML(q.customer_name || 'Unknown')}</strong>
                                 ${q.phone ? `<span class="text-gray-400 text-xs">| ${escapeHTML(q.phone)}</span>` : ''}
                             </div>
-                            <span class="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">${q.quotation_no || 'Q-' + String(q.id).padStart(5,'0')}</span>
+                            <div class="flex flex-col items-end gap-1">
+                                <span class="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">${q.quotation_no || 'Q-' + String(q.id).padStart(5,'0')}</span>
+                                <span class="status-badge status-${q.status}">${QUOTATION_STATUS_LABELS[q.status] || q.status}</span>
+                            </div>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-xs">
-                            <div><span class="text-gray-400">Event:</span> ${formatDate(q.event_date)}</div>
-                            <div><span class="text-gray-400">Total:</span> <strong>RM ${q.total || 0}</strong></div>
-                            <div><span class="text-gray-400">Deposit:</span> RM ${q.deposit || 0}</div>
-                            <div><span class="text-gray-400">Balance:</span> RM ${q.balance || 0}</div>
+                        <div class="quote-stats grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-xs">
+                            <div><span class="text-gray-400">Event</span><br>${formatDate(q.event_date)}</div>
+                            <div><span class="text-gray-400">Total</span><br><strong class="quote-total">RM ${q.total || 0}</strong></div>
+                            <div><span class="text-gray-400">Deposit</span><br>RM ${q.deposit || 0}</div>
+                            <div><span class="text-gray-400">Balance</span><br>RM ${q.balance || 0}</div>
                         </div>
                         ${q.deposit_ack_at ? `<div class="mt-2 text-xs text-emerald-700">&#10003; Customer acknowledged non-refundable deposit on ${formatDate(q.deposit_ack_at)}</div>` : ''}
                         <div class="mt-2 text-xs">
                             <span class="text-gray-400">Services:</span>
                             <div class="mt-1">${servicesHtml || '-'}</div>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2 mt-2 text-xs">
-                            <label class="text-gray-400">Venue:</label>
-                            <input type="text" id="venue_${q.id}" value="${escapeHTML(q.venue || '')}" placeholder="e.g. Grand Ballroom, KL" class="border rounded px-2 py-1 text-xs w-48">
-                            <label class="text-gray-400">Time:</label>
-                            <input type="text" id="eventTime_${q.id}" value="${escapeHTML(q.event_time || '')}" placeholder="e.g. 2:00 PM - 6:00 PM" class="border rounded px-2 py-1 text-xs w-40">
-                            <button onclick="saveQuotationLogistics(${q.id})" class="bg-gray-200 text-dark px-3 py-0.5 rounded text-xs hover:bg-gray-300 transition">Save</button>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2 mt-3">
+                        ${(() => {
+                            const timeRange = parseEventTimeRange(q.event_time);
+                            return `
+                        <div class="logistics-block mt-3 pt-3 border-t border-gray-100">
+                            <div class="flex flex-wrap items-end gap-4">
+                                <div>
+                                    <label class="logistics-label">Venue</label>
+                                    <select id="venue_${q.id}" class="logistics-input min-w-[9rem]">
+                                        ${renderVenueOptions(q.venue || '')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="logistics-label">Time</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <select id="eventTimeFrom_${q.id}" class="logistics-input">${renderTimeSlotOptions(timeRange.from)}</select>
+                                        <span class="text-gray-400 text-xs">To</span>
+                                        <select id="eventTimeTo_${q.id}" class="logistics-input">${renderTimeSlotOptions(timeRange.to)}</select>
+                                    </div>
+                                </div>
+                                <button onclick="saveQuotationLogistics(${q.id})" class="bg-dark text-white px-4 py-1.5 rounded-full text-xs font-medium hover:bg-gold hover:text-dark transition">Save</button>
+                            </div>
+                            ${timeRange.legacy ? `<p class="text-[11px] text-gray-400 mt-1.5">Current time on file: "${escapeHTML(q.event_time)}" - pick From/To above and save to replace it.</p>` : ''}
+                        </div>`;
+                        })()}
+                        <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
                             <label class="text-xs font-medium">Status:</label>
                             <select id="status_${q.id}" class="border rounded text-xs px-2 py-1">
                                 ${optionsHtml}
                             </select>
-                            <button onclick="updateQuotationStatus(${q.id})" class="bg-gold text-dark px-3 py-0.5 rounded text-xs font-medium hover:bg-yellow-600 transition">
-                                Update
-                            </button>
-                            <button onclick="viewQuotationHistory(${q.id})" class="bg-gray-200 text-dark px-3 py-0.5 rounded text-xs hover:bg-gray-300 transition">History</button>
-                            <button onclick="editQuotation(${q.id})" class="bg-blue-100 text-blue-700 px-3 py-0.5 rounded text-xs hover:bg-blue-200 transition">Edit</button>
+                            <button onclick="updateQuotationStatus(${q.id})" class="btn btn-primary">Update</button>
                             ${adminRole === 'owner' ? `
-                            <button onclick="sendQuotationToCustomer(${q.id})" class="bg-green-100 text-green-700 px-3 py-0.5 rounded text-xs hover:bg-green-200 transition" title="Generates the PDF, emails it if the customer has an email on file, opens WhatsApp with a link ready to send, and marks this quotation as sent.">Send Quotation</button>
+                            <button onclick="sendQuotationToCustomer(${q.id})" class="btn btn-success" title="Generates the PDF, emails it if the customer has an email on file, opens WhatsApp with a link ready to send, and marks this quotation as sent.">Send Quotation</button>
                             ` : ''}
-                            <button onclick="copyBookingLink('${q.booking_token || ''}')" class="bg-purple-100 text-purple-700 px-3 py-0.5 rounded text-xs hover:bg-purple-200 transition">Copy Booking Link</button>
-                            <button onclick="regenerateBookingToken(${q.id})" title="${q.booking_token_expires_at ? 'Expires ' + formatDateTime(q.booking_token_expires_at) : ''}" class="bg-purple-50 text-purple-700 px-3 py-0.5 rounded text-xs border border-purple-200 hover:bg-purple-100 transition">Regenerate Link</button>
-                            <button onclick="toggleTaskChecklist(${q.id})" class="bg-emerald-100 text-emerald-700 px-3 py-0.5 rounded text-xs hover:bg-emerald-200 transition">Tasks</button>
-                            <button onclick="togglePropsPanel(${q.id})" class="bg-amber-100 text-amber-700 px-3 py-0.5 rounded text-xs hover:bg-amber-200 transition">Props</button>
+                            <button onclick="deleteQuotation(${q.id})" class="btn btn-danger ml-auto">Delete</button>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 mt-2">
+                            <span class="logistics-label" style="margin:0">Actions</span>
+                            <button onclick="viewQuotationHistory(${q.id})" class="btn btn-ghost">History</button>
+                            <button onclick="editQuotation(${q.id})" class="btn btn-ghost">Edit</button>
+                            <button onclick="copyBookingLink('${q.booking_token || ''}')" class="btn btn-ghost">Copy Booking Link</button>
+                            <button onclick="regenerateBookingToken(${q.id})" title="${q.booking_token_expires_at ? 'Expires ' + formatDateTime(q.booking_token_expires_at) : ''}" class="btn btn-ghost">Regenerate Link</button>
+                            <button onclick="toggleTaskChecklist(${q.id})" class="btn btn-ghost">Tasks</button>
+                            <button onclick="togglePropsPanel(${q.id})" class="btn btn-ghost">Props</button>
                             ${(q.status === 'deposit_paid' || q.status === 'completed') ? `
-                            <button onclick="buildAndDownloadRunSheetPDF(${q.id})" class="bg-indigo-100 text-indigo-700 px-3 py-0.5 rounded text-xs hover:bg-indigo-200 transition">Run Sheet PDF</button>
+                            <button onclick="buildAndDownloadRunSheetPDF(${q.id})" class="btn btn-ghost">Run Sheet PDF</button>
                             ` : ''}
-                            <button onclick="deleteQuotation(${q.id})" class="bg-red-600 text-white px-3 py-0.5 rounded text-xs hover:bg-red-700 transition">Delete</button>
                         </div>
                         <div id="taskPanel_${q.id}" class="hidden mt-3 pt-3 border-t border-gray-100">
                             ${taskTemplatesCache.length > 0 ? `
@@ -610,7 +705,9 @@
         async function saveQuotationLogistics(id) {
             try {
                 const venue = document.getElementById(`venue_${id}`)?.value || '';
-                const eventTime = document.getElementById(`eventTime_${id}`)?.value || '';
+                const timeFrom = document.getElementById(`eventTimeFrom_${id}`)?.value || '';
+                const timeTo = document.getElementById(`eventTimeTo_${id}`)?.value || '';
+                const eventTime = (timeFrom && timeTo) ? `${timeFrom} - ${timeTo}` : '';
 
                 const res = await fetch(`${CONFIG.API_URL}/api/quotation/${id}/logistics`, {
                     method: 'PATCH',
