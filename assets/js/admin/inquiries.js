@@ -339,22 +339,92 @@
                 const deleted = result.data || [];
 
                 document.getElementById('modalTitle').textContent = 'Recently Deleted Inquiries';
-                document.getElementById('modalBody').innerHTML = deleted.length === 0
-                    ? '<p class="text-sm text-gray-500">Nothing here.</p>'
-                    : `<div class="space-y-2">${deleted.map(inq => `
-                        <div class="border rounded-xl p-3 text-sm flex justify-between items-center gap-3">
-                            <div>
-                                <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong>
-                                <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}</div>
-                                <div class="text-xs text-gray-400 mt-0.5">Deleted ${formatDateTime(inq.deleted_at)}</div>
+                document.getElementById('modalBody').innerHTML = `
+                    <p class="text-xs text-gray-400 mb-3">Automatically and permanently erased 30 days after deletion. Restore anything you still need before then.</p>
+                    ${deleted.length === 0 ? '<p class="text-sm text-gray-500">Nothing here.</p>' : `
+                        <button onclick="purgeAllDeletedInquiries()" class="owner-only mb-3 text-xs text-red-500 border border-red-200 px-3 py-1.5 rounded-full font-medium hover:bg-red-50 transition">
+                            Delete All Permanently
+                        </button>
+                        <div class="space-y-2">${deleted.map(inq => `
+                            <div class="border rounded-xl p-3 text-sm flex justify-between items-center gap-3">
+                                <div>
+                                    <strong>#${inq.id} - ${escapeHTML(inq.customer_name)}</strong>
+                                    <div class="text-xs text-gray-500 mt-0.5">${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}</div>
+                                    <div class="text-xs text-gray-400 mt-0.5">Deleted ${formatDateTime(inq.deleted_at)}</div>
+                                </div>
+                                <div class="flex-none flex items-center gap-2">
+                                    <button onclick="restoreInquiry(${inq.id})" class="border-2 border-dark text-dark px-3 py-1.5 rounded-full text-xs font-medium hover:bg-dark hover:text-white transition">Restore</button>
+                                    <button onclick="permanentlyDeleteInquiry(${inq.id})" class="owner-only text-xs text-red-400 hover:text-red-600 transition" title="Permanently delete - cannot be undone">Delete Permanently</button>
+                                </div>
                             </div>
-                            <button onclick="restoreInquiry(${inq.id})" class="flex-none border-2 border-dark text-dark px-3 py-1.5 rounded-full text-xs font-medium hover:bg-dark hover:text-white transition">Restore</button>
-                        </div>
-                    `).join('')}</div>`;
+                        `).join('')}</div>
+                    `}
+                `;
+                applyRoleVisibility();
 
                 document.getElementById('inquiryModal').classList.add('active');
             } catch (err) {
                 console.error('Load deleted inquiries error:', err);
+                alert('Error: ' + err.message);
+            }
+        }
+
+
+        // Owner-only, enforced server-side too (see ownerOnly middleware
+        // on the backend route) - this button is just hidden from staff
+        // by applyRoleVisibility(), not the real security boundary.
+        async function permanentlyDeleteInquiry(id) {
+            const inq = (allInquiries.find(i => i.id === id) || {}).customer_name;
+            if (!confirm(`Permanently delete the inquiry from "${inq || '#' + id}"?\n\nThis cannot be undone - it will not be recoverable from Recently Deleted afterwards.`)) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/${id}/permanent`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 403) {
+                    alert('Only the account owner can permanently delete inquiries.');
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to permanently delete');
+                }
+
+                await showRecentlyDeleted();
+            } catch (err) {
+                console.error('Permanent delete error:', err);
+                alert('Error: ' + err.message);
+            }
+        }
+
+
+        async function purgeAllDeletedInquiries() {
+            if (!confirm('Permanently delete EVERYTHING in Recently Deleted?\n\nThis cannot be undone - none of these inquiries will be recoverable afterwards.')) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/inquiry/deleted/purge-all`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${adminToken}` }
+                });
+
+                if (res.status === 403) {
+                    alert('Only the account owner can permanently delete inquiries.');
+                    return;
+                }
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to purge deleted inquiries');
+                }
+
+                const result = await res.json();
+                await showRecentlyDeleted();
+                alert(result.message);
+            } catch (err) {
+                console.error('Purge all error:', err);
                 alert('Error: ' + err.message);
             }
         }
