@@ -195,6 +195,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('inquiryForm').classList.add('hidden');
                     document.getElementById('successMessage').classList.remove('hidden');
                     window.__lastInquiryWithdrawToken = result.data?.withdraw_token || null;
+
+                    const recapEl = document.getElementById('inquiryRecap');
+                    if (recapEl && result.data?.id) {
+                        const eventDate = result.data.event_date
+                            ? new Date(result.data.event_date).toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+                            : '';
+                        recapEl.textContent = `Reference #${result.data.id} — ${result.data.event_type}${eventDate ? ', ' + eventDate : ''}. Keep this in case you need to follow up.`;
+                        recapEl.classList.remove('hidden');
+                    }
+
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     inquiryIdempotencyKey = generateIdempotencyKey();
                 } else {

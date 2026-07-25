@@ -69,24 +69,33 @@ document.addEventListener('DOMContentLoaded', function () {
             const isTentative = tentativeDates.includes(str);
             const isSelected = selectedDate === str;
 
-            let classes = 'rounded-full py-1.5 cursor-pointer transition select-none';
+            let classes = 'rounded-full py-1.5 w-full transition select-none appearance-none border-0 outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1';
+            let statusLabel = 'available';
             if (isBeforeMin || isAfterMax) {
-                classes += ' text-gray-300 cursor-not-allowed';
+                classes += ' bg-transparent text-gray-300 cursor-not-allowed';
+                statusLabel = 'not selectable';
             } else if (isUnavailable) {
                 classes += ' bg-red-200 text-red-700 cursor-not-allowed';
+                statusLabel = 'unavailable';
             } else if (isSelected) {
-                classes += ' bg-gold text-dark font-semibold';
+                // Deliberately a different hue (forest, not gold/amber) from
+                // Tentative Hold below - the two used to render as visually
+                // interchangeable solid-fill circles.
+                classes += ' bg-dark text-white font-semibold cursor-pointer';
+                statusLabel = 'selected';
             } else if (isTentative) {
                 // Feature 3 - held by another inquiry, not yet confirmed.
                 // Still clickable - a tentative hold isn't a guarantee, so
                 // this date should stay open to other inquiries too.
-                classes += ' bg-amber-200 text-amber-700';
+                classes += ' bg-amber-200 text-amber-700 cursor-pointer';
+                statusLabel = 'tentative hold by another inquiry, still selectable';
             } else {
-                classes += ' bg-white border border-gray-200 text-dark hover:border-gold';
+                classes += ' bg-white border border-gray-200 text-dark hover:border-gold cursor-pointer';
             }
 
             const clickable = !isBeforeMin && !isAfterMax && !isUnavailable;
-            html += `<div class="${classes}" ${clickable ? `onclick="window.__selectAvailabilityDate('${str}')"` : ''}>${d}</div>`;
+            const label = `${d} ${monthNames[viewMonth - 1]} ${viewYear}, ${statusLabel}`;
+            html += `<button type="button" class="${classes}" aria-label="${label}" aria-pressed="${isSelected}" ${clickable ? `onclick="window.__selectAvailabilityDate('${str}')"` : 'disabled aria-disabled="true"'}>${isSelected ? '&#10003; ' : ''}${d}</button>`;
         }
 
         grid.innerHTML = html;
