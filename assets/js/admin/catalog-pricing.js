@@ -54,6 +54,7 @@
                 renderFaqAdminList();
                 renderMessageTemplatesList();
                 renderPeakPeriodsList();
+                renderPeakSuggestions();
                 renderAdminCalendar();
                 renderCalendarFeedLink();
 

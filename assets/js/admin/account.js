@@ -74,8 +74,10 @@
                         <strong>${escapeHTML(a.username)}</strong>
                         <span class="text-xs text-gray-400 ml-2">${a.role}</span>
                         ${!a.active ? '<span class="text-xs text-red-500 ml-2">(disabled)</span>' : ''}
+                        <div class="text-xs text-gray-500 mt-0.5">${a.email ? escapeHTML(a.email) : 'No email set - not included in calendar invites'}</div>
                     </div>
                     <div class="flex gap-2 flex-wrap">
+                        <button onclick="editStaffEmail(${a.id}, '${escapeHTML(a.email || '').replace(/'/g, "&#39;")}')" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">${a.email ? 'Edit' : 'Add'} Email</button>
                         <button onclick="toggleStaffRole(${a.id}, '${a.role === 'owner' ? 'staff' : 'owner'}')" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">Make ${a.role === 'owner' ? 'Staff' : 'Owner'}</button>
                         <button onclick="toggleStaffActive(${a.id}, ${!a.active})" class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200 transition">${a.active ? 'Disable' : 'Enable'}</button>
                         <button onclick="resetStaffPassword(${a.id})" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 transition">Reset Password</button>
@@ -89,6 +91,7 @@
         async function createStaffAccount() {
             try {
                 const username = document.getElementById('newStaffUsername').value.trim();
+                const email = document.getElementById('newStaffEmail').value.trim();
                 const password = document.getElementById('newStaffPassword').value;
                 const role = document.getElementById('newStaffRole').value;
 
@@ -100,7 +103,7 @@
                 const res = await fetch(`${CONFIG.API_URL}/api/admin/users`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                    body: JSON.stringify({ username, password, role })
+                    body: JSON.stringify({ username, password, role, email })
                 });
 
                 if (!res.ok) {
@@ -109,9 +112,31 @@
                 }
 
                 document.getElementById('newStaffUsername').value = '';
+                document.getElementById('newStaffEmail').value = '';
                 document.getElementById('newStaffPassword').value = '';
                 await loadStaffAccounts();
 
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+
+        async function editStaffEmail(id, currentEmail) {
+            const newEmail = prompt('Email for calendar invites (blank to remove):', currentEmail || '');
+            if (newEmail === null) return;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/admin/users/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ email: newEmail.trim() })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to update email');
+                }
+                await loadStaffAccounts();
             } catch (err) {
                 alert('Error: ' + err.message);
             }

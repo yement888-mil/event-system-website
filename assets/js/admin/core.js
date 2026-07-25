@@ -293,6 +293,7 @@
             if (tab === 'calendar') {
                 loadAdminCalendar();
                 loadUpcomingReminders();
+                populatePeakSuggestYearSelect();
             }
             if (tab === 'today') {
                 loadUpcomingReminders();

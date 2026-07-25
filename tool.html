@@ -547,58 +547,82 @@
 
             <!-- TAB 6: CALENDAR -->
             <div id="tabCalendarContent" class="tab-content">
-                <section class="bg-white rounded-2xl p-6 shadow-sm mb-4">
-                    <h2 class="text-lg font-semibold mb-1">Upcoming Reminders</h2>
-                    <p class="text-xs text-gray-400 mb-4">Confirmed events (deposit paid) in the next 7 days. Click to send the customer a WhatsApp reminder.</p>
-                    <div id="upcomingRemindersList" class="upcoming-reminders-target space-y-2">
-                        <p class="text-sm text-gray-400">Loading...</p>
+                <!-- Calendar redesign (BAU: eyes-hurt pass, Calendar edition) - was
+                     three stacked full-width bg-white sections with a tiny raw
+                     grid-cols-7 mini-calendar; now the same panel/rail layout
+                     already proven on the Today tab (.dash-board), so this tab
+                     finally matches the rest of the tool instead of looking like
+                     an unstyled leftover. -->
+                <div class="dash-board">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <button onclick="changeAdminCalMonth(-1)" class="cal-nav-btn" aria-label="Previous month">&lsaquo;</button>
+                            <h2 id="adminCalMonthLabel"></h2>
+                            <button onclick="changeAdminCalMonth(1)" class="cal-nav-btn" aria-label="Next month">&rsaquo;</button>
+                        </div>
+                        <div class="panel-body">
+                            <div id="adminCalGrid" class="cal-grid"></div>
+                            <div class="cal-legend">
+                                <span class="legend-item" title="Deposit paid or completed"><span class="dot dot-confirmed"></span>Confirmed</span>
+                                <span class="legend-item" title="Requested, not yet paid"><span class="dot dot-hold"></span>Tentative Hold</span>
+                                <span class="legend-item" title="Draft, or hold expired"><span class="dot dot-draft"></span>Draft / Expired</span>
+                                <span class="legend-item"><span class="dot dot-cancelled"></span>Cancelled</span>
+                                <span class="legend-item"><span class="dot dot-peak"></span>Peak Period</span>
+                            </div>
+                        </div>
                     </div>
-                </section>
 
-                <section class="bg-white rounded-2xl p-6 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <button onclick="changeAdminCalMonth(-1)" class="text-dark px-3 py-1 hover:text-gold transition text-lg">â€¹</button>
-                        <h2 id="adminCalMonthLabel" class="text-lg font-semibold"></h2>
-                        <button onclick="changeAdminCalMonth(1)" class="text-dark px-3 py-1 hover:text-gold transition text-lg">â€º</button>
-                    </div>
-                    <div id="adminCalGrid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
-                    <div class="flex flex-wrap items-center gap-4 mt-4 text-xs text-gray-500">
-                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-emerald-200"></span> Confirmed (Deposit Paid / Completed)</span>
-                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-amber-200"></span> Tentative Hold (requested, not yet paid)</span>
-                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-gray-200"></span> Draft / Hold Expired</span>
-                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-red-200"></span> Cancelled</span>
-                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full border-2 border-purple-400"></span> Peak Period</span>
-                    </div>
-                </section>
+                    <div class="rail">
+                        <div class="panel">
+                            <div class="panel-head"><h2>Upcoming Reminders</h2></div>
+                            <div class="panel-body">
+                                <p class="text-xs text-gray-400 mb-2">Confirmed events in the next 7 days. Click to send a WhatsApp reminder.</p>
+                                <div id="upcomingRemindersList" class="upcoming-reminders-target mini-list">
+                                    <p class="text-sm text-gray-400">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
 
-                <section class="bg-white rounded-2xl p-6 shadow-sm mt-4">
-                    <h2 class="text-lg font-semibold mb-1">Peak Periods</h2>
-                    <p class="text-xs text-gray-400 mb-4">
-                        Mark CNY, Raya, Deepavali, Christmas, or any other busy stretch so it's highlighted on the calendar above.
-                        These shift every year (several are lunar-calendar holidays), so there's no automatic list - enter the dates yourself once a year.
-                    </p>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-                        <input type="text" id="peak_name" placeholder="Name (e.g. Chinese New Year)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm md:col-span-2">
-                        <input type="date" id="peak_start" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
-                        <input type="date" id="peak_end" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
-                    </div>
-                    <div class="flex items-center gap-3 mb-4">
-                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="peak_active" checked> Active</label>
-                        <button onclick="savePeakPeriod()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="peakSaveLabel">Add Peak Period</span></button>
-                        <button id="peakCancelBtn" onclick="resetPeakPeriodForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
-                    </div>
-                    <div id="peakPeriodsList" class="space-y-2"></div>
-                </section>
+                        <div class="panel">
+                            <div class="panel-head"><h2>Peak Periods</h2></div>
+                            <div class="panel-body">
+                                <p class="text-xs text-gray-400 mb-3">
+                                    Mark CNY, Raya, Deepavali, Christmas, or any other busy stretch so it's highlighted on the calendar. Fixed-date holidays can be suggested below; lunar ones (CNY, Raya, Deepavali) still need the actual date looked up each year.
+                                </p>
+                                <div class="flex flex-wrap items-center gap-2 mb-3">
+                                    <select id="peak_suggest_year" onchange="renderPeakSuggestions()" class="border border-gray-200 rounded-xl px-2 py-1.5 text-xs"></select>
+                                    <button onclick="suggestPeakHolidays()" class="border border-gray-300 text-gray-600 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-gray-100 transition">Suggest Holidays</button>
+                                </div>
+                                <div id="peakSuggestionsList" class="space-y-2 mb-3"></div>
+                                <div class="grid grid-cols-1 gap-3 mb-3">
+                                    <input type="text" id="peak_name" placeholder="Name (e.g. Chinese New Year)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <input type="date" id="peak_start" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                                        <input type="date" id="peak_end" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                                    </div>
+                                </div>
+                                <div class="flex items-center flex-wrap gap-3 mb-4">
+                                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" id="peak_active" checked> Active</label>
+                                    <button onclick="savePeakPeriod()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition"><span id="peakSaveLabel">Add Peak Period</span></button>
+                                    <button id="peakCancelBtn" onclick="resetPeakPeriodForm()" class="hidden border border-gray-300 text-gray-500 px-4 py-2 rounded-full text-sm hover:bg-gray-100 transition">Cancel</button>
+                                </div>
+                                <div id="peakPeriodsList" class="space-y-2"></div>
+                            </div>
+                        </div>
 
-                <section class="bg-white rounded-2xl p-6 shadow-sm mt-4">
-                    <h2 class="text-lg font-semibold mb-1">Calendar Subscription (iCal)</h2>
-                    <p class="text-xs text-gray-400 mb-4">
-                        Read-only feed of confirmed (deposit-paid/completed) events - date and event type only, no customer phone, pricing, or notes.
-                        Subscribe to this link in Google Calendar/Outlook/your phone's calendar app to see bookings alongside everything else.
-                        This link is private to you - don't share it, it has no login of its own (that's how calendar subscriptions work).
-                    </p>
-                    <div id="calendarFeedLink" class="text-sm"></div>
-                </section>
+                        <div class="panel">
+                            <div class="panel-head"><h2>Calendar Subscription (iCal)</h2></div>
+                            <div class="panel-body">
+                                <p class="text-xs text-gray-400 mb-3">
+                                    Read-only feed of confirmed (deposit-paid/completed) events - date and event type only, no customer phone, pricing, or notes.
+                                    Subscribe to this link in Google Calendar/Outlook/your phone's calendar app to see bookings alongside everything else.
+                                    This link is private to you - don't share it, it has no login of its own (that's how calendar subscriptions work).
+                                </p>
+                                <div id="calendarFeedLink" class="text-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
 
@@ -759,8 +783,9 @@
                     <h2 class="text-lg font-semibold mb-1">Staff Accounts</h2>
                     <p class="text-xs text-gray-400 mb-4">Only visible to the account owner. Staff can use the tool but cannot manage other accounts.</p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
                         <input type="text" id="newStaffUsername" placeholder="Username" class="border border-gray-200 rounded-xl px-3 py-2 text-sm" autocomplete="off">
+                        <input type="email" id="newStaffEmail" placeholder="Email (for calendar invites, optional)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm" autocomplete="off">
                         <input type="password" id="newStaffPassword" placeholder="Password (6+ characters)" class="border border-gray-200 rounded-xl px-3 py-2 text-sm" autocomplete="new-password">
                         <select id="newStaffRole" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
                             <option value="staff">Staff</option>
@@ -768,6 +793,7 @@
                         </select>
                         <button onclick="createStaffAccount()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Add Account</button>
                     </div>
+                    <p class="text-xs text-gray-400 mb-4">Any active account with an email set here automatically receives booking calendar invites - no separate config needed.</p>
 
                     <div id="staffAccountsList" class="space-y-2 mt-4"></div>
                 </section>

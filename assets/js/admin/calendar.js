@@ -68,11 +68,10 @@
         }
 
         function adminCalDayColor(dayEvents) {
-            if (dayEvents.some(e => e.status === 'deposit_paid' || e.status === 'completed')) return 'bg-emerald-200';
-            if (dayEvents.some(e => e.status === 'cancelled') && dayEvents.every(e => e.status === 'cancelled')) return 'bg-red-200';
-            if (dayEvents.some(hasActiveHold)) return 'bg-amber-200';
-            if (dayEvents.some(e => e.status === 'sent' || e.status === 'waiting_deposit')) return 'bg-amber-200';
-            if (dayEvents.length > 0) return 'bg-gray-200';
+            if (dayEvents.some(e => e.status === 'deposit_paid' || e.status === 'completed')) return 'cal-day-confirmed';
+            if (dayEvents.some(e => e.status === 'cancelled') && dayEvents.every(e => e.status === 'cancelled')) return 'cal-day-cancelled';
+            if (dayEvents.some(hasActiveHold)) return 'cal-day-hold';
+            if (dayEvents.some(e => e.status === 'sent' || e.status === 'waiting_deposit')) return 'cal-day-hold';
             return '';
         }
 
@@ -95,24 +94,25 @@
 
             const firstDay = new Date(adminCalYear, adminCalMonth - 1, 1).getDay();
             const daysInMonth = new Date(adminCalYear, adminCalMonth, 0).getDate();
+            const todayStr = new Date().toISOString().split('T')[0];
 
             let html = '';
             ['S','M','T','W','T','F','S'].forEach(d => {
-                html += `<div class="text-gray-400 font-medium py-1">${d}</div>`;
+                html += `<div class="cal-weekday">${d}</div>`;
             });
             for (let i = 0; i < firstDay; i++) html += `<div></div>`;
 
             for (let d = 1; d <= daysInMonth; d++) {
                 const str = `${adminCalYear}-${String(adminCalMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const dayEvents = eventsByDay[str] || [];
-                const color = adminCalDayColor(dayEvents);
+                const colorClass = adminCalDayColor(dayEvents) || (dayEvents.length > 0 ? 'cal-day-draft' : '');
                 const clickable = dayEvents.length > 0;
                 const peakName = getPeakPeriodForDate(str);
+                const classes = ['cal-day', colorClass, clickable ? 'cal-clickable' : '', peakName ? 'cal-peak' : '', str === todayStr ? 'cal-today' : ''].filter(Boolean).join(' ');
                 html += `
-                    <div class="rounded-lg py-1.5 ${color} ${peakName ? 'border-2 border-purple-400' : ''} ${clickable ? 'cursor-pointer hover:ring-2 hover:ring-gold' : ''}" ${clickable ? `onclick="showAdminCalDay('${str}')"` : ''} ${peakName ? `title="${escapeHTML(peakName)}"` : ''}>
-                        <div>${d}</div>
-                        ${dayEvents.length > 0 ? `<div class="text-[10px] text-gray-600">${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}</div>` : ''}
-                        ${peakName ? `<div class="text-[9px] text-purple-600 truncate px-0.5">${escapeHTML(peakName)}</div>` : ''}
+                    <div class="${classes}" ${clickable ? `onclick="showAdminCalDay('${str}')"` : ''} ${peakName ? `title="${escapeHTML(peakName)}"` : ''}>
+                        <div class="d">${d}</div>
+                        ${dayEvents.length > 0 ? `<div class="n">${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}</div>` : ''}
                     </div>
                 `;
             }
@@ -199,6 +199,82 @@
             } catch (err) {
                 console.error('Load upcoming reminders error:', err);
                 targets.forEach(el => el.innerHTML = '<p class="text-sm text-red-500">Failed to load reminders.</p>');
+            }
+        }
+
+
+        // Malaysia federal public holidays that fall on the same date every
+        // year - safe to auto-suggest. CNY, Hari Raya (Aidilfitri/Aidiladha),
+        // Deepavali, Awal Muharram, Prophet's Birthday etc are lunar/lunisolar
+        // and shift every year, so they're deliberately NOT in this list -
+        // still entered manually, same as before.
+        const MY_FIXED_HOLIDAYS = [
+            { name: "New Year's Day", month: 1, day: 1 },
+            { name: 'Labour Day', month: 5, day: 1 },
+            { name: 'Merdeka Day', month: 8, day: 31 },
+            { name: 'Malaysia Day', month: 9, day: 16 },
+            { name: 'Christmas Day', month: 12, day: 25 }
+        ];
+
+        function populatePeakSuggestYearSelect() {
+            const sel = document.getElementById('peak_suggest_year');
+            if (!sel || sel.options.length > 0) return;
+            const base = adminCalYear || new Date().getFullYear();
+            [base, base + 1].forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = String(y);
+                opt.textContent = String(y);
+                sel.appendChild(opt);
+            });
+        }
+
+        function suggestPeakHolidays() {
+            renderPeakSuggestions();
+        }
+
+        function renderPeakSuggestions() {
+            const el = document.getElementById('peakSuggestionsList');
+            const sel = document.getElementById('peak_suggest_year');
+            if (!el || !sel || !sel.value) return;
+            const year = Number(sel.value);
+
+            const existing = new Set(peakPeriodsCache.map(p => `${p.name}|${String(p.start_date).split('T')[0]}`));
+
+            el.innerHTML = MY_FIXED_HOLIDAYS.map((h, i) => {
+                const dateStr = `${year}-${String(h.month).padStart(2, '0')}-${String(h.day).padStart(2, '0')}`;
+                const already = existing.has(`${h.name}|${dateStr}`);
+                return `
+                    <div class="peak-suggestion">
+                        <span>${escapeHTML(h.name)} - ${formatDate(dateStr)}</span>
+                        ${already
+                            ? '<span class="text-gray-400">Added</span>'
+                            : `<button onclick="addPeakSuggestion(${i})" class="text-gold text-xs font-medium hover:underline">+ Add</button>`}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function addPeakSuggestion(index) {
+            const sel = document.getElementById('peak_suggest_year');
+            const h = MY_FIXED_HOLIDAYS[index];
+            if (!h || !sel || !sel.value) return;
+            const year = Number(sel.value);
+            const dateStr = `${year}-${String(h.month).padStart(2, '0')}-${String(h.day).padStart(2, '0')}`;
+
+            try {
+                const res = await fetch(`${CONFIG.API_URL}/api/peak-periods`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ name: h.name, start_date: dateStr, end_date: dateStr, active: true })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Failed to add peak period');
+                }
+                await loadCatalog();
+                renderPeakSuggestions();
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
 
