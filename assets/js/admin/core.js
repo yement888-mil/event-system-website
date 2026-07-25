@@ -178,7 +178,12 @@
 
         let editingFaqItemId = null;
 
-        let messageTemplatesCache = [];
+        // Only remaining admin-editable message value (Sprint 10 follow-up
+        // - see buildQuotationMessage()/buildEventReminderMessage() below
+        // for why the rest got hardcoded instead of staying admin-editable
+        // text). Still backed by the message_templates table/API - just
+        // one row ('payment_details') instead of two full templates now.
+        let paymentDetailsCache = '';
 
         let peakPeriodsCache = [];
 
@@ -206,6 +211,59 @@
         function escapeHTML(str) {
             if (!str) return '';
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+
+        // Sprint 10 follow-up - replaces the old admin-editable
+        // {{token}} template system (routes/messageTemplates.js's
+        // 'quotation'/'event_reminder' rows, and three rounds of safety
+        // UI on top of it: insert buttons, live preview, a fully
+        // segmented chip editor). Direct business feedback across all of
+        // that was still "too dangerous, too ugly, non-technical person
+        // will typo it" - so the wording itself is just code now, and
+        // can't be broken by anyone editing it in the tool. Only
+        // paymentDetailsCache (see core.js's cache declarations) stays
+        // admin-editable, since it's genuine business data (bank account)
+        // that changes occasionally, not message wording.
+        function buildQuotationMessage(vars) {
+            return `Hi ${vars.customer_name},
+
+Thank you for your inquiry.
+
+QUOTATION
+--------------------
+Event: ${vars.event_type}
+Date: ${vars.event_date}
+Guests: ${vars.guest_count} pax
+
+Services
+${vars.items}
+
+--------------------
+Total: RM ${vars.total}
+Deposit (30%): RM ${vars.deposit}
+Balance: RM ${vars.balance}
+
+Valid until: ${vars.valid_until}
+
+Payment Details
+${paymentDetailsCache || 'Maybank | 5xxxxx | Dekor By Ana'}
+
+Thank you.`;
+        }
+
+
+        function buildEventReminderMessage(vars) {
+            return `Hi ${vars.customer_name},
+
+Just a friendly reminder that your event (${vars.event_type}) is coming up soon on ${vars.event_date}.
+
+Guests: ${vars.guest_count} pax
+Quotation: ${vars.quotation_no}
+
+We're looking forward to it! Let us know if there's anything you need before the day.
+
+Thank you.`;
         }
 
 

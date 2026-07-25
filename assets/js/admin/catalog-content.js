@@ -296,114 +296,42 @@
         }
 
 
-        // ---- WhatsApp Message Templates ----
-        // Kept in sync by eye with routes/messageTemplates.js's
-        // KNOWN_TEMPLATE_TOKENS - this is the client-side half (insert
-        // buttons + live preview so a typo is visible before Save, not
-        // just at send time); the server route is the actual backstop.
-        const MESSAGE_TEMPLATE_TOKENS = {
-            quotation: ['customer_name', 'event_type', 'event_date', 'guest_count', 'items', 'total', 'deposit', 'balance', 'valid_until'],
-            event_reminder: ['customer_name', 'event_type', 'event_date', 'guest_count', 'quotation_no']
-        };
-        const MESSAGE_TEMPLATE_SAMPLE_VALUES = {
-            customer_name: 'Sarah Tan',
-            event_type: 'Wedding',
-            event_date: '15 Aug 2026',
-            guest_count: '150',
-            quotation_no: 'Q-2026-042',
-            items: '- Balloon Arch (RM 500)\n- Backdrop Decoration (RM 800)',
-            total: '1,300',
-            deposit: '390',
-            balance: '910',
-            valid_until: '22 Aug 2026'
-        };
-
-        function renderMessageTemplatesList() {
-            const el = document.getElementById('messageTemplatesList');
+        // ---- Payment Details ----
+        // Sprint 10 (follow-up): the old admin-editable WhatsApp message
+        // templates (with three rounds of safety UI - insert buttons,
+        // live preview, a fully segmented chip editor) got replaced
+        // outright by hardcoded message builders (buildQuotationMessage()/
+        // buildEventReminderMessage() in core.js) - direct, repeated
+        // business feedback was that free-text editing was still too much
+        // risk/too ugly for a non-technical owner. This is the one value
+        // that stays editable: genuine business data (bank account), not
+        // message wording, so there's no typo-breaks-a-token risk to
+        // design around - a plain textarea is enough.
+        function renderPaymentDetailsField() {
+            const el = document.getElementById('paymentDetailsField');
             if (!el) return;
-            if (messageTemplatesCache.length === 0) {
-                el.innerHTML = '<p class="text-sm text-gray-400">No templates found.</p>';
-                return;
-            }
-            el.innerHTML = messageTemplatesCache.map(t => {
-                const tokens = MESSAGE_TEMPLATE_TOKENS[t.key] || [];
-                return `
-                <div class="border rounded-xl p-3">
-                    <label class="block text-sm font-medium mb-1">${escapeHTML(t.label)}</label>
-                    <p class="text-xs text-gray-400 mb-2">Click a token to insert it - never type <code>{{ }}</code> by hand.</p>
-                    <div class="flex flex-wrap gap-1 mb-2">
-                        ${tokens.map(tok => `<button type="button" onclick="insertTemplateToken('${t.key}', '${tok}')" class="text-xs bg-gray-100 px-2 py-1 rounded font-mono hover:bg-gray-200 transition">{{${tok}}}</button>`).join('')}
-                    </div>
-                    <textarea id="tpl_${t.key}" rows="8" oninput="previewMessageTemplate('${t.key}')" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono">${escapeHTML(t.body)}</textarea>
-                    <p class="text-xs text-gray-400 mt-2 mb-1">Preview with sample data - anything highlighted red won't be filled in for a real customer:</p>
-                    <div id="tplPreview_${t.key}" class="border border-gray-100 bg-gray-50 rounded-xl p-3 text-xs whitespace-pre-wrap font-mono"></div>
-                    <button onclick="saveMessageTemplate('${t.key}')" class="mt-2 bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">
-                        Save Template
-                    </button>
-                </div>
-            `;
-            }).join('');
-
-            messageTemplatesCache.forEach(t => previewMessageTemplate(t.key));
+            el.value = paymentDetailsCache;
         }
 
 
-        function insertTemplateToken(key, token) {
-            const textarea = document.getElementById(`tpl_${key}`);
-            if (!textarea) return;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const insertText = `{{${token}}}`;
-            textarea.value = textarea.value.slice(0, start) + insertText + textarea.value.slice(end);
-            textarea.focus();
-            textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
-            previewMessageTemplate(key);
-        }
-
-
-        // Mirrors renderTemplate()'s real substitution shape but with a
-        // loose \{\{([^}]*)\}\} match (not the strict \w+ one) so anything
-        // that doesn't cleanly resolve - a misspelled token, stray spaces,
-        // whatever - stays visibly red instead of silently vanishing like
-        // it would in the real send (renderTemplate() blanks unknown keys).
-        function previewMessageTemplate(key) {
-            const textarea = document.getElementById(`tpl_${key}`);
-            const previewEl = document.getElementById(`tplPreview_${key}`);
-            if (!textarea || !previewEl) return;
-            const validTokens = MESSAGE_TEMPLATE_TOKENS[key] || [];
-
-            const html = escapeHTML(textarea.value)
-                .replace(/\{\{([^}]*)\}\}/g, (full, raw) => {
-                    if (/^\w+$/.test(raw) && validTokens.includes(raw)) {
-                        const sample = MESSAGE_TEMPLATE_SAMPLE_VALUES[raw] ?? '';
-                        return `<span class="text-emerald-600 font-semibold">${escapeHTML(sample)}</span>`;
-                    }
-                    return `<span class="text-red-600 bg-red-100 px-0.5 rounded" title="Not a recognized token - won't be filled in">${escapeHTML(full)}</span>`;
-                })
-                .replace(/\n/g, '<br>');
-
-            previewEl.innerHTML = html;
-        }
-
-
-        async function saveMessageTemplate(key) {
+        async function savePaymentDetails() {
             try {
-                const textarea = document.getElementById(`tpl_${key}`);
-                if (!textarea) return;
+                const el = document.getElementById('paymentDetailsField');
+                if (!el) return;
 
-                const res = await fetch(`${CONFIG.API_URL}/api/message-templates/${key}`, {
+                const res = await fetch(`${CONFIG.API_URL}/api/message-templates/payment_details`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-                    body: JSON.stringify({ body: textarea.value })
+                    body: JSON.stringify({ body: el.value })
                 });
 
                 if (!res.ok) {
                     const err = await res.json();
-                    throw new Error(err.error || 'Failed to save template');
+                    throw new Error(err.error || 'Failed to save payment details');
                 }
 
                 await loadCatalog();
-                alert('Template saved.');
+                alert('Payment details saved.');
             } catch (err) {
                 alert('Error: ' + err.message);
             }

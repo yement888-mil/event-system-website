@@ -923,14 +923,13 @@
                 });
 
                 // Same rendering pattern as generateWhatsApp() in
-                // quotations-generate.js, reusing the same admin-editable
-                // 'quotation' template - just sourced from the persisted
-                // quotation row instead of the in-progress generate form,
-                // plus the PDF link appended.
+                // quotations-generate.js (both call the shared
+                // buildQuotationMessage() in core.js) - just sourced from
+                // the persisted quotation row instead of the in-progress
+                // generate form, plus the PDF link appended.
                 const valid = new Date();
                 valid.setDate(valid.getDate() + 7);
-                const fallback = `Hi {{customer_name}},\n\nThank you for your inquiry.\n\nQUOTATION\n--------------------\nEvent: {{event_type}}\nDate: {{event_date}}\nGuests: {{guest_count}} pax\n\nServices\n{{items}}\n\n--------------------\nTotal: RM {{total}}\nDeposit (30%): RM {{deposit}}\nBalance: RM {{balance}}\n\nValid until: {{valid_until}}\n\nPayment Details\nMaybank | 5xxxxx | Event Management System\n\nThank you.`;
-                const msgText = renderTemplate(getTemplateBody('quotation', fallback), {
+                const msgText = buildQuotationMessage({
                     customer_name: q.customer_name,
                     event_type: q.event_type || '-',
                     event_date: formatDate(q.event_date),

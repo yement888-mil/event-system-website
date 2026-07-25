@@ -39,7 +39,7 @@
                 packagesCache = pkgData.data || [];
                 galleryCache = galData.data || [];
                 faqCache = faqData.data || [];
-                messageTemplatesCache = tplData.data || [];
+                paymentDetailsCache = (tplData.data || []).find(t => t.key === 'payment_details')?.body || '';
                 peakPeriodsCache = peakData.data || [];
                 highDemandWeeksCache = new Set((demandData.data || []).map(w => w.week_start));
                 frequentPairsCache = pairsData.data || [];
@@ -52,7 +52,7 @@
                 populateQuickAddSelect();
                 renderGalleryAdminList();
                 renderFaqAdminList();
-                renderMessageTemplatesList();
+                renderPaymentDetailsField();
                 renderPeakPeriodsList();
                 renderPeakSuggestions();
                 renderAdminCalendar();

@@ -711,15 +711,10 @@
                 </section>
 
                 <section class="bg-white rounded-2xl p-6 shadow-sm">
-                    <h2 class="text-lg font-semibold mb-1">WhatsApp Message Templates</h2>
-                    <p class="text-xs text-gray-400 mb-4">
-                        Edit the wording used when sending a quotation or event reminder via WhatsApp.
-                        Placeholders like <code>{{customer_name}}</code> are filled in automatically - available tokens:
-                        <code>{{customer_name}}</code>, <code>{{event_type}}</code>, <code>{{event_date}}</code>, <code>{{guest_count}}</code>,
-                        <code>{{quotation_no}}</code>, <code>{{items}}</code>, <code>{{total}}</code>, <code>{{deposit}}</code>, <code>{{balance}}</code>, <code>{{valid_until}}</code>
-                        (not every token applies to every template).
-                    </p>
-                    <div id="messageTemplatesList" class="space-y-4"></div>
+                    <h2 class="text-lg font-semibold mb-1">Payment Details</h2>
+                    <p class="text-xs text-gray-400 mb-4">Shown in the quotation message sent to customers via WhatsApp. The rest of that message's wording is fixed - only this line is editable.</p>
+                    <textarea id="paymentDetailsField" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3"></textarea>
+                    <button onclick="savePaymentDetails()" class="bg-dark text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Save</button>
                 </section>
             </div>
 

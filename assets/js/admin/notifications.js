@@ -154,8 +154,7 @@
                 return;
             }
 
-            const fallback = `Hi {{customer_name}},\n\nJust a friendly reminder that your event ({{event_type}}) is coming up soon on {{event_date}}.\n\nGuests: {{guest_count}} pax\nQuotation: {{quotation_no}}\n\nWe're looking forward to it! Let us know if there's anything you need before the day.\n\nThank you.`;
-            const msg = renderTemplate(getTemplateBody('event_reminder', fallback), {
+            const msg = buildEventReminderMessage({
                 customer_name: event.customer_name,
                 event_type: event.event_type || 'event',
                 event_date: formatDate(event.event_date),

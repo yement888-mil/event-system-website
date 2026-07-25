@@ -262,19 +262,6 @@
         }
 
 
-        // Fills {{placeholder}} tokens in an admin-editable template body.
-        // Missing keys resolve to '' rather than leaving the raw token
-        // visible in an outgoing customer message.
-        function renderTemplate(body, vars) {
-            return body.replace(/\{\{(\w+)\}\}/g, (_, key) => (vars[key] !== undefined && vars[key] !== null) ? String(vars[key]) : '');
-        }
-
-
-        function getTemplateBody(key, fallback) {
-            const tpl = messageTemplatesCache.find(t => t.key === key);
-            return tpl ? tpl.body : fallback;
-        }
-
 
         // ---- Dropdown population (used in Generate Quotation tab) ----
         function populatePackageSelect() {
@@ -558,8 +545,7 @@
             const valid = new Date();
             valid.setDate(valid.getDate() + 7);
 
-            const fallback = `Hi {{customer_name}},\n\nThank you for your inquiry.\n\nQUOTATION\n--------------------\nEvent: {{event_type}}\nDate: {{event_date}}\nGuests: {{guest_count}} pax\n\nServices\n{{items}}\n\n--------------------\nTotal: RM {{total}}\nDeposit (30%): RM {{deposit}}\nBalance: RM {{balance}}\n\nValid until: {{valid_until}}\n\nPayment Details\nMaybank | 5xxxxx | Event Management System\n\nThank you.`;
-            const msgText = renderTemplate(getTemplateBody('quotation', fallback), {
+            const msgText = buildQuotationMessage({
                 customer_name: inq.customer_name,
                 event_type: inq.event_type || '-',
                 event_date: formatDate(inq.event_date),
