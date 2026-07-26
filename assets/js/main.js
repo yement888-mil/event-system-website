@@ -32,6 +32,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // The Spades hall package books one of our own 3 venues, not a
+    // customer-supplied address - so event_location (normally free text
+    // for the customer's own hall) gets locked to the chosen venue while
+    // this is checked, instead of leaving two conflicting venue inputs
+    // on the same form. Restored to an empty, editable field on uncheck.
+    const hallPackageCheckbox = document.querySelector('input[name="services"][value="hall_package"]');
+    const hallPackageExtraFields = document.getElementById('hallPackageExtraFields');
+    const hallVenueSelect = document.getElementById('hall_venue');
+    const eventLocationInput = document.getElementById('event_location');
+    if (hallPackageCheckbox && hallPackageExtraFields && hallVenueSelect && eventLocationInput) {
+        hallPackageCheckbox.addEventListener('change', function() {
+            hallPackageExtraFields.classList.toggle('hidden', !this.checked);
+            if (this.checked) {
+                eventLocationInput.readOnly = true;
+                eventLocationInput.value = hallVenueSelect.value ? `The Spades - ${hallVenueSelect.value}` : '';
+            } else {
+                eventLocationInput.readOnly = false;
+                eventLocationInput.value = '';
+                hallVenueSelect.value = '';
+            }
+        });
+        hallVenueSelect.addEventListener('change', function() {
+            eventLocationInput.value = this.value ? `The Spades - ${this.value}` : '';
+        });
+    }
+
     // FAQ Toggle
     document.querySelectorAll('.faq-item').forEach(item => {
         item.addEventListener('click', function() {

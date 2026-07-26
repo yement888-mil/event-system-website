@@ -125,7 +125,7 @@
             <div>
                 <label class="block text-sm font-medium mb-1 text-dark">Event Location / Hall Name *</label>
                 <input type="text" id="event_location" required class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none" placeholder="e.g. Dewan Serbaguna Taman ABC">
-                <p class="text-xs text-gray-400 mt-1.5">We currently serve Puchong, Klang &amp; Senawang - indoor hall setups only.</p>
+                <p class="text-xs text-gray-400 mt-1.5">We currently serve Puchong, Klang &amp; Sendayan - indoor hall setups only.</p>
             </div>
 
             <div>
@@ -147,6 +147,25 @@
                         <input type="checkbox" name="services" value="magic" class="w-5 h-5">
                         <span class="text-dark text-sm">Magic Show</span>
                     </label>
+                    <label class="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-5 py-3.5 cursor-pointer hover:border-gold transition">
+                        <input type="checkbox" name="services" value="hall_package" class="w-5 h-5">
+                        <span class="text-dark text-sm">Event Hall Package (The Spades)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="hallPackageExtraFields" class="hidden space-y-4">
+                <p class="text-xs text-[#333333] bg-white border border-gray-200 rounded-xl px-4 py-3">
+                    See <a href="packages.html" target="_blank" class="text-gold font-medium hover:underline">The Spades</a> for full inclusions. Price excludes catering and entertainment.
+                </p>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-dark">Venue *</label>
+                    <select id="hall_venue" required class="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:outline-none text-dark">
+                        <option value="">Select a venue</option>
+                        <option value="Puchong">Puchong</option>
+                        <option value="Sendayan">Sendayan</option>
+                        <option value="Klang">Klang</option>
+                    </select>
                 </div>
             </div>
 
