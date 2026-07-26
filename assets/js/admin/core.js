@@ -479,7 +479,7 @@ Thank you.`;
         // BAU backlog #18 - matches the service checkbox codes used on the
         // public inquiry form (see website/contact.html and
         // services/whatsapp.js's formatWhatsAppMessage).
-        const SERVICE_CODE_LABELS = { deco: 'Decoration', photo: 'Photography', catering: 'Catering', magic: 'Magic Show' };
+        const SERVICE_CODE_LABELS = { deco: 'Decoration', photo: 'Photography', catering: 'Catering', magic: 'Magic Show', hall_package: 'Event Hall Package (The Spades)' };
 
 
         const REFUND_STATUS_LABELS = {

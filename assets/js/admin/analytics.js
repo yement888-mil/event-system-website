@@ -95,6 +95,7 @@
             let photoRevenue = 0;
             let cateringRevenue = 0;
             let magicRevenue = 0;
+            let hallPackageRevenue = 0;
 
             // BAU backlog #37 - margin, computed only from items that
             // actually have a snapshotted cost (see generateQuotation()).
@@ -117,7 +118,9 @@
                     q.items.forEach(item => {
                         const itemName = item.name.toLowerCase();
                         const price = parseFloat(item.price) || 0;
-                        if (itemName.includes('decor') || itemName.includes('balloon') || itemName.includes('flower') || itemName.includes('backdrop') || itemName.includes('stage')) {
+                        if (itemName.includes('spades') || itemName.includes('hall package') || itemName.includes('hall usage')) {
+                            hallPackageRevenue += price;
+                        } else if (itemName.includes('decor') || itemName.includes('balloon') || itemName.includes('flower') || itemName.includes('backdrop') || itemName.includes('stage')) {
                             decoRevenue += price;
                         } else if (itemName.includes('photo') || itemName.includes('camera')) {
                             photoRevenue += price;
@@ -150,7 +153,7 @@
                 const d = new Date(i.event_date);
                 return d.getMonth() === (month - 1) && d.getFullYear() === year;
             });
-            const requestCounts = { deco: 0, photo: 0, catering: 0, magic: 0 };
+            const requestCounts = { deco: 0, photo: 0, catering: 0, magic: 0, hall_package: 0 };
             monthInquiries.forEach(i => {
                 let requested = i.services_requested;
                 if (typeof requested === 'string') {
@@ -174,10 +177,12 @@
             const photoEl = document.getElementById('analyticsPhotoRevenue');
             const cateringEl = document.getElementById('analyticsCateringRevenue');
             const magicEl = document.getElementById('analyticsMagicRevenue');
+            const hallPackageEl = document.getElementById('analyticsHallPackageRevenue');
             const decoReqEl = document.getElementById('analyticsDecoRequested');
             const photoReqEl = document.getElementById('analyticsPhotoRequested');
             const cateringReqEl = document.getElementById('analyticsCateringRequested');
             const magicReqEl = document.getElementById('analyticsMagicRequested');
+            const hallPackageReqEl = document.getElementById('analyticsHallPackageRequested');
             const eventsEl = document.getElementById('analyticsTotalEvents');
             const pendingEl = document.getElementById('analyticsPending');
             const completedEl = document.getElementById('analyticsCompleted');
@@ -193,10 +198,12 @@
             if (photoEl) photoEl.textContent = 'RM ' + photoRevenue;
             if (cateringEl) cateringEl.textContent = 'RM ' + cateringRevenue;
             if (magicEl) magicEl.textContent = 'RM ' + magicRevenue;
+            if (hallPackageEl) hallPackageEl.textContent = 'RM ' + hallPackageRevenue;
             if (decoReqEl) decoReqEl.textContent = `Requested ${requestCounts.deco} times`;
             if (photoReqEl) photoReqEl.textContent = `Requested ${requestCounts.photo} times`;
             if (cateringReqEl) cateringReqEl.textContent = `Requested ${requestCounts.catering} times`;
             if (magicReqEl) magicReqEl.textContent = `Requested ${requestCounts.magic} times`;
+            if (hallPackageReqEl) hallPackageReqEl.textContent = `Requested ${requestCounts.hall_package} times`;
             if (eventsEl) eventsEl.textContent = totalEvents;
             if (pendingEl) pendingEl.textContent = 'RM ' + pendingDeposits;
             if (completedEl) completedEl.textContent = completedEvents;
