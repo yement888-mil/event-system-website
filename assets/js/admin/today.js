@@ -28,12 +28,17 @@ function renderCancelAttentionItem(inq) {
 
 function renderChangeAttentionItem(r) {
     const isDateChange = r.request_type === 'date_change';
+    const isTimeChange = r.request_type === 'time_change';
     const conflict = isDateChange && r.conflict;
     const sev = conflict ? 'critical' : 'warning';
-    const tagLabel = isDateChange ? (conflict ? 'Date change &middot; conflict' : 'Date change requested') : 'Add service requested';
+    const tagLabel = isDateChange
+        ? (conflict ? 'Date change &middot; conflict' : 'Date change requested')
+        : isTimeChange ? 'Time change requested' : 'Add service requested';
     const detail = isDateChange
         ? `Requested new date: <strong>${formatDate(r.requested_date)}</strong> (currently ${formatDate(r.current_event_date)})`
-        : `Requested service: <strong>${escapeHTML(r.requested_service)}</strong>`;
+        : isTimeChange
+            ? `Requested new time: <strong>${escapeHTML(r.requested_time)}</strong>`
+            : `Requested service: <strong>${escapeHTML(r.requested_service)}</strong>`;
     const conflictHtml = conflict
         ? `<div class="item-detail" style="color:var(--danger)">Conflict: ${escapeHTML(r.conflict.customer_name)} (${escapeHTML(r.conflict.quotation_no || '-')}) already has a confirmed booking on this date.</div>`
         : '';

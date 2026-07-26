@@ -128,11 +128,11 @@ async function loadBooking() {
             const pending = b.pending_change_requests || [];
             if (pending.length > 0) {
                 const noteEl = document.getElementById('pendingChangeRequestsNote');
-                noteEl.innerHTML = pending.map(r =>
-                    r.request_type === 'date_change'
-                        ? `We're reviewing your request to change the date to ${formatDate(r.requested_date)}.`
-                        : `We're reviewing your request to add "${escapeHTML(r.requested_service)}".`
-                ).join('<br>');
+                noteEl.innerHTML = pending.map(r => {
+                    if (r.request_type === 'date_change') return `We're reviewing your request to change the date to ${formatDate(r.requested_date)}.`;
+                    if (r.request_type === 'time_change') return `We're reviewing your request to change the time to ${escapeHTML(r.requested_time)}.`;
+                    return `We're reviewing your request to add "${escapeHTML(r.requested_service)}".`;
+                }).join('<br>');
                 noteEl.classList.remove('hidden');
 
                 // Don't offer a second request of the same type
@@ -140,6 +140,7 @@ async function loadBooking() {
                 const pendingTypes = pending.map(r => r.request_type);
                 if (pendingTypes.includes('date_change')) document.getElementById('requestDateChangeBtn').classList.add('hidden');
                 if (pendingTypes.includes('add_service')) document.getElementById('requestAddServiceBtn').classList.add('hidden');
+                if (pendingTypes.includes('time_change')) document.getElementById('requestTimeChangeBtn').classList.add('hidden');
             }
         }
 
@@ -193,9 +194,10 @@ async function requestCancellation() {
 // BAU backlog #15 - extends the cancellation-request pattern above
 // to date-change/add-service requests. Same token, same "notify
 // only, never applied automatically" behavior.
+const CHANGE_FORM_IDS = { date_change: 'dateChangeForm', add_service: 'addServiceForm', time_change: 'timeChangeForm' };
+
 function toggleChangeForm(type) {
-    const formId = type === 'date_change' ? 'dateChangeForm' : 'addServiceForm';
-    document.getElementById(formId).classList.toggle('hidden');
+    document.getElementById(CHANGE_FORM_IDS[type]).classList.toggle('hidden');
 }
 
 async function submitChangeRequest(type) {
@@ -208,6 +210,11 @@ async function submitChangeRequest(type) {
         if (!date) { alert('Please pick a date'); return; }
         payload.requested_date = date;
         payload.customer_note = document.getElementById('dateChangeNoteInput').value.trim();
+    } else if (type === 'time_change') {
+        const time = document.getElementById('requestedTimeInput').value.trim();
+        if (!time) { alert('Please enter a time'); return; }
+        payload.requested_time = time;
+        payload.customer_note = document.getElementById('timeChangeNoteInput').value.trim();
     } else {
         const service = document.getElementById('requestedServiceInput').value.trim();
         if (!service) { alert('Please enter a service'); return; }
@@ -320,6 +327,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const submitAddServiceBtn = document.getElementById('submitAddServiceBtn');
     if (submitAddServiceBtn) submitAddServiceBtn.addEventListener('click', () => submitChangeRequest('add_service'));
+
+    const requestTimeChangeBtn = document.getElementById('requestTimeChangeBtn');
+    if (requestTimeChangeBtn) requestTimeChangeBtn.addEventListener('click', () => toggleChangeForm('time_change'));
+
+    const submitTimeChangeBtn = document.getElementById('submitTimeChangeBtn');
+    if (submitTimeChangeBtn) submitTimeChangeBtn.addEventListener('click', () => submitChangeRequest('time_change'));
 
     const submitTestimonialBtn = document.getElementById('submitTestimonialBtn');
     if (submitTestimonialBtn) submitTestimonialBtn.addEventListener('click', submitTestimonial);

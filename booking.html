@@ -146,6 +146,17 @@
                     <textarea id="addServiceNoteInput" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"></textarea>
                     <button id="submitAddServiceBtn" class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Submit Request</button>
                 </div>
+
+                <div class="text-center">
+                    <button id="requestTimeChangeBtn" class="text-xs text-gray-400 hover:text-gold hover:underline">Need to change the time (same date)?</button>
+                </div>
+                <div id="timeChangeForm" class="hidden bg-white rounded-2xl p-4 shadow-sm space-y-3">
+                    <label class="block text-xs font-medium">New time</label>
+                    <input type="text" id="requestedTimeInput" placeholder="e.g. 6:00 PM" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                    <label class="block text-xs font-medium">Note (optional)</label>
+                    <textarea id="timeChangeNoteInput" rows="2" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm"></textarea>
+                    <button id="submitTimeChangeBtn" class="w-full bg-dark text-white py-2.5 rounded-full text-sm font-medium hover:bg-gold hover:text-dark transition">Submit Request</button>
+                </div>
             </div>
 
             <div id="requestCancelSection" class="hidden text-center mb-4">
