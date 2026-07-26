@@ -833,7 +833,7 @@
                                 ${escapeHTML(inq.event_type || '-')} | ${formatDate(inq.event_date)} | ${escapeHTML(inq.phone || '-')}
                             </div>
                             <div class="text-xs text-gray-500 mt-0.5">
-                                &#128205; ${escapeHTML(inq.event_location || '-')}
+                                ${escapeHTML(inq.event_location || '-')}
                             </div>
                             <div class="text-xs text-gray-400 mt-0.5 truncate">
                                 ${inq.services_requested ? (typeof inq.services_requested === 'string' ? JSON.parse(inq.services_requested).join(', ') : inq.services_requested.join(', ')) : 'No services selected'}
