@@ -32,29 +32,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // The Spades hall package books one of our own 3 venues, not a
-    // customer-supplied address - so event_location (normally free text
-    // for the customer's own hall) gets locked to the chosen venue while
-    // this is checked, instead of leaving two conflicting venue inputs
-    // on the same form. Restored to an empty, editable field on uncheck.
+    // Every event is hosted at one of our own 3 venues (see the Venue
+    // field), so checking the hall package just reveals an info note -
+    // no separate venue input needed here anymore.
     const hallPackageCheckbox = document.querySelector('input[name="services"][value="hall_package"]');
     const hallPackageExtraFields = document.getElementById('hallPackageExtraFields');
-    const hallVenueSelect = document.getElementById('hall_venue');
-    const eventLocationInput = document.getElementById('event_location');
-    if (hallPackageCheckbox && hallPackageExtraFields && hallVenueSelect && eventLocationInput) {
+    if (hallPackageCheckbox && hallPackageExtraFields) {
         hallPackageCheckbox.addEventListener('change', function() {
             hallPackageExtraFields.classList.toggle('hidden', !this.checked);
-            if (this.checked) {
-                eventLocationInput.readOnly = true;
-                eventLocationInput.value = hallVenueSelect.value ? `The Spades - ${hallVenueSelect.value}` : '';
-            } else {
-                eventLocationInput.readOnly = false;
-                eventLocationInput.value = '';
-                hallVenueSelect.value = '';
-            }
-        });
-        hallVenueSelect.addEventListener('change', function() {
-            eventLocationInput.value = this.value ? `The Spades - ${this.value}` : '';
         });
     }
 
@@ -204,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const sourceValue = document.getElementById('source')?.value || '';
             const sourceOtherValue = document.getElementById('source_other')?.value.trim() || '';
             const baseMessage = document.getElementById('message').value.trim();
+            const venueValue = document.getElementById('venue')?.value || '';
 
             const data = {
                 customer_name: document.getElementById('customer_name').value.trim(),
@@ -212,7 +198,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 event_type: document.getElementById('event_type').value,
                 event_date: document.getElementById('event_date').value,
                 guest_count: parseInt(document.getElementById('guest_count').value),
-                event_location: document.getElementById('event_location').value.trim(),
+                // event_location is the backend's field name (kept as-is to
+                // avoid a schema change) - populated from the Venue select
+                // now that every event is hosted at one of our own 3 venues,
+                // not a customer-supplied address. "The Spades - " prefix
+                // kept only so staff can tell a package booking apart from a
+                // plain a-la-carte booking at the same venue.
+                event_location: services.includes('hall_package') && venueValue
+                    ? `The Spades - ${venueValue}`
+                    : venueValue,
                 services_requested: services,
                 // sourceValue === 'Other' guarded because sourceOtherValue only
                 // has a value at all when the "Other" field was shown - other
