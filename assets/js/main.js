@@ -58,6 +58,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // "Other" needs a way to specify what it means, but the backend's
+    // source field is a strict enum (Instagram/Facebook/.../Other) with
+    // no free-text companion column - so the specified text rides along
+    // in the message field instead of being sent as its own field. See
+    // the submit handler below for where it actually gets merged in.
+    const sourceSelect = document.getElementById('source');
+    const sourceOtherField = document.getElementById('sourceOtherField');
+    const sourceOtherInput = document.getElementById('source_other');
+    if (sourceSelect && sourceOtherField && sourceOtherInput) {
+        sourceSelect.addEventListener('change', function() {
+            const isOther = this.value === 'Other';
+            sourceOtherField.classList.toggle('hidden', !isOther);
+            sourceOtherInput.required = isOther;
+            if (!isOther) sourceOtherInput.value = '';
+        });
+    }
+
     // FAQ Toggle
     document.querySelectorAll('.faq-item').forEach(item => {
         item.addEventListener('click', function() {
@@ -184,6 +201,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            const sourceValue = document.getElementById('source')?.value || '';
+            const sourceOtherValue = document.getElementById('source_other')?.value.trim() || '';
+            const baseMessage = document.getElementById('message').value.trim();
+
             const data = {
                 customer_name: document.getElementById('customer_name').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
@@ -193,9 +214,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 guest_count: parseInt(document.getElementById('guest_count').value),
                 event_location: document.getElementById('event_location').value.trim(),
                 services_requested: services,
-                message: document.getElementById('message').value.trim(),
+                // sourceValue === 'Other' guarded because sourceOtherValue only
+                // has a value at all when the "Other" field was shown - other
+                // source choices never touch the message body.
+                message: (sourceValue === 'Other' && sourceOtherValue)
+                    ? `Heard about us via: ${sourceOtherValue}\n\n${baseMessage}`
+                    : baseMessage,
                 idempotency_key: inquiryIdempotencyKey,
-                source: document.getElementById('source')?.value || '',
+                source: sourceValue,
                 // Only meaningful when Catering was selected - the picker is
                 // hidden (and irrelevant) otherwise, even though the select
                 // element still technically exists in the DOM.
