@@ -379,19 +379,14 @@
                     XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0, 31));
                 }
 
-                addSheet(data.inquiries, 'Inquiries');
-                addSheet(data.quotations, 'Quotations');
-                addSheet(data.quotation_versions, 'Quotation Versions');
-                addSheet(data.services, 'Services');
-                addSheet(data.pricing_items, 'Pricing Items');
-                addSheet(data.packages, 'Packages');
-                addSheet(data.package_items, 'Package Items');
-                addSheet(data.activity_logs, 'Activity Log');
-                addSheet(data.notification_logs, 'Notification Log');
-                addSheet(data.customers, 'Customers');
-                addSheet(data.gallery_items, 'Gallery');
-                addSheet(data.faq_items, 'FAQ');
-                addSheet(data.tasks, 'Tasks');
+                // Driven off whatever the backup endpoint actually returns, not a
+                // hardcoded list - services/backupData.js is the single source of
+                // truth for which tables are backed up, and this used to silently
+                // drop any table added there but not mirrored here.
+                Object.keys(data).forEach(table => {
+                    const sheetName = table.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    addSheet(data[table], sheetName);
+                });
 
                 const dateStr = new Date().toISOString().split('T')[0];
                 XLSX.writeFile(wb, `Full_Backup_${dateStr}.xlsx`);
