@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.googletagmanager.com https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.facebook.com https://res.cloudinary.com https://*.cdninstagram.com https://*.fbcdn.net; connect-src 'self' https://event-system-backend-production.up.railway.app https://www.google-analytics.com https://analytics.google.com https://www.facebook.com; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.googletagmanager.com https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.facebook.com https://res.cloudinary.com; connect-src 'self' https://event-system-backend-production.up.railway.app https://www.google-analytics.com https://analytics.google.com https://www.facebook.com; object-src 'none'; base-uri 'self'; form-action 'self';">
     <script src="config.js"></script>
     <script src="assets/js/analytics.js"></script>
     <title>Gallery | Event Management System</title>
@@ -70,23 +70,6 @@
         </div>
     </header>
 
-    <section id="instagramSlideshow" class="hidden max-w-6xl mx-auto px-5 py-12">
-        <div class="text-center mb-8">
-            <div class="gold-line mb-4"></div>
-            <h2 class="text-2xl tracking-tight">Latest from Instagram</h2>
-        </div>
-
-        <div class="relative flex items-center gap-2">
-            <button type="button" id="igPrevBtn" aria-label="Previous" class="hidden sm:flex flex-none w-9 h-9 rounded-full border border-gray-200 items-center justify-center icon-btn hover:border-gold transition">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
-            </button>
-            <div id="instagramTrack" class="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2"></div>
-            <button type="button" id="igNextBtn" aria-label="Next" class="hidden sm:flex flex-none w-9 h-9 rounded-full border border-gray-200 items-center justify-center icon-btn hover:border-gold transition">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-            </button>
-        </div>
-    </section>
-
     <section class="max-w-6xl mx-auto px-5 py-12">
         <div class="text-center mb-8">
             <div class="gold-line mb-4"></div>
@@ -114,7 +97,6 @@
     </footer>
 
     <script src="assets/js/main.js"></script>
-    <script src="assets/js/instagram-gallery.js"></script>
     <script src="assets/js/gallery-catalog.js"></script>
 </body>
 </html>
